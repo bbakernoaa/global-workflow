@@ -62,11 +62,6 @@ CAP_EXPORTS:
    CA.bcphilic,CA.bc       bc2
    CA.ocphobic,CA.oc       oc1
    CA.ocphilic,CA.oc       oc2
-   NH3,NI                  nh3
-   NH4a,NI                 nh4a
-   NO3an1,NI               no3an1
-   NO3an2,NI               no3an2
-   NO3an3,NI               no3an3
 ::
 
 
