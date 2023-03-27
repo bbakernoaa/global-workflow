@@ -171,7 +171,7 @@ class Tasks:
         if self.app_config.do_ocean:
             ocn_res = f"{self._base.get('OCNRES', '025'):03d}"
             prefix = f"{cpl_ic['BASE_CPLIC']}/{cpl_ic['CPL_OCNIC']}/@Y@m@d@H/ocn"
-            for res in ['res'] + [f'res_{res_index}' for res_index in range(1, 5)]:
+            for res in ['res'] + [f'res_{res_index}' for res_index in range(1, 4)]:
                 data = f"{prefix}/{ocn_res}/MOM.{res}.nc"
                 dep_dict = {'type': 'data', 'data': data}
                 deps.append(rocoto.add_dependency(dep_dict))
@@ -463,8 +463,7 @@ class Tasks:
         data = f'&ROTDIR;/gdas.@Y@m@d/@H/atmos/gdas.t@Hz.atmf009.nc'
         dep_dict = {'type': 'data', 'data': data, 'offset': '-06:00:00'}
         deps.append(rocoto.add_dependency(dep_dict))
-        data = f'{dmpdir}/{self.cdump}{dump_suffix}.@Y@m@d/@H/atmos/{self.cdump}.t@Hz.updated.status.tm00.bufr_d'
-        dep_dict = {'type': 'data', 'data': data}
+        dep_dict = {'type': 'task', 'name': f'{self.cdump}prep'}
         deps.append(rocoto.add_dependency(dep_dict))
         dependencies = rocoto.create_dependency(dep_condition='and', dep=deps)
 
@@ -839,7 +838,7 @@ class Tasks:
         deps.append(rocoto.add_dependency(dep_dict))
         dependencies = rocoto.create_dependency(dep=deps)
 
-        resources = self.get_resource('waeawipsgridded')
+        resources = self.get_resource('waveawipsgridded')
         task = create_wf_task('waveawipsgridded', resources, cdump=self.cdump, envar=self.envars,
                               dependency=dependencies)
 
@@ -1242,7 +1241,7 @@ class Tasks:
 
         groups = self._get_hybgroups(self._base['NMEM_ENKF'], self._configs['efcs']['NMEM_EFCSGRP'])
 
-        if self.cdump == "gfs":
+        if self.cdump == "enkfgfs":
             groups = self._get_hybgroups(self._base['NMEM_EFCS'], self._configs['efcs']['NMEM_EFCSGRP_GFS'])
         cycledef = 'gdas_half,gdas' if self.cdump in ['enkfgdas'] else self.cdump.replace('enkf', '')
         resources = self.get_resource('efcs')

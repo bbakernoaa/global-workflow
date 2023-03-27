@@ -156,10 +156,6 @@ EOF
 
   #--------------------------------------------------------------------------
   # Grid and orography data
-  for n in $(seq 1 $ntiles); do
-    $NLN $FIXfv3/$CASE/${CASE}_grid.tile${n}.nc     $DATA/INPUT/${CASE}_grid.tile${n}.nc
-    $NLN $FIXfv3/$CASE/${CASE}_oro_data.tile${n}.nc $DATA/INPUT/oro_data.tile${n}.nc
-  done
 
   if [ $cplflx = ".false." ] ; then
     $NLN $FIXfv3/$CASE/${CASE}_mosaic.nc $DATA/INPUT/grid_spec.nc
@@ -167,20 +163,12 @@ EOF
     $NLN $FIXfv3/$CASE/${CASE}_mosaic.nc $DATA/INPUT/${CASE}_mosaic.nc
   fi
 
-  # Fractional grid related
-  if [ $FRAC_GRID = ".true." ]; then
-    OROFIX=${OROFIX:-"${FIX_DIR}/orog/${CASE}.mx${OCNRES}_frac"}
-    FIX_SFC=${FIX_SFC:-"${OROFIX}/fix_sfc"}
-    for n in $(seq 1 $ntiles); do
-      $NLN ${OROFIX}/oro_${CASE}.mx${OCNRES}.tile${n}.nc $DATA/INPUT/oro_data.tile${n}.nc
-    done
-  else
-    OROFIX=${OROFIX:-"${FIXfv3}/${CASE}"}
-    FIX_SFC=${FIX_SFC:-"${OROFIX}/fix_sfc"}
-    for n in $(seq 1 $ntiles); do
-      $NLN ${OROFIX}/${CASE}_oro_data.tile${n}.nc $DATA/INPUT/oro_data.tile${n}.nc
-    done
-  fi
+  OROFIX=${OROFIX:-"${FIX_DIR}/orog/${CASE}.mx${OCNRES}_frac"}
+  FIX_SFC=${FIX_SFC:-"${OROFIX}/fix_sfc"}
+  for n in $(seq 1 $ntiles); do
+    $NLN ${OROFIX}/oro_${CASE}.mx${OCNRES}.tile${n}.nc $DATA/INPUT/oro_data.tile${n}.nc
+    $NLN ${OROFIX}/${CASE}_grid.tile${n}.nc     $DATA/INPUT/${CASE}_grid.tile${n}.nc
+  done
 
   export CCPP_SUITE=${CCPP_SUITE:-"FV3_GFS_v16"}
   _suite_file=$HOMEgfs/sorc/ufs_model.fd/FV3/ccpp/suites/suite_${CCPP_SUITE}.xml
@@ -257,8 +245,8 @@ EOF
   if [ $imp_physics -eq 8 ]; then
     $NLN $FIX_AM/CCN_ACTIVATE.BIN  $DATA/CCN_ACTIVATE.BIN
     $NLN $FIX_AM/freezeH2O.dat     $DATA/freezeH2O.dat
-    $NLN $FIX_AM/qr_acr_qg.dat     $DATA/qr_acr_qg.dat
-    $NLN $FIX_AM/qr_acr_qs.dat     $DATA/qr_acr_qs.dat
+    $NLN $FIX_AM/qr_acr_qgV2.dat   $DATA/qr_acr_qgV2.dat
+    $NLN $FIX_AM/qr_acr_qsV2.dat   $DATA/qr_acr_qsV2.dat
   fi
 
   $NLN $FIX_AM/${O3FORC}                         $DATA/global_o3prdlos.f77
@@ -755,8 +743,6 @@ CPL_out() {
 MOM6_postdet() {
   echo "SUB ${FUNCNAME[0]}: MOM6 after run type determination"
 
-  OCNRES=${OCNRES:-"025"}  # TODO: remove from here and lift higher
-
   # Copy MOM6 ICs
   $NLN "${ROTDIR}/${CDUMP}.${gPDY}/${gcyc}/ocean/RESTART/${PDY}.${cyc}0000.MOM.res.nc" "${DATA}/INPUT/MOM.res.nc"
   case $OCNRES in
@@ -776,7 +762,6 @@ MOM6_postdet() {
           exit 111
       fi
       $NLN "${ROTDIR}/${CDUMP}.${PDY}/${cyc}/ocean/${CDUMP}.t${cyc}z.ocninc.nc" "${DATA}/INPUT/mom6_increment.nc"
-      export ODA_INCUPD="true"
   fi
 
   # Copy MOM6 fixed files
@@ -876,15 +861,12 @@ MOM6_postdet() {
   elif [[ "${CDUMP}" =~ "gdas" ]]; then
     # Link output files for CDUMP = gdas
 
-    # MOM6 does not write out the first forecast hour, so start at FHOUT
-    local fhr="${FHOUT}"
-    while [[ "${fhr}" -le "${FHMAX}" ]]; do
+    # Save MOM6 backgrounds
+    for fhr in ${OUTPUT_FH}; do
       local idatestr=$(date -d "${CDATE:0:8} ${CDATE:8:2} + ${fhr} hours" +%Y_%m_%d_%H)
-      local fhr3=$(printf %03i ${fhr})
+      local fhr3=$(printf %03i "${fhr}")
       $NLN "${COMOUTocean}/${CDUMP}.t${cyc}z.ocnf${fhr3}.nc" "${DATA}/ocn_da_${idatestr}.nc"
-      local fhr=$((fhr + FHOUT))
     done
-
   fi
 
   mkdir -p "${COMOUTocean}/RESTART"
