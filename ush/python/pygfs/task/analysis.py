@@ -5,7 +5,7 @@ from logging import getLogger
 from netCDF4 import Dataset
 from typing import List, Dict, Any
 
-from pygw.yaml_file import YAMLFile, parse_j2yaml
+from pygw.yaml_file import YAMLFile, parse_j2yaml, parse_yamltmpl
 from pygw.file_utils import FileHandler
 from pygw.template import Template, TemplateConstants
 from pygw.logger import logit
@@ -32,6 +32,13 @@ class Analysis(Task):
         obs_dict = self.get_obs_dict()
         FileHandler(obs_dict).sync()
 
+        # some analyses need to stage bias corrections
+        bias_dict = self.get_bias_dict()
+        FileHandler(bias_dict).sync()
+
+        # link jedi executable to run directory
+        self.link_jediexe()
+
     @logit(logger)
     def get_obs_dict(self: Task) -> Dict[str, Any]:
         """Compile a dictionary of observation files to copy
@@ -57,12 +64,50 @@ class Analysis(Task):
         for ob in observers:
             obfile = ob['obs space']['obsdatain']['engine']['obsfile']
             basename = os.path.basename(obfile)
-            copylist.append([os.path.join(self.task_config['COMIN_OBS'], basename), obfile])
+            copylist.append([os.path.join(self.task_config['COM_OBS'], basename), obfile])
         obs_dict = {
             'mkdir': [os.path.join(self.runtime_config['DATA'], 'obs')],
             'copy': copylist
         }
         return obs_dict
+
+    @logit(logger)
+    def get_bias_dict(self: Task) -> Dict[str, Any]:
+        """Compile a dictionary of observation files to copy
+
+        This method uses the OBS_LIST configuration variable to generate a dictionary
+        from a list of YAML files that specify what observation bias correction files
+        are to be copied to the run directory from the observation input directory
+
+        Parameters
+        ----------
+
+        Returns
+        ----------
+        bias_dict: Dict
+            a dictionary containing the list of observation bias files to copy for FileHandler
+        """
+        logger.debug(f"OBS_LIST: {self.task_config['OBS_LIST']}")
+        obs_list_config = parse_j2yaml(self.task_config["OBS_LIST"], self.task_config)
+        logger.debug(f"obs_list_config: {obs_list_config}")
+        # get observers from master dictionary
+        observers = obs_list_config['observers']
+        copylist = []
+        for ob in observers:
+            if 'obs bias' in ob.keys():
+                obfile = ob['obs bias']['input file']
+                obdir = os.path.dirname(obfile)
+                basename = os.path.basename(obfile)
+                prefix = '.'.join(basename.split('.')[:-2])
+                for file in ['satbias.nc4', 'satbias_cov.nc4', 'tlapse.txt']:
+                    bfile = f"{prefix}.{file}"
+                    copylist.append([os.path.join(self.task_config.COM_ATMOS_ANALYSIS_PREV, bfile), os.path.join(obdir, bfile)])
+
+        bias_dict = {
+            'mkdir': [os.path.join(self.runtime_config.DATA, 'bc')],
+            'copy': copylist
+        }
+        return bias_dict
 
     @logit(logger)
     def add_fv3_increments(self, inc_file_tmpl: str, bkg_file_tmpl: str, incvars: List) -> None:
@@ -129,3 +174,28 @@ class Analysis(Task):
         """
         berror_dict = {'foo': 'bar'}
         return berror_dict
+
+    @logit(logger)
+    def link_jediexe(self: Task) -> None:
+        """Compile a dictionary of background error files to copy
+
+        This method links a JEDI executable to the run directory
+
+        Parameters
+        ----------
+        Task: GDAS task
+
+        Returns
+        ----------
+        None
+        """
+        exe_src = self.task_config.JEDIEXE
+
+        # TODO: linking is not permitted per EE2.  Needs work in JEDI to be able to copy the exec.
+        logger.debug(f"Link executable {exe_src} to DATA/")
+        exe_dest = os.path.join(self.task_config.DATA, os.path.basename(exe_src))
+        if os.path.exists(exe_dest):
+            rm_p(exe_dest)
+        os.symlink(exe_src, exe_dest)
+
+        return

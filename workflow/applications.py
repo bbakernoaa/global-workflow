@@ -105,10 +105,12 @@ class AppConfig:
         self.do_awips = _base.get('DO_AWIPS', False)
         self.do_wafs = _base.get('WAFSF', False)
         self.do_vrfy = _base.get('DO_VRFY', True)
+        self.do_fit2obs = _base.get('DO_FIT2OBS', True)
         self.do_metp = _base.get('DO_METP', False)
-        self.do_jedivar = _base.get('DO_JEDIVAR', False)
-        self.do_jediens = _base.get('DO_JEDIENS', False)
+        self.do_jediatmvar = _base.get('DO_JEDIVAR', False)
+        self.do_jediatmens = _base.get('DO_JEDIENS', False)
         self.do_jediocnvar = _base.get('DO_JEDIOCNVAR', False)
+        self.do_mergensst = _base.get('DO_MERGENSST', False)
 
         self.do_hpssarch = _base.get('HPSSARCH', False)
 
@@ -176,24 +178,25 @@ class AppConfig:
 
         configs = ['prep']
 
-        if self.do_jedivar:
-            configs += ['atmanalprep', 'atmanalrun', 'atmanalpost']
+        if self.do_jediatmvar:
+            configs += ['atmanlinit', 'atmanlrun', 'atmanlfinal']
         else:
             configs += ['anal', 'analdiag']
 
         if self.do_jediocnvar:
-            configs += ['ocnanalprep', 'ocnanalbmat', 'ocnanalrun', 'ocnanalpost']
+            configs += ['ocnanalprep', 'ocnanalbmat', 'ocnanalrun', 'ocnanalchkpt', 'ocnanalpost', 'ocnanalvrfy']
+
         if self.do_ocean:
             configs += ['ocnpost']
 
-        configs += ['sfcanl', 'analcalc', 'fcst', 'post', 'vrfy', 'arch']
+        configs += ['sfcanl', 'analcalc', 'fcst', 'post', 'vrfy', 'fit2obs', 'arch']
 
         if self.do_gldas:
             configs += ['gldas']
 
         if self.do_hybvar:
-            if self.do_jediens:
-                configs += ['atmensanalprep', 'atmensanalrun', 'atmensanalpost']
+            if self.do_jediatmens:
+                configs += ['atmensanlinit', 'atmensanlrun', 'atmensanlfinal']
             else:
                 configs += ['eobs', 'eomg', 'ediag', 'eupd']
             configs += ['ecen', 'esfc', 'efcs', 'echgres', 'epos', 'earc']
@@ -353,13 +356,14 @@ class AppConfig:
 
         gdas_gfs_common_cleanup_tasks = ['arch']
 
-        if self.do_jedivar:
-            gdas_gfs_common_tasks_before_fcst += ['atmanalprep', 'atmanalrun', 'atmanalpost']
+        if self.do_jediatmvar:
+            gdas_gfs_common_tasks_before_fcst += ['atmanlinit', 'atmanlrun', 'atmanlfinal']
         else:
             gdas_gfs_common_tasks_before_fcst += ['anal']
 
         if self.do_jediocnvar:
-            gdas_gfs_common_tasks_before_fcst += ['ocnanalprep', 'ocnanalbmat', 'ocnanalrun', 'ocnanalpost']
+            gdas_gfs_common_tasks_before_fcst += ['ocnanalprep', 'ocnanalbmat', 'ocnanalrun',
+                                                  'ocnanalchkpt', 'ocnanalpost', 'ocnanalvrfy']
 
         gdas_gfs_common_tasks_before_fcst += ['sfcanl', 'analcalc']
 
@@ -374,8 +378,8 @@ class AppConfig:
         hybrid_tasks = []
         hybrid_after_eupd_tasks = []
         if self.do_hybvar:
-            if self.do_jediens:
-                hybrid_tasks += ['atmensanalprep', 'atmensanalrun', 'atmensanalpost', 'echgres']
+            if self.do_jediatmens:
+                hybrid_tasks += ['atmensanlinit', 'atmensanlrun', 'atmensanlfinal', 'echgres']
             else:
                 hybrid_tasks += ['eobs', 'eupd', 'echgres']
                 hybrid_tasks += ['ediag'] if self.lobsdiag_forenkf else ['eomg']
@@ -383,7 +387,7 @@ class AppConfig:
 
         # Collect all "gdas" cycle tasks
         gdas_tasks = gdas_gfs_common_tasks_before_fcst.copy()
-        if not self.do_jedivar:
+        if not self.do_jediatmvar:
             gdas_tasks += ['analdiag']
 
         if self.do_gldas:
@@ -400,6 +404,9 @@ class AppConfig:
             if self.do_wave_bnd:
                 gdas_tasks += wave_bndpnt_tasks
             gdas_tasks += wave_post_tasks
+
+        if self.do_fit2obs:
+            gdas_tasks += ['fit2obs']
 
         gdas_tasks += gdas_gfs_common_cleanup_tasks
 

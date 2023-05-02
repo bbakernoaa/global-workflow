@@ -172,7 +172,7 @@ if [[ -d "${script_dir}/gdas.cd" ]]; then
   cd "${top_dir}/fix" || exit 1
     [[ ! -d gdas ]] && mkdir -p gdas
     cd gdas || exit 1
-    for gdas_sub in bump crtm fv3jedi gsibec; do
+    for gdas_sub in crtm fv3jedi gsibec; do
       if [[ -d "${gdas_sub}" ]]; then
          rm -rf "${gdas_sub}"
       fi
@@ -187,6 +187,7 @@ fi
 if [[ -d "${script_dir}/gdas.cd" ]]; then
   cd "${top_dir}/ush" || exit 1
     ${LINK} "${script_dir}/gdas.cd/ush/ufsda"                              .
+    ${LINK} "${script_dir}/gdas.cd/ush/jediinc2fv3.py"                     .
 fi
 
 
