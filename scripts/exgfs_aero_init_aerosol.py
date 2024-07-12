@@ -198,9 +198,9 @@ def get_restart_files(time: datetime, incr: int, max_lookback: int, fcst_length:
         if (lookback > fcst_length):
             # Trying to look back farther than the length of a forecast
             break
-        elif (lookback == fcst_length):
-            # Restart files at the end of the cycle don't have a timestamp
-            timestamp = ""
+        # elif (lookback == fcst_length):
+        #     # Restart files at the end of the cycle don't have a timestamp
+        #     timestamp = ""
         else:
             timestamp = time.strftime("%Y%m%d.%H0000.")
 

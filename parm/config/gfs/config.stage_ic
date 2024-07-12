@@ -42,4 +42,6 @@ if [[ "${DO_NEST:-NO}" == "YES" ]] ; then
   export CPL_ATMIC="GLOBAL-NEST_${CASE}"
 fi
 
+export USE_UFS_UITLS_ICS="NO"
+
 echo "END: config.stage_ic"

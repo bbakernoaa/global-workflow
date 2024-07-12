@@ -63,7 +63,11 @@ for MEMDIR in "${MEMDIR_ARRAY[@]}"; do
     # Stage the FV3 cold-start initial conditions to ROTDIR
     YMD=${PDY} HH=${cyc} declare_from_tmpl COM_ATMOS_INPUT
     [[ ! -d "${COM_ATMOS_INPUT}" ]] && mkdir -p "${COM_ATMOS_INPUT}"
-    src="${BASE_CPLIC}/${CPL_ATMIC:-}/${PDY}${cyc}/${MEMDIR}/atmos/gfs_ctrl.nc"
+    if [ "${USE_UFS_UTILS_ICS}" = "YES" ]; then
+        src="${BASE_CPLIC}/gfs.${PDY}/${cyc}/model/atmos/input/gfs_ctrl.nc"
+    else
+        src="${BASE_CPLIC}/${CPL_ATMIC:-}/${PDY}${cyc}/${MEMDIR}/atmos/gfs_ctrl.nc"
+    fi
     tgt="${COM_ATMOS_INPUT}/gfs_ctrl.nc"
     ${NCP} "${src}" "${tgt}"
     rc=$?
@@ -71,7 +75,15 @@ for MEMDIR in "${MEMDIR_ARRAY[@]}"; do
     err=$((err + rc))
     for ftype in gfs_data sfc_data; do
       for ((tt = 1; tt <= ntiles; tt++)); do
-        src="${BASE_CPLIC}/${CPL_ATMIC:-}/${PDY}${cyc}/${MEMDIR}/atmos/${ftype}.tile${tt}.nc"
+        if (( tt > 6 )) ; then
+          tgt="${COM_ATMOS_RESTART_PREV}/${DTG_PREFIX}.${ftype}.nest0$((tt-5)).tile${tt}.nc"
+        else
+	  if [ "${USE_UFS_UTILS_ICS}" = "YES" ]; then
+              src="${BASE_CPLIC}/gfs.${PDY}/${cyc}/model/atmos/input/${ftype}.tile${tt}.nc"
+          else
+              src="${BASE_CPLIC}/${CPL_ATMIC:-}/${PDY}${cyc}/${MEMDIR}/atmos/${ftype}.tile${tt}.nc"
+          fi
+        fi
         tgt="${COM_ATMOS_INPUT}/${ftype}.tile${tt}.nc"
         ${NCP} "${src}" "${tgt}"
         rc=$?
