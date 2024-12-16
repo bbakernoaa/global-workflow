@@ -132,56 +132,35 @@ class GFSTasks(Tasks):
 
         return task
 
+    def prep_emissions(self):
+        resources = self.get_resource('prep_emissions')
+        task_name = f'{self.run}_prep_emissions'
+        task_dict = {
+            'task_name': task_name,
+            'resources': resources,
+            'envars': self.envars,
+            'cycledef': self.run,
+            'command': f'{self.HOMEgfs}/jobs/rocoto/prep_emissions.sh',
+            'job_name': f'{self.pslot}_{task_name}_@H',
+            'log': f'{self.rotdir}/logs/@Y@m@d@H/{task_name}.log',
+            'maxtries': '&MAXTRIES;'
+        }
+        return rocoto.create_task(task_dict)
+
     def aerosol_init(self):
-
-        input_path = self._template_to_rocoto_cycstring(self._base['COM_ATMOS_INPUT_TMPL'])
-        restart_path = self._template_to_rocoto_cycstring(self._base['COM_ATMOS_RESTART_TMPL'])
-
-        deps = []
-        # Files from current cycle
-        files = ['gfs_ctrl.nc'] + [f'gfs_data.tile{tile}.nc' for tile in range(1, self.n_tiles + 1)]
-        for file in files:
-            data = f'{input_path}/{file}'
-            dep_dict = {'type': 'data', 'data': data}
-            deps.append(rocoto.add_dependency(dep_dict))
-
-        # Calculate offset based on RUN = gfs | gdas
-        interval = None
-        if self.run in ['gfs']:
-            interval = self._base['interval_gfs']
-        elif self.run in ['gdas']:
-            interval = self._base['interval']
-        offset = timedelta_to_HMS(-interval)
-
-        # Files from previous cycle
-        files = [f'@Y@m@d.@H0000.fv_core.res.nc'] + \
-                [f'@Y@m@d.@H0000.fv_core.res.tile{tile}.nc' for tile in range(1, self.n_tiles + 1)] + \
-                [f'@Y@m@d.@H0000.fv_tracer.res.tile{tile}.nc' for tile in range(1, self.n_tiles + 1)]
-
-        for file in files:
-            data = [f'{restart_path}/', file]
-            dep_dict = {'type': 'data', 'data': data, 'offset': [offset, None]}
-            deps.append(rocoto.add_dependency(dep_dict))
-
-        dependencies = rocoto.create_dependency(dep_condition='and', dep=deps)
-
-        cycledef = 'gfs_seq'
         resources = self.get_resource('aerosol_init')
         task_name = f'{self.run}_aerosol_init'
-        task_dict = {'task_name': task_name,
-                     'resources': resources,
-                     'dependency': dependencies,
-                     'envars': self.envars,
-                     'cycledef': cycledef,
-                     'command': f'{self.HOMEgfs}/jobs/rocoto/aerosol_init.sh',
-                     'job_name': f'{self.pslot}_{task_name}_@H',
-                     'log': f'{self.rotdir}/logs/@Y@m@d@H/{task_name}.log',
-                     'maxtries': '&MAXTRIES;'
-                     }
-
-        task = rocoto.create_task(task_dict)
-
-        return task
+        task_dict = {
+            'task_name': task_name,
+            'resources': resources,
+            'envars': self.envars,
+            'cycledef': self.run,
+            'command': f'{self.HOMEgfs}/jobs/rocoto/aerosol_init.sh',
+            'job_name': f'{self.pslot}_{task_name}_@H',
+            'log': f'{self.rotdir}/logs/@Y@m@d@H/{task_name}.log',
+            'maxtries': '&MAXTRIES;'
+        }
+        return rocoto.create_task(task_dict)
 
     def anal(self):
         deps = []
