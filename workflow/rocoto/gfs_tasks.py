@@ -149,12 +149,20 @@ class GFSTasks(Tasks):
 
     def aerosol_init(self):
         resources = self.get_resource('aerosol_init')
+        deps = []
+        dep_dict = {'type': 'metatask', 'name': 'gfs_fcst', 'offset': f"-{timedelta_to_HMS(self._base['interval_gfs'])}"}
+        deps.append(rocoto.add_dependency(dep_dict))
+        dep_dict = {'type': 'task', 'name': 'stage_ic'}
+        deps.append(rocoto.add_dependency(dep_dict))
+        dependencies = rocoto.create_dependency(dep=deps)
+        cycledef = f'{self.run}_seq'
         task_name = f'{self.run}_aerosol_init'
         task_dict = {
             'task_name': task_name,
             'resources': resources,
             'envars': self.envars,
-            'cycledef': self.run,
+            'dependency': dependencies,
+            'cycledef': cycledef,
             'command': f'{self.HOMEgfs}/jobs/rocoto/aerosol_init.sh',
             'job_name': f'{self.pslot}_{task_name}_@H',
             'log': f'{self.rotdir}/logs/@Y@m@d@H/{task_name}.log',
