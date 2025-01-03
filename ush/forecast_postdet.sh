@@ -23,6 +23,20 @@ FV3_postdet() {
       || ( echo "FATAL ERROR: Unable to copy FV3 IC, ABORT!"; exit 1 )
     done
 
+    # For ATMA application in cold start, copy FV3 tracer from previous cycle's increment
+    if [[ "${CDUMP:-}" == "ATMA" ]]; then
+      echo "Copying FV3 tracer from previous cycle's increment for ATMA application"
+      for (( nn = 1; nn <= ntiles; nn++ )); do
+        if [[ -f "${COMIN_ATMOS_RESTART_PREV}/${model_start_date_prev_cycle:0:8}.${model_start_date_prev_cycle:8:2}0000.fv_tracer.res.tile${nn}.nc" ]]; then
+          ${NCP} "${COMIN_ATMOS_RESTART_PREV}/${model_start_date_prev_cycle:0:8}.${model_start_date_prev_cycle:8:2}0000.fv_tracer.res.tile${nn}.nc" \
+                 "${DATA}/INPUT/fv_tracer.res.tile${nn}.nc" \
+          || ( echo "FATAL ERROR: Unable to copy previous cycle's FV3 tracer for ATMA, ABORT!"; exit 1 )
+        else
+          echo "WARNING: Previous cycle's FV3 tracer file not found for tile ${nn}, continuing without it"
+        fi
+      done
+    fi
+
   # warm start case
   elif [[ "${warm_start}" == ".true." ]]; then
 
