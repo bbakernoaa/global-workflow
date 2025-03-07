@@ -200,7 +200,7 @@ def get_restart_files(time: datetime, incr: int, max_lookback: int, fcst_length:
             break
         elif (lookback == fcst_length):
             # Restart files at the end of the cycle don't have a timestamp
-            timestamp = ""
+            timestamp = time.strftime('%Y%m%d.%H0000.') # ""
         else:
             timestamp = time.strftime("%Y%m%d.%H0000.")
 
@@ -211,6 +211,7 @@ def get_restart_files(time: datetime, incr: int, max_lookback: int, fcst_length:
         file_list = []
         file_base = last_time.strftime(restart_base_pattern.format(**locals()))
 
+        print(file_base) 
         for file_pattern in tracer_file_pattern, restart_file_pattern, dycore_file_pattern:
             files = list(map(lambda tile: file_pattern.format(timestamp=timestamp, file_base=file_base, tile=tile), tiles))
             if (debug):

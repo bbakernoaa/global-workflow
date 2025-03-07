@@ -98,7 +98,7 @@ class AppConfig(ABC, metaclass=AppConfigInit):
             run_options[run]['do_prep_obs_aero'] = run_base.get('DO_PREP_OBS_AERO', False)
             run_options[run]['do_aero_anl'] = run_base.get('DO_AERO_ANL', False)
             run_options[run]['do_aero_fcst'] = run_base.get('DO_AERO_FCST', False)
-
+            run_options[run]['do_aero'] = run_base.get('DO_AERO', False)
             run_options[run]['do_hpssarch'] = run_base.get('HPSSARCH', False)
             run_options[run]['fcst_segments'] = run_base.get('FCST_SEGMENTS', None)
 
@@ -156,6 +156,8 @@ class AppConfig(ABC, metaclass=AppConfigInit):
                 files += ['config.fcst', 'config.efcs']
             elif config in ['atmanlinit', 'atmanlvar', 'atmanlfv3inc']:
                 files += ['config.atmanl', f'config.{config}']
+            elif config in ['aerosol_init']:
+                files += ['config.aerosol_init', f'config.{config}']
             elif config in ['atmensanlinit', 'atmensanlobs', 'atmensanlsol', 'atmensanlletkf', 'atmensanlfv3inc']:
                 files += ['config.atmensanl', f'config.{config}']
             elif 'wave' in config:

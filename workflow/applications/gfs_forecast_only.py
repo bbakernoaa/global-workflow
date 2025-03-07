@@ -38,8 +38,11 @@ class GFSForecastOnlyAppConfig(AppConfig):
 
             configs += ['atmos_products']
 
-            if options['do_aero_fcst']:
+            print('in atm')
+            if options['app'] == 'ATMA':
+                print('here')
                 if not options['exp_warm_start']:
+                    print('here2')
                     configs += ['aerosol_init']
 
             if options['do_tracker']:
@@ -100,8 +103,9 @@ class GFSForecastOnlyAppConfig(AppConfig):
 
         tasks = ['stage_ic']
         options = self.run_options[self.run]
-
+        print(options)
         if options['do_aero_fcst'] and not options['exp_warm_start']:
+            print('Getting task name: aerosol_init')
             tasks += ['aerosol_init']
 
         if options['do_wave']:
@@ -141,6 +145,9 @@ class GFSForecastOnlyAppConfig(AppConfig):
             if options['do_awips']:
                 tasks += ['awips_20km_1p0deg', 'fbwind']
 
+            if options['app'] == 'ATMA':
+                if not options['exp_warm_start']:
+                    tasks += ['aerosol_init']
         if options['do_ocean']:
             tasks += ['ocean_prod']
 
