@@ -108,8 +108,6 @@ class GCAFSCycledAppConfig(AppConfig):
 
         configs = ['prep']
 
-        configs += ['offlineanl']
-
         # Add GCAFS-specific aerosol configs by default
         if options['do_aero_fcst']:
             configs += ['aero', 'prep_emissions']
@@ -197,7 +195,6 @@ class GCAFSCycledAppConfig(AppConfig):
             # Common gdas and gcafs tasks before fcst
             if run in ['gcafs']:
                 task_names[run] += ['prep']
-                task_names[run] += ['offlineanl']
                 task_names[run] += ['sfcanl']
                 # gcafs-specific analysis tasks
                 if options['do_aero_anl']:

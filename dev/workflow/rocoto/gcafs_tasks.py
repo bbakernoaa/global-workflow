@@ -177,47 +177,11 @@ class GCAFSTasks(Tasks):
 
         return task
 
-    def offlineanl(self):
-        """
-        Create a task for the analysis step.
-
-        This task performs data assimilation to generate analysis fields
-        by combining observations with the background forecast.
-
-        Returns
-        -------
-        str
-            XML representation of the task
-        """
-        resources = self.get_resource('offlineanl')
-
-        deps = []
-        dep_dict = {'type': 'task', 'name': f'{self.run}_prep'}
-        deps.append(rocoto.add_dependency(dep_dict))
-        dependencies = rocoto.create_dependency(dep=deps)
-
-        task_name = f'{self.run}_offlineanl'
-        task_dict = {'task_name': task_name,
-                     'resources': resources,
-                     'dependency': dependencies,
-                     'envars': self.envars,
-                     'cycledef': 'gcafs',
-                     'command': f'{self.HOMEgfs}/dev/jobs/offlineanl.sh',
-                     'job_name': f'{self.pslot}_{task_name}_@H',
-                     'log': f'{self.rotdir}/logs/@Y@m@d@H/{task_name}.log',
-                     'maxtries': '&MAXTRIES;'
-                     }
-        task = rocoto.create_task(task_dict)
-
-        return task
-
     def sfcanl(self):
 
         deps = []
         if self.options['do_jediatmvar']:
             dep_dict = {'type': 'task', 'name': f'{self.run}_atmanlfinal'}
-        else:
-            dep_dict = {'type': 'task', 'name': f'{self.run}_offlineanl'}
         deps.append(rocoto.add_dependency(dep_dict))
         dependencies = rocoto.create_dependency(dep=deps)
 
