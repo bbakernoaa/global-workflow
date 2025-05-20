@@ -10,8 +10,28 @@ source "${HOMEgfs}/ush/jjob_header.sh" -e "prep_emissions" -c "base prep_emissio
 ##############################################
 # Begin JOB SPECIFIC work
 ##############################################
-# Generate COM variables from templates
-# TODO: Add necessary COMIN, COMOUT variables for this job
+# See config.com for details on the following variables
+#   COMIN_CHEM_RESTART_TMPL
+#   COM_CHEM_INPUT_TMPL
+#   COM_CHEM_HISTORY_TMPL
+#   COM_CHEM_RESTART_TMPL
+#   COM_CHEM_RESTART_PREV_TMPL
+#   COM_ATMOS_HISTORY_TMPL
+rCDUMP="${RUN}"
+# Ignore possible spelling error (nothing is misspelled)
+# shellcheck disable=SC2153
+GDATE=$(date --utc -d "${PDY} ${cyc} - ${assim_freq} hours" +%Y%m%d%H)
+declare -rx GDATE
+# shellcheck disable=
+declare -rx gPDY="${GDATE:0:8}"
+declare -rx gcyc="${GDATE:8:2}"
+
+RUN="${rCDUMP}" YMD=${gPDY} HH=${gcyc} declare_from_tmpl -rx COMIN_CHEM_RESTART:COM_CHEM_RESTART_TMPL \
+    COMIN_ATMOS_HISTORY_PREV:COM_ATMOS_HISTORY_TMPL
+
+YMD=${PDY} HH=${cyc} declare_from_tmpl -rx COMIN_CHEM_INPUT:COM_CHEM_INPUT_TMPL \
+    COMOUT_CHEM_HISTORY:COM_CHEM_HISTORY_TMPL \
+    COMOUT_CHEM_RESTART:COM_CHEM_RESTART_TMPL
 
 ###############################################################
 # Run relevant script

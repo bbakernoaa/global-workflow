@@ -2,14 +2,16 @@
 
 # UFS-Aerosols settings
 
-# Path to the input data tree
-export AERO_INPUTS_DIR="{{ AERO_INPUTS_DIR }}"
+#================================================================================
+# 1. Aerosol settings
+#================================================================================
+export AERO_INPUTS_DIR={{ AERO_INPUTS_DIR }}
 
+# Diag Table and Field Table for GOCART aerosols
 export AERO_DIAG_TABLE="${PARMgfs}/ufs/fv3/diag_table.aero"
 export AERO_FIELD_TABLE="${PARMgfs}/ufs/fv3/field_table.aero"
-# Biomass burning emission dataset. Choose from: gbbepx, qfed, none
-export AERO_EMIS_FIRE="qfed"
-# Directory containing GOCART configuration files
+
+# Aerosol configuration
 export AERO_CONFIG_DIR="${PARMgfs}/ufs/gocart"
 
 # Aerosol convective scavenging factors (list of string array elements)
@@ -19,5 +21,15 @@ export fscav_aero="'*:0.3','so2:0.0','msa:0.0','dms:0.0','nh3:0.4','nh4:0.6','bc
 #
 # Number of diagnostic aerosol tracers (default: 0)
 export dnats_aero=2
+
+#================================================================================
+# 2. Aerosol emissions settings
+#================================================================================
+# Biomass burning emission dataset. Choose from: gbbepx, qfed, none
+export AERO_EMIS_FIRE="qfed"
+export AERO_EMIS_FIRE_VERSION="061"
+# Directory containing GOCART configuration files
+export AERO_EMIS_FIRE_HIST=1
+export FIRE_EMIS_NRT_DIR=""
 
 echo "END: config.aero"
