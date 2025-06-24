@@ -291,6 +291,19 @@ if [[ -d "${HOMEgfs}/sorc/gsi_monitor.fd" ]]; then
 fi
 
 #------------------------------
+#--add NEXUS files
+#------------------------------
+if [[ -d "${HOMEgfs}/sorc/nexus.fd" ]]; then
+  cd "${HOMEgfs}/parm" || exit 1
+  if [[ -d nexus ]]; then
+      rm -rf nexus
+  fi
+  mkdir -p nexus
+  cd nexus || exit 1
+  # TODO: add config files from nexus.fd/config/gocart to here
+fi
+
+#------------------------------
 #--link executables
 #------------------------------
 
@@ -398,6 +411,11 @@ if [[ -d "${HOMEgfs}/sorc/gdas.cd/install" ]]; then
   cd "${HOMEgfs}/lib" || exit 1
   cp -af "${HOMEgfs}/sorc/gdas.cd/install/lib/." ./
 fi
+
+# NEXUS executable
+if [[ -d "${HOMEgfs}/sorc/nexus.fd/build/bin" ]]; then
+  ${LINK_OR_COPY} "${HOMEgfs}/exec/nexus.fd/build/bin/nexus" nexus.x
+fi  
 
 #------------------------------
 #--link source code directories
