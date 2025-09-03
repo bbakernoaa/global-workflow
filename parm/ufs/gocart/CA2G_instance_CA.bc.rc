@@ -53,3 +53,7 @@ sigma: 2.0  2.0
 pressure_lid_in_hPa: 0.01
 
 point_emissions_srcfilen: /dev/null
+
+# SettlingSolver options
+# Options: 'gocart' or 'ufs'
+settling_scheme: 'ufs'
