@@ -19,6 +19,7 @@ from wxflow import (AttrDict,
                     to_timedelta,
                     WorkflowException,
                     Executable, which)
+from wxflow.jinja import save as wxflow_save_jinja
 
 logger = getLogger(__name__.split('.')[-1])
 
@@ -239,30 +240,26 @@ class NEXUSEmissions(Task):
 
         # Render NEXUS Config File
         nexus_config_template = env.get_template(f"{self.task_config.NEXUS_CONFIG_NAME}.j2")
-        self.task_config.NEXUS_CONFIG_TEMPLATE = nexus_config_template.render(tmpl_dict)
         outfile = os.path.join(self.task_config.DATA, self.task_config.NEXUS_CONFIG_NAME)
-        _write_txt_file(self.task_config.NEXUS_CONFIG_TEMPLATE, outfile)
+        wxflow_save_jinja(nexus_config_template, outfile, tmpl_dict)
         logger.info(f"NEXUS config file rendered successfully: written to {outfile}")
 
         # Render NEXUS Time File
         nexus_time_template = env.get_template(f"{self.task_config.NEXUS_TIME_NAME}.j2")
-        self.task_config.NEXUS_TIME_TEMPLATE = nexus_time_template.render(tmpl_dict)
         outfile = os.path.join(self.task_config.DATA, self.task_config.NEXUS_TIME_NAME)
-        _write_txt_file(self.task_config.NEXUS_TIME_TEMPLATE, outfile)
+        wxflow_save_jinja(nexus_time_template, outfile, tmpl_dict)
         logger.info(f"NEXUS time file rendered successfully: written to {outfile}")
 
         # Render NEXUS Diag File
         nexus_diag_template = env.get_template(f"{self.task_config.NEXUS_DIAG_NAME}.j2")
-        self.task_config.NEXUS_DIAG_TEMPLATE = nexus_diag_template.render(tmpl_dict)
         outfile = os.path.join(self.task_config.DATA, self.task_config.NEXUS_DIAG_NAME)
-        _write_txt_file(self.task_config.NEXUS_DIAG_TEMPLATE, outfile)
+        wxflow_save_jinja(nexus_diag_template, outfile, tmpl_dict)
         logger.info(f"NEXUS diag file rendered successfully: written to {outfile}")
 
         # Render NEXUS Spec File
         nexus_spec_template = env.get_template(f"{self.task_config.NEXUS_SPEC_NAME}.j2")
-        self.task_config.NEXUS_SPEC_TEMPLATE = nexus_spec_template.render(tmpl_dict)
         outfile = os.path.join(self.task_config.DATA, self.task_config.NEXUS_SPEC_NAME)
-        _write_txt_file(self.task_config.NEXUS_SPEC_TEMPLATE, outfile)
+        wxflow_save_jinja(nexus_spec_template, outfile, tmpl_dict)
         logger.info(f"NEXUS spec file rendered successfully: written to {outfile}")
 
     @logit(logger)
