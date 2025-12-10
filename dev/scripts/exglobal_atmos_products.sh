@@ -97,7 +97,7 @@ for ((nset = 1; nset <= downset; nset++)); do
         if [[ ${rc} == 0 ]]; then # Matched the grep
             last=$((last + 1))
         fi
-        if [[ ${iproc} -eq ${nproc} ]]; then
+        if [[ ${iproc} -eq ${nproc} || ${last} -gt ${ncount} ]]; then
             last=${ncount}
         fi
 
