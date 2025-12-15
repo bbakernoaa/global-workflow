@@ -84,6 +84,7 @@ for dir in "${gdas_list[@]}" "${gfs_list[@]}" "${gcdas_list[@]}" "${gcafs_list[@
                     link_file "${system_prefix}.t${cyc}z.${abias_type}" "${system_prefix}.t${cyc}z.${abias_type}.txt"
                 fi
             done
+<<<<<<< HEAD
             if [[ -f "${system_prefix}.t${cyc}z.radstat" ]]; then
                 link_file "${system_prefix}.t${cyc}z.radstat" "${system_prefix}.t${cyc}z.radstat.tar"
             fi
@@ -171,6 +172,95 @@ for dir in "${gdas_list[@]}" "${gfs_list[@]}" "${gcdas_list[@]}" "${gcafs_list[@
             done
         fi
         cd "${cwd}"
+=======
+          if [[ -f "${system_prefix}.t${cyc}z.radstat" ]]; then
+              link_file "${system_prefix}.t${cyc}z.radstat" "${system_prefix}.t${cyc}z.radstat.tar"
+          fi
+          if [[ -f "${system_prefix}.t${cyc}z.atmi003.nc" ]]; then
+              link_file "${system_prefix}.t${cyc}z.atmi003.nc" "${system_prefix}.t${cyc}z.increment.atm.i003.nc"
+          fi
+          if [[ -f "${system_prefix}.t${cyc}z.atminc.nc" ]]; then
+              link_file "${system_prefix}.t${cyc}z.atminc.nc" "${system_prefix}.t${cyc}z.increment.atm.i006.nc"
+          fi
+          if [[ -f "${system_prefix}.t${cyc}z.atmi009.nc" ]]; then
+              link_file "${system_prefix}.t${cyc}z.atmi009.nc" "${system_prefix}.t${cyc}z.increment.atm.i009.nc"
+          fi
+          if [[ -f "${system_prefix}.t${cyc}z.atma003.ensres.nc" ]]; then
+              link_file "${system_prefix}.t${cyc}z.atma003.ensres.nc" "${system_prefix}.t${cyc}z.ensres_analysis.atm.a003.nc"
+          fi
+          if [[ -f "${system_prefix}.t${cyc}z.atmanl.nc" ]]; then
+              link_file "${system_prefix}.t${cyc}z.atmanl.nc" "${system_prefix}.t${cyc}z.analysis.atm.a006.nc"
+          fi
+          if [[ -f "${system_prefix}.t${cyc}z.atmanl.ensres.nc" ]]; then
+              link_file "${system_prefix}.t${cyc}z.atmanl.ensres.nc" "${system_prefix}.t${cyc}z.ensres_analysis.atm.a006.nc"
+          fi
+          if [[ -f "${system_prefix}.t${cyc}z.atma009.ensres.nc" ]]; then
+              link_file "${system_prefix}.t${cyc}z.atma009.ensres.nc" "${system_prefix}.t${cyc}z.ensres_analysis.atm.a009.nc"
+          fi
+          if [[ -f "${system_prefix}.t${cyc}z.cnvstat" ]]; then
+              link_file "${system_prefix}.t${cyc}z.cnvstat" "${system_prefix}.t${cyc}z.cnvstat.tar"
+          fi
+          if [[ -f "${system_prefix}.t${cyc}z.dtfanl.nc" ]]; then
+              link_file "${system_prefix}.t${cyc}z.dtfanl.nc" "${system_prefix}.t${cyc}z.increment.dtf.i006.nc"
+          fi
+          if [[ -f "${system_prefix}.t${cyc}z.gsistat" ]]; then
+              link_file "${system_prefix}.t${cyc}z.gsistat" "${system_prefix}.t${cyc}z.gsistat.txt"
+          fi
+          if [[ -f "${system_prefix}.t${cyc}z.oznstat" ]]; then
+              link_file "${system_prefix}.t${cyc}z.oznstat" "${system_prefix}.t${cyc}z.oznstat.tar"
+          fi
+          if [[ -f "${system_prefix}.t${cyc}z.loginc.txt" ]]; then
+              link_file "${system_prefix}.t${cyc}z.loginc.txt" "${system_prefix}.t${cyc}z.increment.done.txt"
+          fi
+          if [[ -f "${system_prefix}.t${cyc}z.loganl.txt" ]]; then
+              link_file "${system_prefix}.t${cyc}z.loganl.txt" "${system_prefix}.t${cyc}z.analysis.done.txt"
+          fi
+          if [[ -f "${system_prefix}.t${cyc}z.sfci003.nc" ]]; then
+              link_file "${system_prefix}.t${cyc}z.sfci003.nc" "${system_prefix}.t${cyc}z.increment.sfc.i003.nc"
+          fi
+          if [[ -f "${system_prefix}.t${cyc}z.sfci006.nc" ]]; then
+              link_file "${system_prefix}.t${cyc}z.sfci006.nc" "${system_prefix}.t${cyc}z.increment.sfc.i006.nc"
+          fi
+          if [[ -f "${system_prefix}.t${cyc}z.sfci009.nc" ]]; then
+              link_file "${system_prefix}.t${cyc}z.sfci009.nc" "${system_prefix}.t${cyc}z.increment.sfc.i009.nc"
+          fi
+          if [[ -f "${system_prefix}.t${cyc}z.sfcanl.nc" ]]; then
+              link_file "${system_prefix}.t${cyc}z.sfcanl.nc" "${system_prefix}.t${cyc}z.analysis.sfc.a006.nc"
+          fi
+          if [[ -f "${system_prefix}.t${cyc}z.sfcinc.nc" ]]; then
+              link_file "${system_prefix}.t${cyc}z.sfcinc.nc" "${system_prefix}.t${cyc}z.increment.sfc.i006.nc"
+          fi
+          if [[ -f "sfc_inc.tile1.nc" ]]; then
+              for tile in {1..6}; do
+                  link_file "sfc_inc.tile${tile}.nc" "increment.sfc.tile${tile}.nc"
+              done
+          fi
+          if [[ -f "${system_prefix}.t${cyc}z.cubed_sphere_grid_atminc.tile1.nc" ]]; then
+              for tile in {1..6}; do
+                  link_file "${system_prefix}.t${cyc}z.cubed_sphere_grid_atminc.tile${tile}.nc" "${system_prefix}.t${cyc}z.jedi_increment.atm.i006.tile${tile}.nc"
+              done
+          fi
+      fi
+      cd "${cwd}"
+      if [[ -d "${cwd}/${dir}/${cyc}/analysis/ocean" ]]; then
+          cd "${cwd}/${dir}/${cyc}/analysis/ocean"
+          if [[ -f "${system_prefix}.t${cyc}z.ocninc.nc" ]]; then
+              link_file "${system_prefix}.t${cyc}z.ocninc.nc" "${system_prefix}.t${cyc}z.mom6_increment.i006.nc"
+          fi
+      fi
+      cd "${cwd}"
+      if [[ -d "${cwd}/${dir}/${cyc}/analysis/ice" ]]; then
+          cd "${cwd}/${dir}/${cyc}/analysis/ice"
+          for ice_file in *.cice_model_anl.res.nc; do
+              if [[ -f "${ice_file}" ]]; then
+                  # This gets the first two fields of the filename separated by dots
+                  prefix=$(echo "${ice_file}" | cut -d. -f1-2)
+                  link_file "${ice_file}" "${prefix}.analysis.cice_model.res.nc"
+              fi
+          done
+      fi
+      cd "${cwd}"
+>>>>>>> cory/bugfix/gcafs-nsst
         if [[ -d "${cwd}/${dir}/${cyc}/analysis/snow" ]]; then
             cd "${cwd}/${dir}/${cyc}/analysis/snow"
             for snow_file in snowinc*.sfc_data.tile1.nc; do
