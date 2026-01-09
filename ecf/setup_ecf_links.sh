@@ -58,3 +58,10 @@ link_master_to_fhr "jgfs_atmos_awips" "${fhrs[*]}"
 # # shellcheck disable=SC2312
 # mapfile -t fhrs <<< "$(seq 0 3 84) $(seq 90 6 240)"
 # link_master_to_fhr "jgfs_atmos_awips_g2" "${fhrs[*]}"
+
+# GCAFS post files
+cd "${ECF_DIR}/scripts/gcafs/atmos/post"
+echo "Linking gcafs/atmos/post ..."
+# shellcheck disable=SC2312
+mapfile -t fhrs <<< $(seq 0 3 120)
+link_master_to_fhr "jgcafs_atmos_post" "${fhrs[*]}"
