@@ -10,6 +10,7 @@ This includes:
 - Removing unused files where appropriate
 """
 import os
+import re
 from wxflow import FileHandler
 
 # Get the absolute path of the directory containing this file
@@ -44,7 +45,6 @@ def replace_gfs_with_gcafs(input_file):
     # Count and replace all instances of FOOgfs with FOOgcafs
     # This will match patterns like: HOMEgfs, USHgfs, PARMgfs, etc.
     # Does NOT match standalone "gfs" or quoted "gfs"
-    import re
     # Match word characters followed by "gfs" at word boundary, but ensure prefix has at least 2 chars
     # This ensures we match variable names like HOMEgfs but not just "gfs" or "Xgfs"
     pattern = r'(\w{2,})gfs\b'
@@ -62,6 +62,255 @@ def replace_gfs_with_gcafs(input_file):
     with open(input_file, 'w') as f:
         f.write(modified_content)
     
+    return replacement_count
+
+
+def get_template_dict(global_workflow_dir):
+    """
+    Extract and resolve templates from config.com and other config files,
+    prioritizing NCO branch in config.com.
+
+    Parameters
+    ----------
+    global_workflow_dir : str
+        Path to the global workflow directory
+
+    Returns
+    -------
+    dict
+        Dictionary of resolved templates
+    """
+    templates = {}
+    config_dir = os.path.join(global_workflow_dir, 'dev', 'parm', 'config', 'gfs')
+    if not os.path.exists(config_dir):
+        return templates
+
+    # Priority 1: config.com (with NCO logic)
+    config_com_path = os.path.join(config_dir, 'config.com')
+    if os.path.exists(config_com_path):
+        with open(config_com_path, 'r') as f:
+            lines = f.readlines()
+
+        in_nco_branch = False
+        in_else_branch = False
+
+        for line in lines:
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+            if 'if [[ "${RUN_ENVIR:-emc}" == "nco" ]]' in line:
+                in_nco_branch = True
+                continue
+            if in_nco_branch and 'else' == line:
+                in_nco_branch = False
+                in_else_branch = True
+                continue
+            if (in_nco_branch or in_else_branch) and 'fi' == line:
+                in_nco_branch = False
+                in_else_branch = False
+                continue
+
+            if in_else_branch:
+                continue
+
+            match = re.search(r'(?:declare\s+-[^\s]+\s+)?(\w+)=(.+)', line)
+            if match:
+                var_name = match.group(1)
+                var_value = match.group(2).strip()
+                # Remove trailing comments
+                var_value = var_value.split(' #')[0].strip()
+
+                # Remove outermost quotes and concatenation quotes
+                if (var_value.startswith("'") and var_value.endswith("'")) or \
+                   (var_value.startswith('"') and var_value.endswith('"')):
+                    var_value = var_value[1:-1]
+
+                var_value = var_value.replace("'", "").replace('"', "")
+
+                if var_name.endswith('_TMPL') or var_name == 'COM_BASE':
+                    templates[var_name] = var_value
+
+    # Also scan other config.* files for any missing templates
+    for filename in os.listdir(config_dir):
+        if filename.startswith('config.') and filename != 'config.com':
+            path = os.path.join(config_dir, filename)
+            with open(path, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith('#'):
+                        continue
+                    match = re.search(r'(?:declare\s+-[^\s]+\s+|export\s+)?(\w+)=(.+)', line)
+                    if match:
+                        var_name = match.group(1)
+                        if var_name.endswith('_TMPL') or var_name == 'COM_BASE':
+                            if var_name not in templates:
+                                var_value = match.group(2).strip()
+                                var_value = var_value.split(' #')[0].strip()
+                                if (var_value.startswith("'") and var_value.endswith("'")) or \
+                                   (var_value.startswith('"') and var_value.endswith('"')):
+                                    var_value = var_value[1:-1]
+                                var_value = var_value.replace("'", "").replace('"', "")
+                                templates[var_name] = var_value
+
+    # Recursive resolution of templates
+    def resolve(val):
+        vars_found = re.findall(r'\$\{(\w+)\}', val)
+        changed = False
+        for v in vars_found:
+            if v in templates:
+                val = val.replace(f'${{{v}}}', templates[v])
+                changed = True
+        if changed:
+            return resolve(val)
+        return val
+
+    resolved_templates = {}
+    for k, v in templates.items():
+        resolved_templates[k] = resolve(v)
+
+    return resolved_templates
+
+
+def resolve_template(template_str, overrides):
+    """
+    Substitute overrides into a template string.
+
+    Parameters
+    ----------
+    template_str : str
+        Template string to substitute into
+    overrides : dict
+        Dictionary of variable names and their override values
+
+    Returns
+    -------
+    str
+        Substituted template string
+    """
+    res = template_str
+    # Sort overrides by length descending to avoid partial replacements
+    for k in sorted(overrides.keys(), key=len, reverse=True):
+        v = overrides[k]
+        res = res.replace(f'${{{k}}}', v)
+        res = re.sub(f'\\${k}\\b', v, res)
+    return res
+
+
+def parse_overrides(overrides_str):
+    """
+    Parse bash-style overrides like VAR=VAL or VAR="VAL".
+
+    Parameters
+    ----------
+    overrides_str : str
+        String containing overrides
+
+    Returns
+    -------
+    dict
+        Dictionary of overrides
+    """
+    overrides = {}
+    pos = 0
+    while pos < len(overrides_str):
+        match = re.match(r'(\w+)=', overrides_str[pos:])
+        if not match:
+            pos += 1
+            continue
+        var_name = match.group(1)
+        pos += match.end()
+        if pos < len(overrides_str) and overrides_str[pos] in ("'", '"'):
+            quote = overrides_str[pos]
+            pos += 1
+            end_quote = overrides_str.find(quote, pos)
+            if end_quote == -1:
+                val = overrides_str[pos:]
+                pos = len(overrides_str)
+            else:
+                val = overrides_str[pos:end_quote]
+                pos = end_quote + 1
+        else:
+            match = re.match(r'([^ \t\n\\]+)', overrides_str[pos:])
+            if match:
+                val = match.group(1)
+                pos += match.end()
+            else:
+                val = ""
+        overrides[var_name] = val
+        while pos < len(overrides_str) and overrides_str[pos] in " \t":
+            pos += 1
+    return overrides
+
+
+def replace_declare_from_tmpl_in_file(file_path, templates):
+    """
+    Replace declare_from_tmpl calls in a file with explicit export statements.
+
+    Parameters
+    ----------
+    file_path : str
+        Path to the file to modify
+    templates : dict
+        Dictionary of resolved templates
+
+    Returns
+    -------
+    int
+        Number of replacements made
+    """
+    if not os.path.exists(file_path):
+        return 0
+    with open(file_path, 'r') as f:
+        content = f.read()
+
+    # Match optional overrides, declare_from_tmpl, flags, and arguments
+    # Handles multiline arguments with backslashes
+    pattern = r'((?:[ \t]*[\w{}="$.:/%-]+=[^ \t\n\\]+[ \t]*)*)declare_from_tmpl\s+([-rx\s\\]*)\s+((?:[ \t]*[:\w${}./-]+(?:[ \t]*\\[ \t]*\n[ \t]*| [ \t]*)*)+)'
+
+    replacement_count = 0
+    def replacement(match):
+        nonlocal replacement_count
+        replacement_count += 1
+        full_match = match.group(0)
+        indent = re.match(r'[ \t]*', full_match).group(0)
+        overrides_str = match.group(1).strip()
+        # flags = match.group(2).strip() # Unused as per user request (no -r handling)
+        args_str = match.group(3).strip()
+
+        overrides = parse_overrides(overrides_str)
+
+        # Parse args, handling backslashes and newlines
+        args_str = args_str.replace('\\\n', ' ').replace('\\', ' ')
+        args = args_str.split()
+
+        new_lines = []
+        for arg in args:
+            if ':' in arg:
+                var_name, tmpl_name = arg.split(':')
+            else:
+                var_name = arg
+                tmpl_name = f"{var_name}_TMPL"
+
+            if tmpl_name in templates:
+                template_val = templates[tmpl_name]
+                resolved_val = resolve_template(template_val, overrides)
+                new_lines.append(f'export {var_name}="{resolved_val}"')
+            else:
+                new_lines.append(f'# Template {tmpl_name} not found for {var_name}')
+
+        # Preserve leading overrides that were not part of declare_from_tmpl (if any)
+        # Actually, our regex captures all overrides on the line.
+        # If they were part of the call, they are now redundant if they were only for the call.
+        # But in bash, YMD=... HH=... cmd, YMD and HH are only for cmd.
+        # So replacing with export is correct.
+
+        return '\n'.join([f'{indent}{line}' for line in new_lines])
+
+    modified_content = re.sub(pattern, replacement, content)
+
+    with open(file_path, 'w') as f:
+        f.write(modified_content)
+
     return replacement_count
 
 
@@ -273,11 +522,19 @@ def setup_gcafs_for_nco():
     # Remove unused executables from the exec directory
     removed_files = remove_unused_executables(global_workflow_dir)
 
+    # Extract templates for declare_from_tmpl replacement
+    templates = get_template_dict(global_workflow_dir)
+
     # Go through the copied job and ex-script files and replace FOOgfs with FOOgcafs
     all_copied_files = [dest for _, dest in job_file_copy_list + ex_script_file_copy_list]
     for file_path in all_copied_files:
         num_replacements = replace_gfs_with_gcafs(file_path)
         print(f"Modified {file_path}: {num_replacements} replacements made.")
+
+        # For job files, also replace declare_from_tmpl with explicit exports
+        if '/jobs/' in file_path:
+            num_tmpl_replacements = replace_declare_from_tmpl_in_file(file_path, templates)
+            print(f"Replaced {num_tmpl_replacements} declare_from_tmpl calls in {file_path}")
     
     
 if __name__ == "__main__":
