@@ -33,7 +33,7 @@ class UFS:
         self._config = copy.deepcopy(config)
 
     @logit(logger)
-    def parse_ufs_templates(input_template, output_file, ctx: Dict) -> None:
+    def parse_ufs_templates(self, input_template, output_file, ctx: Dict) -> None:
         """
         This method parses UFS-weather-model templates of the pattern @[VARIABLE]
         drawing the value from ctx['VARIABLE']
