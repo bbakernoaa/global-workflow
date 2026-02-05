@@ -24,12 +24,12 @@ def replace_gfs_with_gcafs(input_file):
     """
     Replace all instances of FOOgfs with FOOgcafs in the given input file.
     This matches patterns like HOMEgfs -> HOMEgcafs, USHgfs -> USHgcafs, etc.
-    
+
     Parameters
     ----------
     input_file : str
         Path to the file to modify
-    
+
     Returns
     -------
     int
@@ -37,31 +37,32 @@ def replace_gfs_with_gcafs(input_file):
     """
     if not os.path.exists(input_file):
         raise FileNotFoundError(f"File not found: {input_file}")
-    
+
     # Read the file content
     with open(input_file, 'r') as f:
         content = f.read()
-    
+
     # Count and replace all instances of FOOgfs with FOOgcafs
     # This will match patterns like: HOMEgfs, USHgfs, PARMgfs, etc.
     # Does NOT match standalone "gfs" or quoted "gfs"
     # Match word characters followed by "gfs" at word boundary, but ensure prefix has at least 2 chars
     # This ensures we match variable names like HOMEgfs but not just "gfs" or "Xgfs"
     pattern = r'(\w{2,})gfs\b'
-    
+
     replacement_count = 0
+
     def replace_func(match):
         nonlocal replacement_count
         replacement_count += 1
         prefix = match.group(1)
         return f"{prefix}gcafs"
-    
+
     modified_content = re.sub(pattern, replace_func, content)
-    
+
     # Write the modified content back to the file
     with open(input_file, 'w') as f:
         f.write(modified_content)
-    
+
     return replacement_count
 
 
@@ -153,6 +154,7 @@ def get_template_dict(global_workflow_dir):
                                 templates[var_name] = var_value
 
     # Recursive resolution of templates
+
     def resolve(val):
         vars_found = re.findall(r'\$\{(\w+)\}', val)
         changed = False
@@ -268,6 +270,7 @@ def replace_declare_from_tmpl_in_file(file_path, templates):
     pattern = r'((?:[ \t]*[\w{}="$.:/%-]+=[^ \t\n\\]+[ \t]*)*)declare_from_tmpl\s+([-rx\s\\]*)\s+((?:[ \t]*[:\w${}./-]+(?:[ \t]*\\[ \t]*\n[ \t]*| [ \t]*)*)+)'
 
     replacement_count = 0
+
     def replacement(match):
         nonlocal replacement_count
         replacement_count += 1
@@ -317,12 +320,12 @@ def replace_declare_from_tmpl_in_file(file_path, templates):
 def copy_job_files(global_workflow_dir):
     """
     Copy job files from dev/jobs to jobs directory with appropriate renaming.
-    
+
     Parameters
     ----------
     global_workflow_dir : str
         Path to the global workflow directory
-        
+
     Returns
     -------
     list
@@ -364,19 +367,19 @@ def copy_job_files(global_workflow_dir):
     }
     # Execute the file operations
     FileHandler(job_file_handler).sync()
-    
+
     return job_file_copy_list
 
 
 def copy_script_files(global_workflow_dir):
     """
     Copy script files from dev/scripts to scripts directory with appropriate renaming.
-    
+
     Parameters
     ----------
     global_workflow_dir : str
         Path to the global workflow directory
-        
+
     Returns
     -------
     list
@@ -422,19 +425,19 @@ def copy_script_files(global_workflow_dir):
     }
     # Execute the file operations for scripts
     FileHandler(ex_script_file_handler).sync()
-    
+
     return ex_script_file_copy_list
 
 
 def remove_unused_executables(global_workflow_dir):
     """
     Remove unused executables from the exec directory.
-    
+
     Parameters
     ----------
     global_workflow_dir : str
         Path to the global workflow directory
-        
+
     Returns
     -------
     list
@@ -493,10 +496,10 @@ def remove_unused_executables(global_workflow_dir):
         "wave_stat.x",
         "webtitle.x"
     ]
-    
+
     exec_dir = os.path.join(global_workflow_dir, 'exec')
     removed_files = []
-    
+
     for executable in unused_executables:
         executable_path = os.path.join(exec_dir, executable)
         if os.path.exists(executable_path):
@@ -508,7 +511,7 @@ def remove_unused_executables(global_workflow_dir):
                 print(f"Error removing {executable}: {e}")
         else:
             print(f"Executable not found (already removed?): {executable}")
-    
+
     return removed_files
 
 
@@ -535,7 +538,7 @@ def setup_gcafs_for_nco():
         if '/jobs/' in file_path:
             num_tmpl_replacements = replace_declare_from_tmpl_in_file(file_path, templates)
             print(f"Replaced {num_tmpl_replacements} declare_from_tmpl calls in {file_path}")
-    
-    
+
+
 if __name__ == "__main__":
     setup_gcafs_for_nco()
