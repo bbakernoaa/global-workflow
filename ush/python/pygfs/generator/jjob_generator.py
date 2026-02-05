@@ -1,6 +1,7 @@
 import os
 from typing import Dict, Any
-from wxflow import Logger, Jinja, AttrDict, add_to_datetime, to_timedelta, to_YMD, Template, TemplateConstants
+from wxflow import (Logger, Jinja, AttrDict, add_to_datetime,
+                    to_timedelta, to_YMD, Template, TemplateConstants)
 
 logger = Logger(level=os.environ.get("LOGGING_LEVEL", "INFO"))
 
@@ -48,7 +49,8 @@ class JJobGenerator:
         val = tmpl_str
         # Max 10 iterations to avoid infinite loops
         for _ in range(10):
-            val = Template.substitute_string(val, TemplateConstants.DOLLAR_CURLY_BRACE, ctx.get)
+            val = Template.substitute_string(
+                val, TemplateConstants.DOLLAR_CURLY_BRACE, ctx.get)
             if '${' not in val:
                 break
         return val
@@ -88,17 +90,21 @@ class JJobGenerator:
                 com_paths[var] = self.resolve_template(tmpl_str, ctx)
 
         # Handle Previous Cycle
-        current_cycle = add_to_datetime(self.config.PDY, to_timedelta(f"{tpl_config.cyc}H"))
-        previous_cycle = add_to_datetime(current_cycle, -to_timedelta(f"{self.config.assim_freq}H"))
+        current_cycle = add_to_datetime(
+            self.config.PDY, to_timedelta(f"{tpl_config.cyc}H"))
+        previous_cycle = add_to_datetime(
+            current_cycle, -to_timedelta(f"{self.config.assim_freq}H"))
         gPDY = to_YMD(previous_cycle)
         gcyc = previous_cycle.strftime("%H")
 
-        rCDUMP = self.config.RUN.replace('gfs', 'gdas').replace('gcafs', 'gcdas')
+        rCDUMP = self.config.RUN.replace('gfs', 'gdas').replace(
+            'gcafs', 'gcdas')
         prev_ctx = {'RUN': rCDUMP, 'YMD': gPDY, 'HH': gcyc, 'MEMDIR': ''}
 
         tmpl_str = self.config.get('COM_ATMOS_RESTART_TMPL')
         if tmpl_str:
-            com_paths['COMIN_ATMOS_RESTART_PREV'] = self.resolve_template(tmpl_str, prev_ctx)
+            com_paths['COMIN_ATMOS_RESTART_PREV'] = self.resolve_template(
+                tmpl_str, prev_ctx)
 
         data = {
             'config': tpl_config,
