@@ -539,6 +539,19 @@ def setup_gcafs_for_nco():
             num_tmpl_replacements = replace_declare_from_tmpl_in_file(file_path, templates)
             print(f"Replaced {num_tmpl_replacements} declare_from_tmpl calls in {file_path}")
 
+            # Ensure MEMDIR is defined even for single member runs
+            with open(file_path, 'r') as f:
+                content = f.read()
+            if 'MEMDIR' in content and 'export MEMDIR=' not in content:
+                # Insert after jjob_header.sh source
+                header_pattern = r'(source\s+.*jjob_header\.sh.*)'
+                match = re.search(header_pattern, content)
+                if match:
+                    content = re.sub(header_pattern, r'\1\nexport MEMDIR=${MEMDIR:-""}', content)
+                    with open(file_path, 'w') as f:
+                        f.write(content)
+                    print(f"Added MEMDIR export to {file_path}")
+
 
 if __name__ == "__main__":
     setup_gcafs_for_nco()
