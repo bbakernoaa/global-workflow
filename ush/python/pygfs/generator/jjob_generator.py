@@ -4,6 +4,7 @@ from wxflow import Logger, Jinja, AttrDict, add_to_datetime, to_timedelta, to_YM
 
 logger = Logger(level=os.environ.get("LOGGING_LEVEL", "INFO"))
 
+
 JJOB_TEMPLATE = """#! /usr/bin/env bash
 
 ###############################################################
@@ -33,6 +34,7 @@ fi
 
 exit 0
 """
+
 
 class JJobGenerator:
     def __init__(self, config: Dict[str, Any]):

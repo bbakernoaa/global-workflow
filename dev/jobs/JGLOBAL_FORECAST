@@ -11,6 +11,7 @@ source "${HOMEgfs}/ush/jjob_header.sh" -e "fcst" -c "base fcst"
 ###############################################################
 
 # Base COM directory for the current cycle
+# shellcheck disable=SC2153
 export COM_BASE="${ROTDIR}/${RUN}.${PDY}/${cyc}"
 
 # Atmos components
