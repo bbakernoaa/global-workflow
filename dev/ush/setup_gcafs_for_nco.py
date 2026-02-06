@@ -371,7 +371,7 @@ def copy_job_files(global_workflow_dir):
     # Execute the file operations
     FileHandler(job_file_handler).sync()
 
-    return job_file_copy_list
+    return job_file_copy_list, gcafs_jobs, gcdas_jobs
 
 
 def copy_script_files(global_workflow_dir):
@@ -390,16 +390,16 @@ def copy_script_files(global_workflow_dir):
     """
     gcafs_ex_scripts = {
         "exgcafs_forecast.sh": "exglobal_forecast.sh",
-        "exgcafs_prep_emissions.sh": "exglobal_prep_emissions.py",
+        "exgcafs_prep_emissions.py": "exglobal_prep_emissions.py",
         "exgcafs_atmos_post_manager.sh": "exglobal_atmos_pmgr.sh",
         "exgcafs_atmos_products.sh": "exglobal_atmos_products.sh",
     }
     gcdas_ex_scripts = {
         "exgcdas_forecast.sh": "exglobal_forecast.sh",
-        "exgcdas_prep_emissions.sh": "exglobal_prep_emissions.py",
+        "exgcdas_prep_emissions.py": "exglobal_prep_emissions.py",
         "exgcdas_atmos_post_manager.sh": "exglobal_atmos_pmgr.sh",
         "exgcdas_atmos_products.sh": "exglobal_atmos_products.sh",
-        "exgcdas_atmos_initialize.py": "exglobal_offline_atmos_analysis.py",
+        "exgcdas_offline_atmos_analysis.py": "exglobal_offline_atmos_analysis.py",
         "exgcdas_surface_initialize.sh": "exglobal_atmos_sfcanl.sh",
         "exgcdas_aero_analysis_initialize.py": "exglobal_aero_analysis_initialize.py",
         "exgcdas_aero_analysis_variational.py": "exglobal_aero_analysis_variational.py",
@@ -429,7 +429,7 @@ def copy_script_files(global_workflow_dir):
     # Execute the file operations for scripts
     FileHandler(ex_script_file_handler).sync()
 
-    return ex_script_file_copy_list
+    return ex_script_file_copy_list, gcafs_ex_scripts, gcdas_ex_scripts
 
 
 def remove_unused_executables(global_workflow_dir):
@@ -520,10 +520,10 @@ def remove_unused_executables(global_workflow_dir):
 
 def setup_gcafs_for_nco():
     # first, copy jobs from dev to the global workflow directory
-    job_file_copy_list = copy_job_files(global_workflow_dir)
+    job_file_copy_list, gcafs_jobs, gcdas_jobs = copy_job_files(global_workflow_dir)
 
     # Next, copy ex-scripts from dev/scripts to the global workflow directory
-    ex_script_file_copy_list = copy_script_files(global_workflow_dir)
+    ex_script_file_copy_list, gcafs_ex, gcdas_ex = copy_script_files(global_workflow_dir)
 
     # Remove unused executables from the exec directory
     removed_files = remove_unused_executables(global_workflow_dir)
@@ -537,10 +537,38 @@ def setup_gcafs_for_nco():
         num_replacements = replace_gfs_with_gcafs(file_path)
         print(f"Modified {file_path}: {num_replacements} replacements made.")
 
+        # Read the modified content for script renaming
+        with open(file_path, 'r') as f:
+            content = f.read()
+
+        # Update script filenames in content
+        filename = os.path.basename(file_path)
+        if filename.startswith('JGCAFS') or filename.startswith('exgcafs'):
+            script_mapping = gcafs_ex
+        elif filename.startswith('JGCDAS') or filename.startswith('exgcdas'):
+            script_mapping = gcdas_ex
+        else:
+            script_mapping = {**gcafs_ex, **gcdas_ex}
+
+        modified_scripts = False
+        for dest_script, src_script in script_mapping.items():
+            if src_script in content:
+                content = content.replace(src_script, dest_script)
+                modified_scripts = True
+                print(f"  Renamed script reference: {src_script} -> {dest_script}")
+
+        if modified_scripts:
+            with open(file_path, 'w') as f:
+                f.write(content)
+
         # For job files, also replace declare_from_tmpl with explicit exports
         if '/jobs/' in file_path:
             num_tmpl_replacements = replace_declare_from_tmpl_in_file(file_path, templates)
             print(f"Replaced {num_tmpl_replacements} declare_from_tmpl calls in {file_path}")
+
+            # Read the modified content
+            with open(file_path, 'r') as f:
+                content = f.read()
 
             # Ensure common variables are defined even for single member or deterministic runs
             # Also include critical path variables identified from dev/jobs
