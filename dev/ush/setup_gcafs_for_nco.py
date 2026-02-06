@@ -22,8 +22,8 @@ global_workflow_dir = os.path.abspath(os.path.join(current_dir_path, "../.."))
 
 def replace_gfs_with_gcafs(input_file):
     """
-    Replace all instances of gfs with gcafs in the given input file,
-    preserving case where possible and avoiding pygfs.
+    Replace all instances of FOOgfs with FOOgcafs in the given input file.
+    This matches patterns like HOMEgfs -> HOMEgcafs, USHgfs -> USHgcafs, etc.
 
     Parameters
     ----------
@@ -42,33 +42,22 @@ def replace_gfs_with_gcafs(input_file):
     with open(input_file, 'r') as f:
         content = f.read()
 
-    # Match any word containing 'gfs'
-    pattern = r'\b\w*gfs\w*\b'
+    # Count and replace all instances of FOOgfs with FOOgcafs
+    # This will match patterns like: HOMEgfs, USHgfs, PARMgfs, etc.
+    # Does NOT match standalone "gfs" or quoted "gfs"
+    # Match word characters followed by "gfs" at word boundary, but ensure prefix has at least 2 chars
+    # This ensures we match variable names like HOMEgfs but not just "gfs" or "Xgfs"
+    pattern = r'(\w{2,})gfs\b'
 
     replacement_count = 0
 
     def replace_func(match):
-        full_match = match.group(0)
-        # Avoid renaming Python package names like pygfs or paths containing it
-        if 'pygfs' in full_match.lower():
-            return full_match
-
         nonlocal replacement_count
-        
-        # Replace gfs with gcafs, preserving case
-        def sub_gfs(m):
-            nonlocal replacement_count
-            replacement_count += 1
-            original = m.group(0)
-            if original.isupper():
-                return "GCAFS"
-            if original.istitle():
-                return "Gcafs"
-            return "gcafs"
+        replacement_count += 1
+        prefix = match.group(1)
+        return f"{prefix}gcafs"
 
-        return re.sub(r'gfs', sub_gfs, full_match, flags=re.IGNORECASE)
-
-    modified_content = re.sub(pattern, replace_func, content, flags=re.IGNORECASE)
+    modified_content = re.sub(pattern, replace_func, content)
 
     # Write the modified content back to the file
     with open(input_file, 'w') as f:
@@ -398,13 +387,13 @@ def copy_script_files(global_workflow_dir):
     """
     gcafs_ex_scripts = {
         "exgcafs_forecast.sh": "exglobal_forecast.sh",
-        "exgcafs_prep_emissions.py": "exglobal_prep_emissions.py",
+        "exgcafs_prep_emissions.sh": "exglobal_prep_emissions.py",
         "exgcafs_atmos_post_manager.sh": "exglobal_atmos_pmgr.sh",
         "exgcafs_atmos_products.sh": "exglobal_atmos_products.sh",
     }
     gcdas_ex_scripts = {
         "exgcdas_forecast.sh": "exglobal_forecast.sh",
-        "exgcdas_prep_emissions.py": "exglobal_prep_emissions.py",
+        "exgcdas_prep_emissions.sh": "exglobal_prep_emissions.py",
         "exgcdas_atmos_post_manager.sh": "exglobal_atmos_pmgr.sh",
         "exgcdas_atmos_products.sh": "exglobal_atmos_products.sh",
         "exgcdas_atmos_initialize.py": "exglobal_offline_atmos_analysis.py",
@@ -533,28 +522,6 @@ def setup_gcafs_for_nco():
     # Next, copy ex-scripts from dev/scripts to the global workflow directory
     ex_script_file_copy_list = copy_script_files(global_workflow_dir)
 
-    # Re-extract mappings for script renaming inside jobs
-    gcafs_ex_scripts = {
-        "exgcafs_forecast.sh": "exglobal_forecast.sh",
-        "exgcafs_prep_emissions.py": "exglobal_prep_emissions.py",
-        "exgcafs_atmos_post_manager.sh": "exglobal_atmos_pmgr.sh",
-        "exgcafs_atmos_products.sh": "exglobal_atmos_products.sh",
-    }
-    gcdas_ex_scripts = {
-        "exgcdas_forecast.sh": "exglobal_forecast.sh",
-        "exgcdas_prep_emissions.py": "exglobal_prep_emissions.py",
-        "exgcdas_atmos_post_manager.sh": "exglobal_atmos_pmgr.sh",
-        "exgcdas_atmos_products.sh": "exglobal_atmos_products.sh",
-        "exgcdas_atmos_initialize.py": "exglobal_offline_atmos_analysis.py",
-        "exgcdas_surface_initialize.sh": "exglobal_atmos_sfcanl.sh",
-        "exgcdas_aero_analysis_initialize.py": "exglobal_aero_analysis_initialize.py",
-        "exgcdas_aero_analysis_variational.py": "exglobal_aero_analysis_variational.py",
-        "exgcdas_aero_analysis_finalize.py": "exglobal_aero_analysis_finalize.py",
-        "exgcdas_aero_analysis_calc.sh": "exglobal_atmos_analysis_calc.sh",
-        "exgcdas_aero_analysis_stats.py": "exglobal_analysis_stats.py",
-        "exgcdas_aero_analysis_generate_bmatrix.py": "exgdas_aero_analysis_generate_bmatrix.py",
-    }
-
     # Remove unused executables from the exec directory
     removed_files = remove_unused_executables(global_workflow_dir)
 
@@ -574,7 +541,7 @@ def setup_gcafs_for_nco():
             if num_tmpl_replacements > 0:
                 print(f"Replaced {num_tmpl_replacements} declare_from_tmpl calls in {file_path}")
 
-            # Specific script renaming inside jobs
+            # Ensure common variables are defined even for single member or deterministic runs
             with open(file_path, 'r') as f:
                 content = f.read()
 
