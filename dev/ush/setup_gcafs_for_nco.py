@@ -179,7 +179,8 @@ def get_template_dict(global_workflow_dir):
 
 def resolve_template(template_str, overrides):
     """
-    Substitute overrides into a template string.
+    Substitute overrides into a template string, preserving variables
+    that are not in the overrides as literal shell variables.
 
     Parameters
     ----------
@@ -197,6 +198,8 @@ def resolve_template(template_str, overrides):
     # Sort overrides by length descending to avoid partial replacements
     for k in sorted(overrides.keys(), key=len, reverse=True):
         v = overrides[k]
+        # If the override value itself contains a variable reference (e.g. YMD=${PDY}),
+        # we want to keep it as a shell variable string for the export.
         res = res.replace(f'${{{k}}}', v)
         res = re.sub(f'\\${k}\\b', v, res)
     return res
