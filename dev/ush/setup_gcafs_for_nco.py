@@ -52,9 +52,14 @@ def replace_gfs_with_gcafs(input_file):
     replacement_count = 0
 
     def replace_func(match):
+        prefix = match.group(1)
+        # Avoid renaming Python package names like pygfs or paths containing it
+        # Also avoid renaming any variable or path that is explicitly 'pygfs'
+        if prefix.lower() == 'py' or match.group(0).lower() == 'pygfs':
+            return match.group(0)
+
         nonlocal replacement_count
         replacement_count += 1
-        prefix = match.group(1)
         return f"{prefix}gcafs"
 
     modified_content = re.sub(pattern, replace_func, content)
