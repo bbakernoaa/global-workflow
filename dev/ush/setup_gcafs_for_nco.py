@@ -543,20 +543,40 @@ def setup_gcafs_for_nco():
             print(f"Replaced {num_tmpl_replacements} declare_from_tmpl calls in {file_path}")
 
             # Ensure common variables are defined even for single member or deterministic runs
-            with open(file_path, 'r') as f:
-                content = f.read()
-
-            vars_to_define = ['MEMDIR', 'COMINgcafs', 'COMOUTgcafs']
+            # Also include critical path variables identified from dev/jobs
+            standard_vars = [
+                'MEMDIR', 'ROTDIR', 'RUN', 'PDY', 'cyc', 'PSLOT', 'STMP', 'COM_BASE', 
+                'DATAROOT', 'DMPDIR', 'IODADIR', 'envir', 'obsproc_ver', 'obsforge_ver',
+                'GDATE', 'gPDY', 'gcyc', 'GDUMP'
+            ]
+            
+            # Find all COMIN and COMOUT variables (with or without underscores) in the content
+            job_vars = re.findall(r'\b(COMIN\w*|COMOUT\w*)\b', content)
+            
+            vars_to_define = sorted(list(set(standard_vars + job_vars)))
+            
             modified = False
             for var in vars_to_define:
+                # Only add export if it's not already explicitly exported with a value
+                # We check for 'export VAR=' to see if it's already there
                 if f'export {var}=' not in content:
-                    # Insert after jjob_header.sh source
-                    header_pattern = r'(source\s+.*jjob_header\.sh.*)'
+                    # Insert after preamble.sh or jjob_header.sh source
+                    header_pattern = r'(source\s+.*(?:preamble\|jjob_header)\.sh.*)'
                     match = re.search(header_pattern, content)
                     if match:
-                        content = re.sub(header_pattern, f'\\1\nexport {var}=${{{var}:-""}}', content)
-                        modified = True
-                        print(f"Added {var} export to {file_path}")
+                        # Use a fallback to empty string and ensure it's not redefining if already set
+                        export_line = f'export {var}=${{{var}:-""}}'
+                        # But wait, if we are in a job, some variables like PDY/cyc are critical.
+                        # We just want to ensure they are at least empty instead of unbound.
+                        
+                        # Find the last match of the header pattern to insert after it
+                        all_matches = list(re.finditer(header_pattern, content))
+                        if all_matches:
+                            last_match = all_matches[-1]
+                            insert_pos = last_match.end()
+                            content = content[:insert_pos] + f'\n{export_line}' + content[insert_pos:]
+                            modified = True
+                            print(f"  Added fallback export for {var}")
 
             if modified:
                 with open(file_path, 'w') as f:
