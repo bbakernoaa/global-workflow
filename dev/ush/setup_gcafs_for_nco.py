@@ -586,13 +586,24 @@ def setup_gcafs_for_nco():
                             gfs_alias = f"{pre}gfs_{post}"
                     
                     if gfs_alias != exp and f'export {gfs_alias}=' not in content:
-                        alias_lines.append(f'export {gfs_alias}="${{{exp}}}"')
+                        alias_lines.append(f'export {gfs_alias}="${{{exp}:-}}"')
 
-            # Add required exports
+            # Add required exports early in the file to avoid unbound variable errors
             required_vars = ['MEMDIR', 'COMINgcafs', 'COMOUTgcafs']
+            early_lines = []
             for var in required_vars:
                 if f'export {var}=' not in content:
-                    alias_lines.append(f'export {var}=${{{var}:-""}}')
+                    early_lines.append(f'export {var}=${{{var}:-""}}')
+
+            if early_lines:
+                # Try to insert after preamble.sh or jjob_header.sh
+                for pattern in [r'(source\s+.*jjob_header\.sh.*)', r'(source\s+.*preamble\.sh.*)']:
+                    match = re.search(pattern, content)
+                    if match:
+                        insertion = '\n' + '\n'.join(early_lines)
+                        content = re.sub(pattern, f'\\1{insertion}', content)
+                        modified_job = True
+                        break
 
             if alias_lines:
                 # Find the execution line to insert aliases right before it
@@ -600,7 +611,6 @@ def setup_gcafs_for_nco():
                 exec_pattern = r'^(\s*(?:\${[A-Z_]+}|"\${[A-Z_]+}|python\s+|bash\s+).*)$'
                 
                 # Look for the "Begin JOB SPECIFIC work" marker as a safe starting point
-                # to avoid hitting headers/preambles at the top
                 job_work_marker = "# Begin JOB SPECIFIC work"
                 marker_pos = content.find(job_work_marker)
                 
@@ -625,7 +635,7 @@ def setup_gcafs_for_nco():
                 
                 if inserted:
                     modified_job = True
-                    print(f"  Added {len(alias_lines)} alias/required exports to {filename}")
+                    print(f"  Added {len(alias_lines)} alias exports to {filename}")
 
             if modified_job:
                 with open(file_path, 'w') as f:
