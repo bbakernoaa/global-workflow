@@ -589,26 +589,28 @@ def setup_gcafs_for_nco():
                         alias_lines.append(f'export {gfs_alias}="${{{exp}:-}}"')
 
             # Add required exports early in the file to avoid unbound variable errors
-            required_vars = ['MEMDIR', 'COMINgcafs', 'COMOUTgcafs']
+            required_vars = [
+                'MEMDIR', 'COMINgcafs', 'COMOUTgcafs', 'COMINgcdas', 'COMOUTgcdas',
+                'COMINgfs', 'COMOUTgfs', 'COMINgdas', 'COMOUTgdas',
+                'COMINgcafs_ATMOS_ANALYSIS', 'COMOUTgcafs_ATMOS_ANALYSIS',
+                'HOMEgcafs', 'SCRgcafs', 'EXECgcafs', 'PARMgcafs', 'FIXgcafs'
+            ]
             early_lines = []
             for var in required_vars:
                 if f'export {var}=' not in content:
-                    early_lines.append(f'export {var}=${{{var}:-""}}')
+                    early_lines.append(f'export {var}="${{{var}:-}}"')
 
             if early_lines:
-                # Try to insert after preamble.sh or jjob_header.sh
-                for pattern in [r'(source\s+.*jjob_header\.sh.*)', r'(source\s+.*preamble\.sh.*)']:
-                    match = re.search(pattern, content)
-                    if match:
-                        insertion = '\n' + '\n'.join(early_lines)
-                        content = re.sub(pattern, f'\\1{insertion}', content)
-                        modified_job = True
-                        break
+                # Insert at the top after shebang to ensure safety for set -u
+                insertion = '\n# Ensure variables are defined for set -u\n' + '\n'.join(early_lines) + '\n'
+                # Use a specific marker to avoid multiple insertions
+                if '# Ensure variables are defined for set -u' not in content:
+                    content = re.sub(r'(#!.*\n)', f'\\1{insertion}', content)
+                    modified_job = True
 
             if alias_lines:
                 # Find the execution line to insert aliases right before it
-                # We typically want the first execution of a script after the job-specific setup
-                exec_pattern = r'^(\s*(?:\${[A-Z_]+}|"\${[A-Z_]+}|python\s+|bash\s+).*)$'
+                exec_pattern = r'^(\s*(?:mkdir|cd|rm|cp|mv|python|bash|\${[A-Z_]+}|"\${[A-Z_]+}").*)$'
                 
                 # Look for the "Begin JOB SPECIFIC work" marker as a safe starting point
                 job_work_marker = "# Begin JOB SPECIFIC work"
@@ -621,10 +623,11 @@ def setup_gcafs_for_nco():
                     if match:
                         actual_pos = marker_pos + match.start()
                         insertion = '\n# GFS/GDAS aliases for Python tasks\n' + '\n'.join(alias_lines) + '\n\n'
-                        content = content[:actual_pos] + insertion + content[actual_pos:]
-                        inserted = True
+                        if '# GFS/GDAS aliases for Python tasks' not in content:
+                             content = content[:actual_pos] + insertion + content[actual_pos:]
+                             inserted = True
                 
-                if not inserted:
+                if not inserted and '# GFS/GDAS aliases for Python tasks' not in content:
                     # Fallback: Insert after jjob_header.sh source
                     header_pattern = r'(source\s+.*jjob_header\.sh.*)'
                     match = re.search(header_pattern, content)
