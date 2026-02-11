@@ -600,10 +600,49 @@ def setup_gcafs_for_nco():
                 'assim_freq', 'DO_WAVE', 'DO_OCN', 'DO_ICE', 'DO_AERO_FCST',
                 'DUMP', 'DUMP_SUFFIX', 'OFFLINEANLPY'
             ]
+            
+            # Define some sensible defaults for core variables
+            required_defaults = {
+                'jobid': '"${jobid:-local_job}"',
+                'ENSMEM': '"${ENSMEM:-0}"',
+                'machine': '"${machine:-WCOSS2}"',
+                'cyc': '"${cyc:-00}"',
+                'NET': '"${NET:-gcafs}"',
+                'envir': '"${envir:-prod}"',
+                'RUN_ENVIR': '"${RUN_ENVIR:-emc}"',
+                'STMP': '"${STMP:-/tmp}"',
+                'PTMP': '"${PTMP:-/tmp}"',
+                'SENDCOM': '"${SENDCOM:-NO}"',
+                'SENDDBN': '"${SENDDBN:-NO}"',
+                'SENDCAN': '"${SENDCAN:-NO}"',
+                'KEEPDATA': '"${KEEPDATA:-YES}"',
+                'WIPE_DATA': '"${WIPE_DATA:-NO}"',
+            }
+
             early_lines = []
             for var in required_vars:
                 if f'export {var}=' not in content:
-                    early_lines.append(f'export {var}="${{{var}:-}}"')
+                    if var == 'DATAROOT':
+                        early_lines.append(f'export {var}="${{{var}:-${{ROTDIR:-${{STMP:-/tmp}}}}}}"')
+                    elif var == 'DATA':
+                        early_lines.append(f'export {var}="${{{var}:-${{DATAROOT:-/tmp}}/${{jobid:-local_job}}}}"')
+                    elif var == 'PDY':
+                        early_lines.append(f'export {var}="${{{var}:-$(date +%Y%m%d)}}"')
+                    elif var == 'ROTDIR':
+                        early_lines.append(f'export {var}="${{{var}:-${{STMP:-/tmp}}/${{PSLOT:-experiment}}}}"')
+                    elif var == 'HOMEgcafs':
+                        # Fallback to HOMEgfs, then PWD as last resort
+                        early_lines.append(f'export {var}="${{{var}:-${{HOMEgfs:-${{PWD}}}}}}"')
+                    elif var in required_defaults:
+                        early_lines.append(f'export {var}={required_defaults[var]}')
+                    elif 'gcafs' in var:
+                        gfs_var = var.replace('gcafs', 'gfs')
+                        early_lines.append(f'export {var}="${{{var}:-${{{gfs_var}:-}}}}"')
+                    elif 'gcdas' in var:
+                        gfs_var = var.replace('gcdas', 'gdas')
+                        early_lines.append(f'export {var}="${{{var}:-${{{gfs_var}:-}}}}"')
+                    else:
+                        early_lines.append(f'export {var}="${{{var}:-}}"')
 
             if early_lines:
                 # Insert at the top after shebang to ensure safety for set -u
