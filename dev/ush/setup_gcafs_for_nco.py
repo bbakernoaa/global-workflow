@@ -52,9 +52,13 @@ def replace_gfs_with_gcafs(input_file):
     replacement_count = 0
 
     def replace_func(match):
+        prefix = match.group(1)
+        # Avoid renaming Python package names like pygfs
+        if prefix.lower() == 'py':
+            return match.group(0)
+
         nonlocal replacement_count
         replacement_count += 1
-        prefix = match.group(1)
         return f"{prefix}gcafs"
 
     modified_content = re.sub(pattern, replace_func, content)
@@ -591,12 +595,35 @@ def setup_gcafs_for_nco():
                     alias_lines.append(f'export {var}=${{{var}:-""}}')
 
             if alias_lines:
-                # Insert after jjob_header.sh source
-                header_pattern = r'(source\s+.*jjob_header\.sh.*)'
-                match = re.search(header_pattern, content)
-                if match:
-                    insertion = '\n' + '\n'.join(alias_lines)
-                    content = re.sub(header_pattern, f'\\1{insertion}', content)
+                # Find the execution line to insert aliases right before it
+                # We typically want the first execution of a script after the job-specific setup
+                exec_pattern = r'^(\s*(?:\${[A-Z_]+}|"\${[A-Z_]+}|python\s+|bash\s+).*)$'
+                
+                # Look for the "Begin JOB SPECIFIC work" marker as a safe starting point
+                # to avoid hitting headers/preambles at the top
+                job_work_marker = "# Begin JOB SPECIFIC work"
+                marker_pos = content.find(job_work_marker)
+                
+                inserted = False
+                if marker_pos != -1:
+                    # Search for the first execution line following the marker
+                    match = re.search(exec_pattern, content[marker_pos:], re.MULTILINE)
+                    if match:
+                        actual_pos = marker_pos + match.start()
+                        insertion = '\n# GFS/GDAS aliases for Python tasks\n' + '\n'.join(alias_lines) + '\n\n'
+                        content = content[:actual_pos] + insertion + content[actual_pos:]
+                        inserted = True
+                
+                if not inserted:
+                    # Fallback: Insert after jjob_header.sh source
+                    header_pattern = r'(source\s+.*jjob_header\.sh.*)'
+                    match = re.search(header_pattern, content)
+                    if match:
+                        insertion = '\n' + '\n'.join(alias_lines)
+                        content = re.sub(header_pattern, f'\\1{insertion}', content)
+                        inserted = True
+                
+                if inserted:
                     modified_job = True
                     print(f"  Added {len(alias_lines)} alias/required exports to {filename}")
 
