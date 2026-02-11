@@ -590,10 +590,15 @@ def setup_gcafs_for_nco():
 
             # Add required exports early in the file to avoid unbound variable errors
             required_vars = [
-                'MEMDIR', 'COMINgcafs', 'COMOUTgcafs', 'COMINgcdas', 'COMOUTgcdas',
+                'DATA', 'DATAROOT', 'jobid', 'MEMDIR', 'ENSMEM', 'machine',
+                'PDY', 'cyc', 'RUN', 'NET', 'envir', 'envir_obs', 'RUN_ENVIR',
+                'COMINgcafs', 'COMOUTgcafs', 'COMINgcdas', 'COMOUTgcdas',
                 'COMINgfs', 'COMOUTgfs', 'COMINgdas', 'COMOUTgdas',
-                'COMINgcafs_ATMOS_ANALYSIS', 'COMOUTgcafs_ATMOS_ANALYSIS',
-                'HOMEgcafs', 'SCRgcafs', 'EXECgcafs', 'PARMgcafs', 'FIXgcafs'
+                'HOMEgcafs', 'SCRgcafs', 'EXECgcafs', 'PARMgcafs', 'FIXgcafs',
+                'STMP', 'PTMP', 'ROTDIR', 'DMPDIR', 'IODADIR', 'COM_BASE',
+                'SENDCOM', 'SENDDBN', 'SENDCAN', 'KEEPDATA', 'WIPE_DATA',
+                'assim_freq', 'DO_WAVE', 'DO_OCN', 'DO_ICE', 'DO_AERO_FCST',
+                'DUMP', 'DUMP_SUFFIX', 'OFFLINEANLPY'
             ]
             early_lines = []
             for var in required_vars:
