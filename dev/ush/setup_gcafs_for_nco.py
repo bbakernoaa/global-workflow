@@ -391,13 +391,13 @@ def copy_script_files(global_workflow_dir):
     """
     gcafs_ex_scripts = {
         "exgcafs_forecast.sh": "exglobal_forecast.sh",
-        "exgcafs_prep_emissions.py": "exglobal_prep_emissions.py",
+        "exgcafs_prep_emissions.sh": "exglobal_prep_emissions.py",
         "exgcafs_atmos_post_manager.sh": "exglobal_atmos_pmgr.sh",
         "exgcafs_atmos_products.sh": "exglobal_atmos_products.sh",
     }
     gcdas_ex_scripts = {
         "exgcdas_forecast.sh": "exglobal_forecast.sh",
-        "exgcdas_prep_emissions.py": "exglobal_prep_emissions.py",
+        "exgcdas_prep_emissions.sh": "exglobal_prep_emissions.py",
         "exgcdas_atmos_post_manager.sh": "exglobal_atmos_pmgr.sh",
         "exgcdas_atmos_products.sh": "exglobal_atmos_products.sh",
         "exgcdas_atmos_initialize.py": "exglobal_offline_atmos_analysis.py",
@@ -430,7 +430,7 @@ def copy_script_files(global_workflow_dir):
     # Execute the file operations for scripts
     FileHandler(ex_script_file_handler).sync()
 
-    return ex_script_file_copy_list, gcafs_ex_scripts, gcdas_ex_scripts
+    return ex_script_file_copy_list
 
 
 def remove_unused_executables(global_workflow_dir):
@@ -524,7 +524,7 @@ def setup_gcafs_for_nco():
     job_file_copy_list = copy_job_files(global_workflow_dir)
 
     # Next, copy ex-scripts from dev/scripts to the global workflow directory
-    ex_script_file_copy_list, gcafs_ex_scripts, gcdas_ex_scripts = copy_script_files(global_workflow_dir)
+    ex_script_file_copy_list = copy_script_files(global_workflow_dir)
 
     # Remove unused executables from the exec directory
     removed_files = remove_unused_executables(global_workflow_dir)
@@ -532,67 +532,32 @@ def setup_gcafs_for_nco():
     # Extract templates for declare_from_tmpl replacement
     templates = get_template_dict(global_workflow_dir)
 
-    # Go through the copied job and ex-script files and replace GFS with GCAFS
+    # Go through the copied job and ex-script files and replace FOOgfs with FOOgcafs
     all_copied_files = [dest for _, dest in job_file_copy_list + ex_script_file_copy_list]
     for file_path in all_copied_files:
         num_replacements = replace_gfs_with_gcafs(file_path)
-        if num_replacements > 0:
-            print(f"Modified {file_path}: {num_replacements} replacements made.")
+        print(f"Modified {file_path}: {num_replacements} replacements made.")
 
         # For job files, also replace declare_from_tmpl with explicit exports
         if '/jobs/' in file_path:
             num_tmpl_replacements = replace_declare_from_tmpl_in_file(file_path, templates)
-            if num_tmpl_replacements > 0:
-                print(f"Replaced {num_tmpl_replacements} declare_from_tmpl calls in {file_path}")
+            print(f"Replaced {num_tmpl_replacements} declare_from_tmpl calls in {file_path}")
 
             # Ensure common variables are defined even for single member or deterministic runs
             with open(file_path, 'r') as f:
                 content = f.read()
 
-            filename = os.path.basename(file_path)
-            script_map = gcdas_ex_scripts if filename.startswith('JGCDAS_') else gcafs_ex_scripts
-            
-            # Replace script references using the map
-            modified_job = False
-            for dest_script, src_script in script_map.items():
-                if src_script in content:
-                    content = content.replace(src_script, dest_script)
-                    modified_job = True
-                    print(f"  Renamed {src_script} to {dest_script} in {filename}")
-
-            # Also catch any missed 'exglobal_' and replace with 'exgcafs_' or 'exgcdas_'
-            prefix = 'exgcafs_' if filename.startswith('JGCAFS_') else 'exgcdas_'
-            if re.search(r'\bexglobal_', content):
-                content = re.sub(r'\bexglobal_', prefix, content)
-                modified_job = True
-
-            # Ensure common variables are defined even for single member or deterministic runs
-            # Find all exported COMIN/COMOUT variables
-            exports = re.findall(r'export\s+((?:COMIN|COMOUT)\w*)=', content)
-            alias_lines = []
-            for exp in exports:
-                # If it's a gcafs/gcdas var, add a gfs alias for Python compatibility
-                # If it's a plain COMIN_VAR, add a gfs alias too
-                if 'gcafs' in exp.lower() or 'gcdas' in exp.lower() or 'gfs' not in exp.lower():
-                    gfs_alias = exp
-                    if 'gcafs' in gfs_alias.lower():
-                        gfs_alias = re.sub(r'gcafs', 'gfs', gfs_alias, flags=re.IGNORECASE)
-                    elif 'gcdas' in gfs_alias.lower():
-                        gfs_alias = re.sub(r'gcdas', 'gfs', gfs_alias, flags=re.IGNORECASE)
-                    else:
-                        # For COMIN_ATMOS_ANALYSIS -> COMINgfs_ATMOS_ANALYSIS
-                        if '_' in gfs_alias:
-                            pre, post = gfs_alias.split('_', 1)
-                            gfs_alias = f"{pre}gfs_{post}"
-                    
-                    if gfs_alias != exp and f'export {gfs_alias}=' not in content:
-                        alias_lines.append(f'export {gfs_alias}="${{{exp}}}"')
-
-            # Add required exports
-            required_vars = ['MEMDIR', 'COMINgcafs', 'COMOUTgcafs']
-            for var in required_vars:
+            vars_to_define = ['MEMDIR', 'COMINgcafs', 'COMOUTgcafs']
+            modified = False
+            for var in vars_to_define:
                 if f'export {var}=' not in content:
-                    alias_lines.append(f'export {var}=${{{var}:-""}}')
+                    # Insert after jjob_header.sh source
+                    header_pattern = r'(source\s+.*jjob_header\.sh.*)'
+                    match = re.search(header_pattern, content)
+                    if match:
+                        content = re.sub(header_pattern, f'\\1\nexport {var}=${{{var}:-""}}', content)
+                        modified = True
+                        print(f"Added {var} export to {file_path}")
 
             if alias_lines:
                 # Find the execution line to insert aliases right before it
