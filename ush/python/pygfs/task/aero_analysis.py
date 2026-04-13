@@ -203,3 +203,48 @@ class AerosolAnalysis(Analysis):
                         rstfile.variables[vname].delncattr('checksum')  # remove the checksum so fv3 does not complain
                     except (AttributeError, RuntimeError):
                         pass  # checksum is missing, move on
+    
+    @logit(logger)
+    def _apply_merra2_climo(self) -> None:
+        """Apply MERRA2 climatology to tracer files when backgrounds are missing.
+        Uses the GDASMerra2Coldstart utility for selection and interpolation.
+        """
+        from pygfs.utils.gdas_merra2_coldstart import GDASMerra2Coldstart
+S
+        # Use anl_time consistently with the template staging
+        bkgtime = self.task_config.anl_time
+
+        # Determine paths
+        restart_dir = os.path.join(self.task_config.DATA, 'anl')
+        fix_dir = os.path.join(self.task_config.HOMEglobal, 'fix', 'aer')
+        
+        # Initialize processor with target resolution
+        res = self.task_config.CASE # e.g., 'C384'
+        processor = GDASMerra2Coldstart(res=res)
+        
+        # Get appropriate MERRA2 file for the cycle month
+        merra_file = processor.get_merra2_climatology_file(bkgtime, fix_dir)
+        
+        if not os.path.exists(merra_file):
+            logger.error(f"MERRA2 climatology file not found: {merra_file}")
+            return
+
+        logger.info(f"Integrating MERRA2 climatology from {merra_file}")
+        
+        # Standardize filenames for the utility if they use the fv_tracer convention
+        for itile in range(1, self.task_config.ntiles + 1):
+            tracer_file = os.path.join(restart_dir, f'{to_fv3time(bkgtime)}.fv_tracer.res.tile{itile}.nc')
+            standard_tile = os.path.join(restart_dir, f'gfs_data.tile{itile}.nc')
+            
+            # Utility expects gfs_data.tileX.nc, so link if needed
+            if os.path.exists(tracer_file) and not os.path.exists(standard_tile):
+                os.symlink(tracer_file, standard_tile)
+
+        # Execute integration
+        processor.process_all("", restart_dir, merra_file)
+        
+        # Clean up symlinks if they were created
+        for itile in range(1, self.task_config.ntiles + 1):
+            standard_tile = os.path.join(restart_dir, f'gfs_data.tile{itile}.nc')
+            if os.path.islink(standard_tile):
+                os.unlink(standard_tile)
