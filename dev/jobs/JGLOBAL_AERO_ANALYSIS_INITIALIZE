@@ -44,7 +44,14 @@ export ROTDIR
 declare -rx COMIN_OBS="${ROTDIR}/${RUN}.${PDY}/${cyc}/obs"
 declare -rx COMOUT_CHEM_ANALYSIS="${ROTDIR}/${RUN}.${PDY}/${cyc}/analysis/chem"
 
-declare -rx COMIN_ATMOS_RESTART_PREV="${ROTDIR}/${GDUMP}.${gPDY}/${gcyc}/model/atmos/restart"
+# For Aerosol Coldstart - pull GDAS restart files and add tracers
+if [[ "${COLDSTART:-NO}" == "YES" ]]; then
+    declare -rx COMINgfs_ATMOS_ANALYSIS="${COMINgfs}/gdas.${PDY}/${cyc}/atmos"
+    declare -rx COMIN_ATMOS_RESTART_PREV="${COMINgfs_ATMOS_ANALYSIS}/restart"
+    declare -rx MERRA2_CLIMO_FILE_DIR="${HOMEglobal}/fix/aer"
+else
+    declare -rx COMIN_ATMOS_RESTART_PREV="${ROTDIR}/${GDUMP}.${gPDY}/${gcyc}/model/atmos/restart"
+fi
 declare -rx COMIN_CHEM_BMAT_PREV="${ROTDIR}/${GDUMP}.${gPDY}/${gcyc}/analysis/chem/bmatrix"
 declare -rx COMIN_CHEM_ANALYSIS_PREV="${ROTDIR}/${GDUMP}.${gPDY}/${gcyc}/analysis/chem"
 
