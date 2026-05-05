@@ -24,17 +24,23 @@ if __name__ == '__main__':
     # Instantiate the offline analysis task
     offline_anl = OfflineAnalysis(config)
 
-    # Initialize and stage the runtime directory
-    offline_anl.initialize()
+    coldstart = config.get('COLDSTART', False)
 
-    # Interpolate the Gaussian analysis to the background resolution
-    offline_anl.interpolate_analysis()
+    if coldstart:
+        # Coldstart: stage GDAS atmos/input files directly, skip DA pipeline
+        offline_anl.coldstart_initialize()
+    else:
+        # Initialize and stage the runtime directory
+        offline_anl.initialize()
 
-    # Compute the increment between the analysis and background
-    offline_anl.calc_increment()
+        # Interpolate the Gaussian analysis to the background resolution
+        offline_anl.interpolate_analysis()
 
-    # Compute the tref increment
-    offline_anl.calc_tref_inc()
+        # Compute the increment between the analysis and background
+        offline_anl.calc_increment()
 
-    # Copy the analysis increment and regridded analysis back to COM
-    offline_anl.finalize()
+        # Compute the tref increment
+        offline_anl.calc_tref_inc()
+
+        # Copy the analysis increment and regridded analysis back to COM
+        offline_anl.finalize()

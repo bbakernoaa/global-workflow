@@ -45,12 +45,7 @@ class AerosolAnalysis(Analysis):
         _res = int(self.task_config['CASE'][1:])
         _res_anl = int(self.task_config['CASE_ANL'][1:])
 
-        if self.task_config.DOIAU:
-            _anl_time = self.task_config.WINDOW_BEGIN
-        else:
-            _anl_time = self.task_config.current_cycle
-        
-        _coldstart = self.task_config.get('COLDSTART', False)
+        _anl_time = self.task_config.WINDOW_BEGIN if self.task_config.DOIAU else self.task_config.current_cycle
         _fixaer = self.task_config.get('FIXaer')
 
         _bkg_times = []
@@ -72,7 +67,6 @@ class AerosolAnalysis(Analysis):
                 'AERO_BMATRIX_RESCALE_YAML': 'aero_gen_bmatrix_rescale_default.yaml.j2',
                 'anl_time': _anl_time,
                 'bkg_times': _bkg_times,
-                'coldstart': _coldstart,
                 'fixaer': _fixaer,
             }
         ))
@@ -125,15 +119,6 @@ class AerosolAnalysis(Analysis):
         ----------
         None
         """
-        coldstart = self.task_config.get('COLDSTART') or self.task_config.get('coldstart')
-        logger.info(F"COLDSTART: {self.task_config.get('COLDSTART')}, coldstart: {self.task_config.get('coldstart')}")
-
-        # if self.task_config.coldstart:
-        if coldstart:
-            logger.info('Coldstart detected: applying MERRA2 climatology instead of running JEDI')
-            self._apply_merra2_climo()
-            return
-
         self.jedi_dict[jedi_dict_key].execute()
 
     @logit(logger)
@@ -216,98 +201,3 @@ class AerosolAnalysis(Analysis):
                         rstfile.variables[vname].delncattr('checksum')  # remove the checksum so fv3 does not complain
                     except (AttributeError, RuntimeError):
                         pass  # checksum is missing, move on
-
-    @logit(logger)
-    def _apply_merra2_climo(self) -> None:
-        """Apply MERRA2 climatology to tracer files when restarts are missing.
-
-        This method iterates over all tiles and performs horizontal and vertical
-        interpolation of MERRA2 aerosol climatology onto the GFS grid.
-
-        Returns
-        -------
-        None
-        """
-        if self.task_config.DOIAU:
-            bkgtime = self.task_config.AERO_WINDOW_BEGIN
-        else:
-            bkgtime = self.task_config.current_cycle
-
-        current_month = bkgtime.strftime('%m')
-
-        from pygfs.utils.merra2climo_to_gdas import (
-            open_dataset, get_fv3_plevs, get_merra2_plevs,
-            horizontal_interp, vertical_interp
-        )
-
-        # akbk.nc4 is staged by aero_stage_jedi_fix.yaml.j2 for all cases
-        akbk_file = os.path.join(self.task_config.DATA, 'fv3jedi', 'akbk.nc4')
-        merra_file = os.path.join(self.task_config.DATA, 'bkg', f"merra2.aerclim.2014-2023.m{current_month}.nc")
-
-        ds_akbk = open_dataset(akbk_file)
-        fv3_press = get_fv3_plevs(ds_akbk)
-        ak, bk = get_fv3_plevs(ds_akbk, return_akbk=True)
-        merra_press = get_merra2_plevs()[1:]
-
-        ds_merra = open_dataset(merra_file).isel(time=0)
-
-        merra_2_aerosols = ['BCPHILIC', 'BCPHOBIC', 'DMS',
-                            'DU001', 'DU002', 'DU003', 'DU004', 'DU005',
-                            'OCPHILIC', 'OCPHOBIC', 'SO2', 'SO4',
-                            'SS001', 'SS002', 'SS003', 'SS004', 'SS005', 'MSA']
-        rename_dict = dict(BCPHILIC='bc2', BCPHOBIC='bc1', DMS='dms',
-                           DU001='dust1', DU002='dust2', DU003='dust3', DU004='dust4', DU005='dust5',
-                           SS001='seas1', SS002='seas2', SS003='seas3', SS004='seas4', SS005='seas5',
-                           OCPHILIC='oc2', OCPHOBIC='oc1', SO2='so2', SO4='so4', MSA='msa')
-        fv3_units = dict(so2='ppm', so4='ug/kg', dms='ppm', msa='ppm', bc2='ug/kg', bc1='ug/kg',
-                         dust1='ug/kg', dust2='ug/kg', dust3='ug/kg', dust4='ug/kg', dust5='ug/kg',
-                         seas1='ug/kg', seas2='ug/kg', seas3='ug/kg', seas4='ug/kg', seas5='ug/kg',
-                         oc1='ug/kg', oc2='ug/kg')
-
-        ds_merra = ds_merra[merra_2_aerosols].rename(rename_dict)
-
-        for itile in range(1, self.task_config.ntiles + 1):
-            tracer_file = os.path.join(self.task_config.DATA, 'anl', f'{to_fv3time(bkgtime)}.fv_tracer.res.tile{itile}.nc')
-            core_tile_file = os.path.join(self.task_config.DATA, 'bkg', f'{to_fv3time(bkgtime)}.fv_core.res.tile{itile}.nc')
-            oro_file = os.path.join(self.task_config.FIXorog, self.task_config.CASE,
-                                    f"{self.task_config.CASE}.mx{self.task_config.OCNRES}_oro_data.tile{itile}.nc")
-
-            logger.info(f"Applying MERRA2 climatology to {tracer_file}")
-
-            # Load all data eagerly so files can be closed before the in-place write
-            with open_dataset(tracer_file) as ds_tracer:
-                o3mr_shape = ds_tracer.o3mr.values.shape
-
-            with open_dataset(core_tile_file) as ds_core_tile:
-                temp = ds_core_tile.T.squeeze().values
-
-            with open_dataset(oro_file) as ds_oro:
-                grid = ds_oro[['geolon', 'geolat']].load()
-
-            # Horizontal then vertical interpolation
-            hinterp = horizontal_interp(ds_merra, grid)
-            hvinterp = vertical_interp(hinterp, np.log(merra_press), np.log(fv3_press))
-
-            # Pressure and density for unit conversion of gas-phase species
-            pmid = 0.5 * ((ak[1:] + ak[:-1]) + (bk[1:] + bk[:-1]) * 101325.0)
-            p = pmid.reshape(-1, 1, 1) * np.ones_like(np.empty(o3mr_shape))
-            density = p / (287.0 * temp)
-
-            # Build per-field arrays then write in one open of the restart file
-            field_data = {}
-            for orig_name, field in rename_dict.items():
-                interp_data = hvinterp[field].fillna(0.).values
-
-                unit = fv3_units[field]
-                if unit == 'ug/kg':
-                    interp_data = interp_data * 1e9
-                elif unit == 'ppm':
-                    mw = {'dms': 63.15, 'so2': 64.066, 'msa': 96.11}.get(field)
-                    interp_data = interp_data * density * 1e6 * 24.45 / mw
-                field_data[field] = interp_data
-
-            # Write directly into the restart file to preserve dimension/variable order.
-            # All xarray handles are already closed above.
-            with Dataset(tracer_file, 'r+') as nc:
-                for field, data in field_data.items():
-                    nc[field][:] = data

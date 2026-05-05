@@ -4,6 +4,7 @@ import os
 from collections import OrderedDict
 from logging import getLogger
 from typing import Dict, Any
+import numpy as np
 import f90nml
 from wxflow import (AttrDict,
                     Task,
@@ -230,6 +231,145 @@ class OfflineAnalysis(Task):
         except Exception as err:
             logger.exception(f"An error occured during execution of {exe}")
             raise WorkflowException(f"An error occured during execution of {exe}") from err
+
+    @logit(logger)
+    def coldstart_initialize(self) -> None:
+        """Stage GDAS atmos/input files as GCAFS forecast inputs for a coldstart.
+
+        This method copies the GDAS atmospheric IC files (gfs_data, sfc_data,
+        gfs_ctrl) directly into the GCAFS model/atmos/input COM directory without
+        running any DA or increment calculation.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        ----------
+        None
+        """
+        logger.info("Coldstart: staging GDAS atmos/input files to GCAFS atmos/input")
+        n_tiles = 6
+        files_to_copy = []
+        for itile in range(1, n_tiles + 1):
+            files_to_copy.append([
+                os.path.join(self.task_config.COMIN_GDAS_ATMOS_INPUT, f"gfs_data.tile{itile}.nc"),
+                os.path.join(self.task_config.COMOUT_ATMOS_INPUT, f"gfs_data.tile{itile}.nc"),
+            ])
+            files_to_copy.append([
+                os.path.join(self.task_config.COMIN_GDAS_ATMOS_INPUT, f"sfc_data.tile{itile}.nc"),
+                os.path.join(self.task_config.COMOUT_ATMOS_INPUT, f"sfc_data.tile{itile}.nc"),
+            ])
+        files_to_copy.append([
+            os.path.join(self.task_config.COMIN_GDAS_ATMOS_INPUT, "gfs_ctrl.nc"),
+            os.path.join(self.task_config.COMOUT_ATMOS_INPUT, "gfs_ctrl.nc"),
+        ])
+        FileHandler({'copy': files_to_copy}).sync()
+
+        # Apply MERRA2 aerosol climatology to the staged IC files
+        self._apply_merra2_climo_to_inputs()
+
+    @logit(logger)
+    def _apply_merra2_climo_to_inputs(self) -> None:
+        """Apply MERRA2 aerosol climatology to staged gfs_data IC files.
+
+        After coldstart staging of GDAS atmos/input files, this method performs
+        horizontal and vertical interpolation of MERRA2 aerosol climatology onto
+        the GFS cubed-sphere grid and writes the result into each
+        gfs_data.tile{N}.nc file in COMOUT_ATMOS_INPUT.
+
+        Inspired by https://github.com/noaa-oar-arl/MERRA2_UFS_ICS
+
+        The gfs_data IC files store aerosols in kg/kg (unlike restart files
+        which use µg/kg). ak/bk vertical coordinates are read from the
+        already-staged gfs_ctrl.nc file.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        ----------
+        None
+        """
+        import xarray as xr
+        from pygfs.utils.merra2climo_to_gdas import (
+            open_dataset, get_merra2_plevs,
+            horizontal_interp, vertical_interp
+        )
+
+        current_month = self.task_config.current_cycle.strftime('%m')
+        merra_file = os.path.join(self.task_config.FIXaer,
+                                  f"merra2.aerclim.2014-2023.m{current_month}.nc")
+
+        # ak/bk come from gfs_ctrl.nc which is already staged
+        ctrl_file = os.path.join(self.task_config.COMOUT_ATMOS_INPUT, 'gfs_ctrl.nc')
+        ds_ctrl = open_dataset(ctrl_file)
+        ak = ds_ctrl.vcoord.values[0, :]
+        bk = ds_ctrl.vcoord.values[1, :]
+        fv3_press = (ak + bk * 100000.) / 100.
+
+        merra_press = get_merra2_plevs()[1:]
+        ds_merra = open_dataset(merra_file).isel(time=0)
+
+        rename_dict = dict(BCPHILIC='bc2', BCPHOBIC='bc1', DMS='dms',
+                           DU001='dust1', DU002='dust2', DU003='dust3', DU004='dust4', DU005='dust5',
+                           SS001='seas1', SS002='seas2', SS003='seas3', SS004='seas4', SS005='seas5',
+                           OCPHILIC='oc2', OCPHOBIC='oc1', SO2='so2', SO4='so4', MSA='msa')
+        # Molecular weights for gas-phase ppm conversions
+        mw_dict = {'dms': 63.15, 'so2': 64.066, 'msa': 96.11}
+        # IC files store aerosols as kg/kg; gas species as ppm
+        gas_species = {'so2', 'dms', 'msa'}
+
+        ds_merra = ds_merra[list(rename_dict.keys())].rename(rename_dict)
+
+        n_tiles = 6
+        for itile in range(1, n_tiles + 1):
+            input_file = os.path.join(self.task_config.COMOUT_ATMOS_INPUT, f"gfs_data.tile{itile}.nc")
+            oro_file = os.path.join(self.task_config.FIXorog, self.task_config.CASE,
+                                    f"{self.task_config.CASE}.mx{self.task_config.OCNRES}_oro_data.tile{itile}.nc")
+
+            logger.info(f"Applying MERRA2 climatology to IC file {input_file}")
+
+            ds_input = xr.load_dataset(input_file)
+
+            # Temperature (lowercase 't') and shape from IC file
+            temp = ds_input['t'].squeeze().values
+            o3mr_shape = ds_input['o3mr'].squeeze().shape
+
+            with open_dataset(oro_file) as ds_oro:
+                grid = ds_oro[['geolon', 'geolat']].load()
+
+            hinterp = horizontal_interp(ds_merra, grid)
+            hvinterp = vertical_interp(hinterp, np.log(merra_press), np.log(fv3_press))
+
+            # 3D pressure (Pa) from ak/bk — no averaging, use layer interfaces directly
+            p = (ak[1:] + bk[1:] * 101325.0).reshape(-1, 1, 1) * np.ones(o3mr_shape)
+            density = p / (287.0 * temp)
+
+            for orig_name, field in rename_dict.items():
+                interp_data = hvinterp[field].fillna(0.).values
+
+                if field in gas_species:
+                    # Convert kg/m3 → ppm using air density
+                    mw = mw_dict[field]
+                    interp_data = interp_data / 1e9 * density * 1e6 * 24.45 / mw
+                else:
+                    # MERRA2 µg/kg → IC kg/kg
+                    interp_data = interp_data / 1e9
+
+                if field in ds_input:
+                    ds_input[field].values[:] = interp_data
+                else:
+                    # Field does not exist in GDAS IC — create from o3mr template
+                    logger.info(f"Creating new variable '{field}' in {input_file}")
+                    new_var = ds_input['o3mr'].copy(data=interp_data)
+                    new_var.attrs['long_name'] = field
+                    new_var.attrs['units'] = 'ppm' if field in gas_species else 'kg/kg'
+                    ds_input[field] = new_var
+
+            ds_input.to_netcdf(input_file, mode='w', format='NETCDF4')
+            ds_input.close()
 
     @logit(logger)
     def finalize(self) -> None:
