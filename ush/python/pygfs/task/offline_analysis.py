@@ -234,11 +234,13 @@ class OfflineAnalysis(Task):
 
     @logit(logger)
     def coldstart_initialize(self) -> None:
-        """Stage GDAS atmos/input files as GCAFS forecast inputs for a coldstart.
+        """Initialize a coldstart offline atmospheric analysis using GDAS files.
 
-        This method copies the GDAS atmospheric IC files (gfs_data, sfc_data,
-        gfs_ctrl) directly into the GCAFS model/atmos/input COM directory without
-        running any DA or increment calculation.
+        In a coldstart there is no previous GCAFS forecast, so this method
+        substitutes the corresponding GDAS history files as the background
+        (atm.f006, sfc.f006), then performs the same namelist generation and
+        executable staging as initialize(). It also stages GDAS atmos/input
+        IC files and applies the MERRA2 aerosol climatology to them.
 
         Parameters
         ----------
@@ -248,25 +250,98 @@ class OfflineAnalysis(Task):
         ----------
         None
         """
+        logger.info("Coldstart: staging GDAS history files as background")
+        gdas_prefix = f"gdas.t{self.task_config.gcyc:02d}z."
+        files_to_copy = []
+        fcst_file_in = os.path.join(self.task_config.COMIN_GDAS_ATMOS_HISTORY_PREV,
+                                    f"{gdas_prefix}atm.f006.nc")
+        files_to_copy.append([fcst_file_in, os.path.join(self.task_config.DATA, "atmges_mem001")])
+        sfcfcst_file_in = os.path.join(self.task_config.COMIN_GDAS_ATMOS_HISTORY_PREV,
+                                       f"{gdas_prefix}sfc.f006.nc")
+        files_to_copy.append([sfcfcst_file_in, os.path.join(self.task_config.DATA, "sfcges_mem001")])
+        # TODO: Re-stage all of the inputs on HPSS to match EE2-compliant filenames
+        anl_file_in = os.path.join(self.task_config.COMINgfs_ATMOS_ANALYSIS.replace('analysis', ''),
+                                   f"{self.task_config.APREFIX_IN}atmanl.nc")
+        files_to_copy.append([anl_file_in, os.path.join(self.task_config.DATA, "atmanl.input.nc")])
+        sfcanl_file_in = os.path.join(self.task_config.COMINgfs_ATMOS_ANALYSIS.replace('analysis', ''),
+                                      f"{self.task_config.APREFIX_IN}sfcanl.nc")
+        files_to_copy.append([sfcanl_file_in, os.path.join(self.task_config.DATA, "sfcanl.input.nc")])
+        FileHandler({'copy': files_to_copy}).sync()
+
+        # Namelists and executables are identical to the non-coldstart path
+        logger.info("Generating namelist for 'chgres_nc'")
+        namelist = {
+            'chgres_setup': {
+                "i_output": self.task_config.nlon_interp,
+                "j_output": self.task_config.nlat_interp,
+                "input_file": "atmanl.input.nc",
+                "output_file": "atmanl_mem001",
+                "terrain_file": "atmges_mem001",
+                "ref_file": "atmges_mem001",
+            }
+        }
+        logger.info(namelist)
+        with open(os.path.join(self.task_config.DATA, 'chgres_nc_gauss.nml'), 'w') as nmlfile:
+            f90nml.write(namelist, nmlfile)
+
+        logger.info("Generating namelist for 'calc_increment'")
+        namelist = {
+            "setup": {
+                "datapath": "./",
+                "analysis_filename": "atmanl",
+                "firstguess_filename": "atmges",
+                "increment_filename": "atminc",
+                "debug": False,
+                "nens": 1,
+                "imp_physics": self.task_config.imp_physics
+            },
+            "zeroinc": {
+                "incvars_to_zero": self.task_config.INCREMENTS_TO_ZERO
+            }
+        }
+        logger.info(namelist)
+        with open(os.path.join(self.task_config.DATA, 'calc_increment.nml'), 'w') as nmlfile:
+            f90nml.write(namelist, nmlfile)
+
+        logger.info("Generating namelist for 'tref_calc'")
+        namelist = {
+            "tref_calc_setup": {
+                "i_output": self.task_config.nlon_interp,
+                "j_output": self.task_config.nlat_interp,
+                "sfcanl_file": "sfcanl.input.nc",
+                "sfcf006_file": "sfcges_mem001",
+                "output_file": "dtfanl.nc",
+            }
+        }
+        logger.info(namelist)
+        with open(os.path.join(self.task_config.DATA, 'tref_calc.nml'), 'w') as nmlfile:
+            f90nml.write(namelist, nmlfile)
+
+        executables_to_copy = []
+        executable_list = ['enkf_chgres_recenter_nc.x', 'calc_increment_ens_ncio.x', 'tref_calc.x']
+        for exec_name in executable_list:
+            executables_to_copy.append([os.path.join(self.task_config.EXECglobal, exec_name),
+                                        os.path.join(self.task_config.DATA, exec_name)])
+        FileHandler({'copy': executables_to_copy}).sync()
+
+        # Stage GDAS atmos/input IC files and apply MERRA2 aerosol climatology
         logger.info("Coldstart: staging GDAS atmos/input files to GCAFS atmos/input")
         n_tiles = 6
-        files_to_copy = []
+        ic_files = []
         for itile in range(1, n_tiles + 1):
-            files_to_copy.append([
+            ic_files.append([
                 os.path.join(self.task_config.COMIN_GDAS_ATMOS_INPUT, f"gfs_data.tile{itile}.nc"),
                 os.path.join(self.task_config.COMOUT_ATMOS_INPUT, f"gfs_data.tile{itile}.nc"),
             ])
-            files_to_copy.append([
+            ic_files.append([
                 os.path.join(self.task_config.COMIN_GDAS_ATMOS_INPUT, f"sfc_data.tile{itile}.nc"),
                 os.path.join(self.task_config.COMOUT_ATMOS_INPUT, f"sfc_data.tile{itile}.nc"),
             ])
-        files_to_copy.append([
+        ic_files.append([
             os.path.join(self.task_config.COMIN_GDAS_ATMOS_INPUT, "gfs_ctrl.nc"),
             os.path.join(self.task_config.COMOUT_ATMOS_INPUT, "gfs_ctrl.nc"),
         ])
-        FileHandler({'copy': files_to_copy}).sync()
-
-        # Apply MERRA2 aerosol climatology to the staged IC files
+        FileHandler({'copy': ic_files}).sync()
         self._apply_merra2_climo_to_inputs()
 
     @logit(logger)
