@@ -27,14 +27,18 @@ if __name__ == '__main__':
     # Initialize and stage the runtime directory
     offline_anl.initialize()
 
-    # Interpolate the Gaussian analysis to the background resolution
-    offline_anl.interpolate_analysis()
+    if config.get('COLDSTART', False):
+        # Regrid analysis to FV3 cube-sphere tiles for a cold start forecast
+        offline_anl.generate_coldstart_ics()
+    else:
+        # Interpolate the Gaussian analysis to the background resolution
+        offline_anl.interpolate_analysis()
 
-    # Compute the increment between the analysis and background
-    offline_anl.calc_increment()
+        # Compute the increment between the analysis and background
+        offline_anl.calc_increment()
 
-    # Compute the tref increment
-    offline_anl.calc_tref_inc()
+        # Compute the tref increment
+        offline_anl.calc_tref_inc()
 
-    # Copy the analysis increment and regridded analysis back to COM
+    # Copy the output files back to COM
     offline_anl.finalize()
