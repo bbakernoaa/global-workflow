@@ -27,25 +27,22 @@ if __name__ == '__main__':
     coldstart = config.get('COLDSTART', False)
 
     if coldstart:
-        # Coldstart: use GDAS history as background instead of GCAFS history,
-        # stage atmos/input IC files with MERRA2 aerosols, then run full DA pipeline
+        # Coldstart: no previous GCAFS forecast exists. Stage GDAS history files,
+        # run chgres_cube to produce IC files, and apply MERRA2 aerosol tracers.
         offline_anl.coldstart_initialize()
+        offline_anl.coldstart_finalize()
     else:
         # Initialize and stage the runtime directory
         offline_anl.initialize()
 
-    # Interpolate the Gaussian analysis to the background resolution
-    offline_anl.interpolate_analysis()
+        # Interpolate the Gaussian analysis to the background resolution
+        offline_anl.interpolate_analysis()
 
-    # Compute the increment between the analysis and background
-    offline_anl.calc_increment()
+        # Compute the increment between the analysis and background
+        offline_anl.calc_increment()
 
-    # Compute the tref increment
-    offline_anl.calc_tref_inc()
+        # Compute the tref increment
+        offline_anl.calc_tref_inc()
 
-    # Copy the analysis increment and regridded analysis back to COM
-    offline_anl.finalize()
-
-    if coldstart:
-        # Run chgres_cube to produce IC files from analysis and apply MERRA2 aerosol tracers
-        offline_anl.coldstart_finalize()
+        # Copy the analysis increment and regridded analysis back to COM
+        offline_anl.finalize()

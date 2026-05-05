@@ -234,13 +234,12 @@ class OfflineAnalysis(Task):
 
     @logit(logger)
     def coldstart_initialize(self) -> None:
-        """Initialize a coldstart offline atmospheric analysis using GDAS files.
+        """Stage GDAS history files for use as chgres_cube inputs in a coldstart.
 
-        In a coldstart there is no previous GCAFS forecast, so this method
-        substitutes the corresponding GDAS history files as the background
-        (atm.f006, sfc.f006), then performs the same namelist generation and
-        executable staging as initialize(). It also stages GDAS atmos/input
-        IC files and applies the MERRA2 aerosol climatology to them.
+        In a coldstart there is no previous GCAFS forecast. This method stages
+        the GDAS atm.f006 and sfc.f006 history files into DATA so that
+        coldstart_finalize() can pass them directly to chgres_cube to produce
+        the GCAFS IC files.
 
         Parameters
         ----------
@@ -250,79 +249,21 @@ class OfflineAnalysis(Task):
         ----------
         None
         """
-        logger.info("Coldstart: staging GDAS history files as background")
+        logger.info("Coldstart: staging GDAS history files as chgres_cube inputs")
         gdas_prefix = f"gdas.t{self.task_config.gcyc:02d}z."
-        files_to_copy = []
-        fcst_file_in = os.path.join(self.task_config.COMIN_GDAS_ATMOS_HISTORY_PREV,
-                                    f"{gdas_prefix}atm.f006.nc")
-        files_to_copy.append([fcst_file_in, os.path.join(self.task_config.DATA, "atmges_mem001")])
-        sfcfcst_file_in = os.path.join(self.task_config.COMIN_GDAS_ATMOS_HISTORY_PREV,
-                                       f"{gdas_prefix}sfc.f006.nc")
-        files_to_copy.append([sfcfcst_file_in, os.path.join(self.task_config.DATA, "sfcges_mem001")])
-        # TODO: Re-stage all of the inputs on HPSS to match EE2-compliant filenames
-        anl_file_in = os.path.join(self.task_config.COMINgfs_ATMOS_ANALYSIS.replace('analysis', ''),
-                                   f"{self.task_config.APREFIX_IN}atmanl.nc")
-        files_to_copy.append([anl_file_in, os.path.join(self.task_config.DATA, "atmanl.input.nc")])
-        sfcanl_file_in = os.path.join(self.task_config.COMINgfs_ATMOS_ANALYSIS.replace('analysis', ''),
-                                      f"{self.task_config.APREFIX_IN}sfcanl.nc")
-        files_to_copy.append([sfcanl_file_in, os.path.join(self.task_config.DATA, "sfcanl.input.nc")])
+        files_to_copy = [
+            [
+                os.path.join(self.task_config.COMIN_GDAS_ATMOS_HISTORY_PREV,
+                             f"{gdas_prefix}atmf006.nc"),
+                os.path.join(self.task_config.DATA, "atm_input.nc"),
+            ],
+            [
+                os.path.join(self.task_config.COMIN_GDAS_ATMOS_HISTORY_PREV,
+                             f"{gdas_prefix}sfcf006.nc"),
+                os.path.join(self.task_config.DATA, "sfc_input.nc"),
+            ],
+        ]
         FileHandler({'copy': files_to_copy}).sync()
-
-        # Namelists and executables are identical to the non-coldstart path
-        logger.info("Generating namelist for 'chgres_nc'")
-        namelist = {
-            'chgres_setup': {
-                "i_output": self.task_config.nlon_interp,
-                "j_output": self.task_config.nlat_interp,
-                "input_file": "atmanl.input.nc",
-                "output_file": "atmanl_mem001",
-                "terrain_file": "atmges_mem001",
-                "ref_file": "atmges_mem001",
-            }
-        }
-        logger.info(namelist)
-        with open(os.path.join(self.task_config.DATA, 'chgres_nc_gauss.nml'), 'w') as nmlfile:
-            f90nml.write(namelist, nmlfile)
-
-        logger.info("Generating namelist for 'calc_increment'")
-        namelist = {
-            "setup": {
-                "datapath": "./",
-                "analysis_filename": "atmanl",
-                "firstguess_filename": "atmges",
-                "increment_filename": "atminc",
-                "debug": False,
-                "nens": 1,
-                "imp_physics": self.task_config.imp_physics
-            },
-            "zeroinc": {
-                "incvars_to_zero": self.task_config.INCREMENTS_TO_ZERO
-            }
-        }
-        logger.info(namelist)
-        with open(os.path.join(self.task_config.DATA, 'calc_increment.nml'), 'w') as nmlfile:
-            f90nml.write(namelist, nmlfile)
-
-        logger.info("Generating namelist for 'tref_calc'")
-        namelist = {
-            "tref_calc_setup": {
-                "i_output": self.task_config.nlon_interp,
-                "j_output": self.task_config.nlat_interp,
-                "sfcanl_file": "sfcanl.input.nc",
-                "sfcf006_file": "sfcges_mem001",
-                "output_file": "dtfanl.nc",
-            }
-        }
-        logger.info(namelist)
-        with open(os.path.join(self.task_config.DATA, 'tref_calc.nml'), 'w') as nmlfile:
-            f90nml.write(namelist, nmlfile)
-
-        executables_to_copy = []
-        executable_list = ['enkf_chgres_recenter_nc.x', 'calc_increment_ens_ncio.x', 'tref_calc.x']
-        for exec_name in executable_list:
-            executables_to_copy.append([os.path.join(self.task_config.EXECglobal, exec_name),
-                                        os.path.join(self.task_config.DATA, exec_name)])
-        FileHandler({'copy': executables_to_copy}).sync()
 
     @logit(logger)
     def coldstart_finalize(self) -> None:
@@ -399,10 +340,10 @@ class OfflineAnalysis(Task):
                 'orog_dir_input_grid': 'NULL',
                 'orog_files_input_grid': 'NULL',
                 'data_dir_input_grid': './',
-                'atm_files_input_grid': './atmanl_mem001',
+                'atm_files_input_grid': './atm_input.nc',
                 'atm_core_files_input_grid': 'NULL',
                 'atm_tracer_files_input_grid': 'NULL',
-                'sfc_files_input_grid': './sfcanl.input.nc',
+                'sfc_files_input_grid': './sfc_input.nc',
                 'nst_files_input_grid': 'NULL',
                 'grib2_file_input_grid': 'NULL',
                 'geogrid_file_input_grid': 'NULL',
