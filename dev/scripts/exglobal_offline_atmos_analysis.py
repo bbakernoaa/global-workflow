@@ -45,3 +45,7 @@ if __name__ == '__main__':
 
     # Copy the analysis increment and regridded analysis back to COM
     offline_anl.finalize()
+
+    if coldstart:
+        # Run chgres_cube to produce IC files from analysis and apply MERRA2 aerosol tracers
+        offline_anl.coldstart_finalize()

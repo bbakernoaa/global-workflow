@@ -324,44 +324,173 @@ class OfflineAnalysis(Task):
                                         os.path.join(self.task_config.DATA, exec_name)])
         FileHandler({'copy': executables_to_copy}).sync()
 
-        # Stage GDAS atmos/input IC files and apply MERRA2 aerosol climatology
-        logger.info("Coldstart: staging GDAS atmos/input files to GCAFS atmos/input")
-        n_tiles = 6
-        ic_files = []
-        for itile in range(1, n_tiles + 1):
-            ic_files.append([
-                os.path.join(self.task_config.COMIN_GDAS_ATMOS_INPUT, f"gfs_data.tile{itile}.nc"),
-                os.path.join(self.task_config.COMOUT_ATMOS_INPUT, f"gfs_data.tile{itile}.nc"),
-            ])
-            ic_files.append([
-                os.path.join(self.task_config.COMIN_GDAS_ATMOS_INPUT, f"sfc_data.tile{itile}.nc"),
-                os.path.join(self.task_config.COMOUT_ATMOS_INPUT, f"sfc_data.tile{itile}.nc"),
-            ])
-        ic_files.append([
-            os.path.join(self.task_config.COMIN_GDAS_ATMOS_INPUT, "gfs_ctrl.nc"),
-            os.path.join(self.task_config.COMOUT_ATMOS_INPUT, "gfs_ctrl.nc"),
-        ])
-        FileHandler({'copy': ic_files}).sync()
-        self._apply_merra2_climo_to_inputs()
-
     @logit(logger)
-    def _apply_merra2_climo_to_inputs(self) -> None:
-        """Apply MERRA2 aerosol climatology to staged gfs_data IC files.
+    def coldstart_finalize(self) -> None:
+        """Run chgres_cube to create IC files from analysis, then apply MERRA2 aerosol climatology.
 
-        After coldstart staging of GDAS atmos/input files, this method performs
-        horizontal and vertical interpolation of MERRA2 aerosol climatology onto
-        the GFS cubed-sphere grid and writes the result into each
-        gfs_data.tile{N}.nc file in COMOUT_ATMOS_INPUT.
-
-        Inspired by https://github.com/noaa-oar-arl/MERRA2_UFS_ICS
-
-        The gfs_data IC files store aerosols in kg/kg (unlike restart files
-        which use µg/kg). ak/bk vertical coordinates are read from the
-        already-staged gfs_ctrl.nc file.
+        This method is the coldstart-only counterpart to finalize(). It:
+        - Stages orography and level fix files required by chgres_cube into DATA
+        - Writes the fort.41 namelist for chgres_cube
+        - Runs chgres_cube to produce gfs_data.tile{N}.nc, sfc_data.tile{N}.nc, gfs_ctrl.nc
+        - Copies chgres outputs to COMOUT_ATMOS_INPUT
+        - Applies MERRA2 aerosol climatology to the gfs_data IC files
 
         Parameters
         ----------
         None
+
+        Returns
+        ----------
+        None
+        """
+        # Stage fix files required by chgres_cube
+        logger.info("Coldstart finalize: staging fix files for chgres_cube")
+        fix_files = []
+        fix_files.append([
+            os.path.join(self.task_config.FIXglobal, 'am',
+                         f"global_hyblev.l{self.task_config.LEVS}.txt"),
+            os.path.join(self.task_config.DATA,
+                         f"global_hyblev.l{self.task_config.LEVS}.txt"),
+        ])
+        fix_files.append([
+            os.path.join(self.task_config.FIXorog, self.task_config.CASE,
+                         f"{self.task_config.CASE}_mosaic.nc"),
+            os.path.join(self.task_config.DATA,
+                         f"{self.task_config.CASE}_mosaic.nc"),
+        ])
+        for itile in range(1, 7):
+            fix_files.append([
+                os.path.join(self.task_config.FIXorog, self.task_config.CASE,
+                             f"{self.task_config.CASE}_grid.tile{itile}.nc"),
+                os.path.join(self.task_config.DATA,
+                             f"{self.task_config.CASE}_grid.tile{itile}.nc"),
+            ])
+            fix_files.append([
+                os.path.join(self.task_config.FIXorog, self.task_config.CASE,
+                             f"{self.task_config.CASE}.mx{self.task_config.OCNRES}_oro_data.tile{itile}.nc"),
+                os.path.join(self.task_config.DATA,
+                             f"{self.task_config.CASE}.mx{self.task_config.OCNRES}_oro_data.tile{itile}.nc"),
+            ])
+            for sfc_type in ['slope_type', 'maximum_snow_albedo', 'snowfree_albedo', 'soil_type',
+                             'vegetation_type', 'substrate_temperature', 'vegetation_greenness', 'facsf']:
+                fix_files.append([
+                    os.path.join(self.task_config.FIXorog, self.task_config.CASE, 'sfc',
+                                 f"{self.task_config.CASE}.mx{self.task_config.OCNRES}.{sfc_type}.tile{itile}.nc"),
+                    os.path.join(self.task_config.DATA,
+                                 f"{self.task_config.CASE}.mx{self.task_config.OCNRES}.{sfc_type}.tile{itile}.nc"),
+                ])
+        FileHandler({'copy': fix_files}).sync()
+
+        # Write fort.41 namelist — chgres_cube reads this from the working directory
+        logger.info("Coldstart finalize: writing fort.41 namelist for chgres_cube")
+        current_cycle = self.task_config.current_cycle
+        oro_files = [
+            f"{self.task_config.CASE}.mx{self.task_config.OCNRES}_oro_data.tile{i}.nc"
+            for i in range(1, 7)
+        ]
+        nml_dict = {
+            'config': {
+                'mosaic_file_target_grid': f"./{self.task_config.CASE}_mosaic.nc",
+                'fix_dir_target_grid': './',
+                'orog_dir_target_grid': './',
+                'orog_files_target_grid': oro_files,
+                'vcoord_file_target_grid': f"./global_hyblev.l{self.task_config.LEVS}.txt",
+                'mosaic_file_input_grid': 'NULL',
+                'orog_dir_input_grid': 'NULL',
+                'orog_files_input_grid': 'NULL',
+                'data_dir_input_grid': './',
+                'atm_files_input_grid': './atmanl_mem001',
+                'atm_core_files_input_grid': 'NULL',
+                'atm_tracer_files_input_grid': 'NULL',
+                'sfc_files_input_grid': './sfcanl.input.nc',
+                'nst_files_input_grid': 'NULL',
+                'grib2_file_input_grid': 'NULL',
+                'geogrid_file_input_grid': 'NULL',
+                'varmap_file': 'NULL',
+                'wam_parm_file': 'NULL',
+                'cycle_year': int(current_cycle.strftime('%Y')),
+                'cycle_mon': int(current_cycle.strftime('%m')),
+                'cycle_day': int(current_cycle.strftime('%d')),
+                'cycle_hour': int(current_cycle.strftime('%H')),
+                'convert_atm': True,
+                'convert_sfc': True,
+                'convert_nst': True,
+                'input_type': 'gaussian_netcdf',
+                'tracers': ['sphum', 'liq_wat', 'o3mr', 'ice_wat', 'rainwat', 'snowwat', 'graupel'],
+                'tracers_input': ['spfh', 'clwmr', 'o3mr', 'icmr', 'rwmr', 'snmr', 'grle'],
+                'regional': 0,
+                'halo_bndy': 0,
+                'halo_blend': 0,
+                'sotyp_from_climo': True,
+                'vgtyp_from_climo': True,
+                'vgfrc_from_climo': True,
+                'minmax_vgfrc_from_climo': True,
+                'tg3_from_soil': False,
+                'lai_from_climo': True,
+                'external_model': 'GFS',
+                'nsoill_out': 4,
+                'thomp_mp_climo_file': 'NULL',
+                'wam_cold_start': False,
+            }
+        }
+        nml = f90nml.namelist.Namelist(nml_dict)
+        nml.write(os.path.join(self.task_config.DATA, 'fort.41'), force=True)
+
+        # chgres_cube reads fort.41 from the working directory
+        logger.info("Coldstart finalize: running chgres_cube")
+        os.chdir(self.task_config.DATA)
+        exe = Executable(self.task_config.APRUN_CHGRES)
+        exe.add_default_arg(os.path.join(self.task_config.EXECglobal, 'chgres_cube'))
+        try:
+            logger.debug(f"Executing {exe}")
+            exe()
+        except OSError:
+            logger.exception(f"Failed to execute {exe}")
+            raise
+        except Exception as err:
+            logger.exception(f"An error occured during execution of {exe}")
+            raise WorkflowException(f"An error occured during execution of {exe}") from err
+
+        # Apply MERRA2 aerosol climatology to the IC files in DATA before copying to COM
+        self._apply_merra2_climo_to_inputs(self.task_config.DATA)
+
+        # Copy chgres outputs (with MERRA2 tracers applied) to COMOUT_ATMOS_INPUT
+        logger.info("Coldstart finalize: copying IC files to COMOUT_ATMOS_INPUT")
+        ic_files = []
+        for itile in range(1, 7):
+            ic_files.append([
+                os.path.join(self.task_config.DATA, f"gfs_data.tile{itile}.nc"),
+                os.path.join(self.task_config.COMOUT_ATMOS_INPUT, f"gfs_data.tile{itile}.nc"),
+            ])
+            ic_files.append([
+                os.path.join(self.task_config.DATA, f"sfc_data.tile{itile}.nc"),
+                os.path.join(self.task_config.COMOUT_ATMOS_INPUT, f"sfc_data.tile{itile}.nc"),
+            ])
+        ic_files.append([
+            os.path.join(self.task_config.DATA, "gfs_ctrl.nc"),
+            os.path.join(self.task_config.COMOUT_ATMOS_INPUT, "gfs_ctrl.nc"),
+        ])
+        FileHandler({'copy': ic_files}).sync()
+
+    @logit(logger)
+    def _apply_merra2_climo_to_inputs(self, input_dir: str) -> None:
+        """Apply MERRA2 aerosol climatology to gfs_data IC files in input_dir.
+
+        Performs horizontal and vertical interpolation of MERRA2 aerosol
+        climatology onto the GFS cubed-sphere grid and writes the result into
+        each gfs_data.tile{N}.nc file found in input_dir.  gfs_ctrl.nc must
+        also be present in input_dir so that ak/bk can be read.
+
+        Inspired by https://github.com/noaa-oar-arl/MERRA2_UFS_ICS
+
+        The gfs_data IC files store aerosols in kg/kg (unlike restart files
+        which use µg/kg). Gas species (so2, dms, msa) are stored as ppm.
+
+        Parameters
+        ----------
+        input_dir : str
+            Directory containing gfs_ctrl.nc and gfs_data.tile{N}.nc files
+            to be updated in-place.
 
         Returns
         ----------
@@ -377,8 +506,8 @@ class OfflineAnalysis(Task):
         merra_file = os.path.join(self.task_config.FIXaer,
                                   f"merra2.aerclim.2014-2023.m{current_month}.nc")
 
-        # ak/bk come from gfs_ctrl.nc which is already staged
-        ctrl_file = os.path.join(self.task_config.COMOUT_ATMOS_INPUT, 'gfs_ctrl.nc')
+        # ak/bk come from gfs_ctrl.nc in the working directory
+        ctrl_file = os.path.join(input_dir, 'gfs_ctrl.nc')
         ds_ctrl = open_dataset(ctrl_file)
         ak = ds_ctrl.vcoord.values[0, :]
         bk = ds_ctrl.vcoord.values[1, :]
@@ -400,7 +529,7 @@ class OfflineAnalysis(Task):
 
         n_tiles = 6
         for itile in range(1, n_tiles + 1):
-            input_file = os.path.join(self.task_config.COMOUT_ATMOS_INPUT, f"gfs_data.tile{itile}.nc")
+            input_file = os.path.join(input_dir, f"gfs_data.tile{itile}.nc")
             oro_file = os.path.join(self.task_config.FIXorog, self.task_config.CASE,
                                     f"{self.task_config.CASE}.mx{self.task_config.OCNRES}_oro_data.tile{itile}.nc")
 

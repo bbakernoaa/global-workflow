@@ -48,8 +48,7 @@ declare -rx COMOUT_ATMOS_ANALYSIS="${ROTDIR}/${RUN}.${PDY}/${cyc}/analysis/atmos
 declare -rx COMOUT_ATMOS_INPUT="${ROTDIR}/${RUN}.${PDY}/${cyc}/model/atmos/input"
 
 declare -rx COMIN_ATMOS_HISTORY_PREV="${ROTDIR}/${RUN}.${gPDY}/${gcyc}/model/atmos/history"
-declare -rx COMIN_GDAS_ATMOS_HISTORY_PREV="${COMINgfs}/gdas.${gPDY}/${gcyc}/atmos/"
-declare -rx COMIN_GDAS_ATMOS_INPUT="${COMINgfs}/gdas.${PDY}/${cyc}/model/atmos/input"
+declare -rx COMIN_GDAS_ATMOS_HISTORY_PREV="${COMINgfs}/gdas.${gPDY}/${gcyc}/model/atmos/history"
 
 mkdir -p "${COMOUT_ATMOS_ANALYSIS}"
 mkdir -p "${COMOUT_ATMOS_INPUT}"
