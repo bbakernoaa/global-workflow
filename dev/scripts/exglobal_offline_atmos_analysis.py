@@ -24,7 +24,7 @@ if __name__ == '__main__':
     # Instantiate the offline analysis task
     offline_anl = OfflineAnalysis(config)
 
-    coldstart = config.get('COLDSTART', False)
+    coldstart = str(config.get('COLDSTART', 'NO')).upper() == 'YES'
 
     if coldstart:
         # Coldstart: no previous GCAFS forecast exists. Stage GDAS history files,
