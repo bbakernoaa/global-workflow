@@ -80,10 +80,10 @@ class OfflineAnalysis(Task):
         logger.info("Copy input files from $COM to $DATA")
         files_to_copy = []
         fcst_file_in = os.path.join(self.task_config.COMIN_ATMOS_HISTORY_PREV,
-                                    f"{self.task_config.GPREFIX}atm.f006.nc")
+                                    f"{self.task_config.GPREFIX}atmf006.nc")
         files_to_copy.append([fcst_file_in, os.path.join(self.task_config.DATA, "atmges_mem001")])
         sfcfcst_file_in = os.path.join(self.task_config.COMIN_ATMOS_HISTORY_PREV,
-                                       f"{self.task_config.GPREFIX}sfc.f006.nc")
+                                       f"{self.task_config.GPREFIX}sfcf006.nc")
         files_to_copy.append([sfcfcst_file_in, os.path.join(self.task_config.DATA, "sfcges_mem001")])
         # TODO: Re-stage all of the inputs on HPSS to match EE2-compliant filenames
         anl_file_in = os.path.join(self.task_config.COMINgfs_ATMOS_ANALYSIS.replace('analysis', ''), f"{self.task_config.APREFIX_IN}atmanl.nc")
