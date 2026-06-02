@@ -1,0 +1,201 @@
+# Workflow_Configuration for SFS (Seasonal Forecast System)
+# Schema: suite, defaults, cycles, families, tasks, inter_cycle_dependencies
+# This configuration defines the SFS long-range seasonal workflow as an ecFlow DAG.
+#
+# SFS (Seasonal Forecast System) produces extended-range seasonal forecasts
+# out to 90 days (2160 hours) using a coupled atmosphere-ocean-wave model.
+#
+# Forecast-only mode:
+#   - Single sfs cycle: stage ICs, run 90-day coupled forecast,
+#     post-process at selected intervals, archive
+#
+# Traces to: SFS design documentation, seasonal prediction §3.1
+
+# Experiment-level context variables (normally provided by setup_expt.py)
+# These are deploy-time variables resolved into config templates.
+HOMEglobal: "/tmp/EXPDIR/sfs_test"
+ACCOUNT: "nems"
+QUEUE: "batch"
+QUEUE_SERVICE: "service"
+QUEUE_EXCLUSIVE: "batch"
+QUEUE_DTN: "service"
+PARTITION_BATCH: "hera"
+PARTITION_SERVICE: "service"
+PARTITION_EXCLUSIVE: ""
+PARTITION_DTN: ""
+RESERVATION: ""
+CLUSTERS: ""
+CLUSTERS_SERVICE: ""
+CLUSTERS_EXCLUSIVE: ""
+CLUSTERS_DTN: ""
+PSLOT: "sfs_seasonal"
+SDATE: "2021120100"
+EDATE: "2022030100"
+idate: "2021120100"
+edate: "2022030100"
+EXP_WARM_START: ".false."
+assim_freq: 6
+APP: "S2SW"
+CASE_CTL: "C96"
+CASE_ENS: ""
+CASE_HIST: ""
+OCNRES: "100"
+LEVS: 128
+NMEM_ENS: 0
+NMEM_ENS_GFS: 0
+NMEM_ENS_GFS_OFFSET: 0
+FHMAX: 2160
+FHMAX_GFS: 2160
+FHMAX_HF_GFS: 0
+FHOUT_GFS: 24
+INTERVAL_GFS: 6
+SDATE_GFS: "2021120100"
+FCST_BREAKPOINTS: ""
+DO_GOES: "NO"
+DO_BUFRSND: "NO"
+DO_GEMPAK: "NO"
+DO_AWIPS: "NO"
+DO_NPOESS: "NO"
+DO_TRACKER: "NO"
+DO_GENESIS: "NO"
+DO_GENESIS_FSU: "NO"
+DO_METP: "NO"
+DO_TEST_MODE: "NO"
+DO_JEDIATMVAR: "NO"
+DO_JEDIATMENS: "NO"
+DO_JEDIOCNVAR: "NO"
+DO_JEDISNOWDA: "NO"
+DO_WAVE: "YES"
+DO_OCN: "YES"
+DO_ICE: "YES"
+DO_ARCHCOM: "YES"
+ARCHCOM_TO: "hpss"
+CLIENT_GLOBUS_UUID: ""
+FETCHDIR: ""
+CHECK_LAND_RESTART_OROG: ".true."
+
+suite:
+  name: "sfs_v1"
+  ecf_home: "{{ EXPDIR }}/ecf"
+  ecf_files: "{{ EXPDIR }}/ecf/scripts"
+  ecf_include: "{{ EXPDIR }}/ecf/include"
+
+defaults:
+  ECF_TRIES: 2
+  ECF_JOB_CMD: "uwtools submit %ECF_JOB% %ECF_JOBOUT%"
+  ACCOUNT: "nems"
+  QUEUE: "batch"
+  PARTITION: "hera"
+
+cycles:
+  - name: "sfs"
+    repeat:
+      type: "date"
+      variable: "YMD"
+      start: "{{ idate }}"
+      end: "{{ edate }}"
+      step: 1
+    time: "00:00"
+
+families:
+  # ══════════════════════════════════════════════════════════════════════
+  # SFS: Seasonal Forecast Cycle
+  # ══════════════════════════════════════════════════════════════════════
+
+  # ──────────────────────────────────────────────────────────────────────
+  # SFS: Stage Initial Conditions
+  # ──────────────────────────────────────────────────────────────────────
+  - path: "sfs/stage"
+    tasks:
+      - name: "stage_ic"
+        trigger: ""
+        jjob: "JSFS_STAGE_IC"
+
+  # ──────────────────────────────────────────────────────────────────────
+  # SFS: Long-Range Coupled Forecast (90 days = 2160 hours)
+  # ──────────────────────────────────────────────────────────────────────
+  - path: "sfs/forecast"
+    tasks:
+      - name: "fcst"
+        trigger: "sfs/stage/stage_ic == complete"
+        jjob: "JSFS_FORECAST"
+        events:
+          - "forecast_hour"
+        meters:
+          - name: "forecast_hour"
+            min: 0
+            max: 2160
+
+  # ──────────────────────────────────────────────────────────────────────
+  # SFS: Post-Processing (UPP at selected daily/weekly intervals)
+  # ──────────────────────────────────────────────────────────────────────
+  - path: "sfs/post"
+    tasks:
+      - name: "upp_f{{ '%04d' % fhr }}"
+        trigger: "sfs/forecast/fcst:forecast_hour ge {{ fhr }}"
+        jjob: "JSFS_ATMOS_UPP"
+        variables:
+          FHOUR: "{{ fhr }}"
+        for_each:
+          fhr: [0, 24, 48, 72, 96, 120, 144, 168, 192, 216, 240, 264, 288, 312, 336, 360, 384, 408, 432, 456, 480, 504, 528, 552, 576, 600, 624, 648, 672, 696, 720, 744, 768, 792, 816, 840, 864, 888, 912, 936, 960, 984, 1008, 1032, 1056, 1080, 1104, 1128, 1152, 1176, 1200, 1224, 1248, 1272, 1296, 1320, 1344, 1368, 1392, 1416, 1440, 1464, 1488, 1512, 1536, 1560, 1584, 1608, 1632, 1656, 1680, 1704, 1728, 1752, 1776, 1800, 1824, 1848, 1872, 1896, 1920, 1944, 1968, 1992, 2016, 2040, 2064, 2088, 2112, 2136, 2160]
+
+  # ──────────────────────────────────────────────────────────────────────
+  # SFS: Products (atmosphere + ocean-ice)
+  # ──────────────────────────────────────────────────────────────────────
+  - path: "sfs/products"
+    tasks:
+      - name: "atmos_prod"
+        trigger: "sfs/post/upp_f2160 == complete"
+        jjob: "JSFS_ATMOS_PRODUCTS"
+
+      - name: "oceanice_prod"
+        trigger: "sfs/forecast/fcst:forecast_hour ge 2160"
+        jjob: "JSFS_OCEANICE_PRODUCTS"
+
+  # ──────────────────────────────────────────────────────────────────────
+  # SFS: Wave Processing
+  # ──────────────────────────────────────────────────────────────────────
+  - path: "sfs/wave"
+    tasks:
+      - name: "wave_init"
+        trigger: "sfs/stage/stage_ic == complete"
+        jjob: "JSFS_WAVE_INIT"
+
+      - name: "wave_prep"
+        trigger: "wave_init == complete"
+        jjob: "JSFS_WAVE_PREP"
+
+      - name: "wave_post_sbs"
+        trigger: "sfs/forecast/fcst:forecast_hour ge 2160"
+        jjob: "JSFS_WAVE_POST_SBS"
+
+      - name: "wave_post_pnt"
+        trigger: "sfs/forecast/fcst:forecast_hour ge 2160"
+        jjob: "JSFS_WAVE_POST_PNT"
+
+  # ──────────────────────────────────────────────────────────────────────
+  # SFS: Archive
+  # ──────────────────────────────────────────────────────────────────────
+  - path: "sfs/archive"
+    tasks:
+      - name: "arch_vrfy"
+        trigger: "sfs/products/atmos_prod == complete and sfs/products/oceanice_prod == complete and sfs/wave/wave_post_sbs == complete"
+        jjob: "JSFS_ARCHIVE_VRFY"
+
+      - name: "arch_tars"
+        trigger: "arch_vrfy == complete"
+        jjob: "JSFS_ARCHIVE_TARS"
+
+  # ──────────────────────────────────────────────────────────────────────
+  # SFS: Cleanup
+  # ──────────────────────────────────────────────────────────────────────
+  - path: "sfs/cleanup"
+    tasks:
+      - name: "cleanup"
+        trigger: "sfs/archive/arch_tars == complete and sfs/wave/wave_post_pnt == complete"
+        jjob: "JSFS_CLEANUP"
+
+inter_cycle_dependencies:
+  - task: "sfs/stage/stage_ic"
+    depends_on: "sfs/cleanup/cleanup == complete"
+    cycle_offset: -1

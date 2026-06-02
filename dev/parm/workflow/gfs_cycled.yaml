@@ -1,11 +1,95 @@
-# Workflow_Configuration for GFS Cycled (GDAS + GFS)
+# Workflow_Configuration for GFS Cycled (GDAS + GFS) with Full DA
 # Schema: suite, defaults, cycles, families, tasks, inter_cycle_dependencies
-# This configuration defines the full cycled GFS/GDAS workflow as an ecFlow DAG.
+# This configuration defines the GFS cycled workflow as an ecFlow DAG.
 #
-# Traces to: Requirement 2.1 (DAG representation), Requirement 10.1 (Parser input)
+# GFS (Global Forecast System) is the primary deterministic global NWP system.
+#
+# Cycled mode:
+#   - GDAS cycle: full atmosphere/ocean/snow data assimilation + short forecast
+#   - GFS cycle: extended 16-day deterministic forecast + post-processing + archiving
+#
+# Traces to: GFS v17 operational documentation, EMC workflow design §4.2
+
+# Experiment-level context variables (normally provided by setup_expt.py)
+# These are deploy-time variables resolved into config templates.
+HOMEglobal: "/tmp/EXPDIR/gfs_cycled_test"
+ACCOUNT: "nems"
+QUEUE: "batch"
+QUEUE_SERVICE: "service"
+QUEUE_EXCLUSIVE: "batch"
+QUEUE_DTN: "service"
+PARTITION_BATCH: "hera"
+PARTITION_SERVICE: "service"
+PARTITION_EXCLUSIVE: ""
+PARTITION_DTN: ""
+RESERVATION: ""
+CLUSTERS: ""
+CLUSTERS_SERVICE: ""
+CLUSTERS_EXCLUSIVE: ""
+CLUSTERS_DTN: ""
+PSLOT: "gfs_cycled"
+SDATE: "2021122012"
+EDATE: "2021123100"
+idate: "2021122012"
+edate: "2021123100"
+EXP_WARM_START: ".false."
+assim_freq: 6
+APP: "S2SWA"
+CASE_CTL: "C384"
+CASE_ENS: "C384"
+CASE_HIST: ""
+OCNRES: "025"
+LEVS: 128
+NMEM_ENS: 80
+NMEM_ENS_GFS: 30
+NMEM_ENS_GFS_OFFSET: 0
+FHMAX: 9
+FHMAX_GFS: 384
+FHMAX_HF_GFS: 120
+FHOUT_HF_GFS: 1
+FHOUT_GFS: 6
+INTERVAL_GFS: 6
+SDATE_GFS: "2021122012"
+FCST_BREAKPOINTS: ""
+FHMAX_ENKF_GFS: 0
+EUPD_CYC: "gdas"
+DO_GOES: "NO"
+DO_BUFRSND: "YES"
+DO_GEMPAK: "YES"
+DO_AWIPS: "YES"
+DO_NPOESS: "YES"
+DO_TRACKER: "YES"
+DO_GENESIS: "YES"
+DO_GENESIS_FSU: "YES"
+DO_METP: "YES"
+DO_TEST_MODE: "NO"
+DO_JEDIATMVAR: "YES"
+DO_JEDIATMENS: "YES"
+DO_JEDIATMENS_SPLIT_OBSSOL: "YES"
+DO_JEDIAEROVAR: "NO"
+DO_JEDIOCNVAR: "YES"
+DO_JEDISNOWDA: "YES"
+DO_MERGENSST: "NO"
+DO_GSISOILDA: "NO"
+DO_LAND_IAU: ".false."
+DOHYBVAR: "YES"
+DOHYBVAR_OCN: "YES"
+DOLETKF_OCN: "NO"
+DOIAU: "YES"
+USE_AERO_ANL: "NO"
+AERO_ANL_RUNS: ""
+USE_IODADIR: "YES"
+DO_ARCHCOM: "YES"
+ARCHCOM_TO: "hpss"
+CLIENT_GLOBUS_UUID: ""
+FETCHDIR: ""
+CHECK_LAND_RESTART_OROG: ".true."
+DO_WAVE: "YES"
+DO_OCN: "YES"
+DO_ICE: "YES"
 
 suite:
-  name: "gfs_v17"
+  name: "gfs_cycled_v1"
   ecf_home: "{{ EXPDIR }}/ecf"
   ecf_files: "{{ EXPDIR }}/ecf/scripts"
   ecf_include: "{{ EXPDIR }}/ecf/include"
@@ -13,9 +97,9 @@ suite:
 defaults:
   ECF_TRIES: 2
   ECF_JOB_CMD: "uwtools submit %ECF_JOB% %ECF_JOBOUT%"
-  ACCOUNT: "{{ ACCOUNT }}"
-  QUEUE: "{{ QUEUE }}"
-  PARTITION: "{{ PARTITION }}"
+  ACCOUNT: "nems"
+  QUEUE: "batch"
+  PARTITION: "hera"
 
 cycles:
   - name: "gdas"
@@ -31,43 +115,193 @@ cycles:
     repeat:
       type: "date"
       variable: "YMD"
-      start: "{{ idate }}"
+      start: "{{ SDATE_GFS }}"
       end: "{{ edate }}"
       step: 1
     time: "00:00 06:00 12:00 18:00"
 
 families:
+  # ══════════════════════════════════════════════════════════════════════
+  # GDAS: Data Assimilation Cycle
+  # ══════════════════════════════════════════════════════════════════════
+
   # ──────────────────────────────────────────────────────────────────────
-  # GDAS Atmosphere Analysis
+  # GDAS: Stage Initial Conditions
+  # ──────────────────────────────────────────────────────────────────────
+  - path: "gdas/stage"
+    tasks:
+      - name: "stage_ic"
+        trigger: ""
+        jjob: "JGDAS_STAGE_IC"
+
+  # ──────────────────────────────────────────────────────────────────────
+  # GDAS: Atmospheric Prep
   # ──────────────────────────────────────────────────────────────────────
   - path: "gdas/atmos/prep"
     tasks:
-      - name: "prep"
-        trigger: ""
-        jjob: "JGLOBAL_ATMOS_PREP"
+      - name: "prep_sfc"
+        trigger: "gdas/stage/stage_ic == complete"
+        jjob: "JGDAS_ATMOS_PREP_SFC"
 
+      - name: "tropcy_qc_reloc"
+        trigger: "gdas/stage/stage_ic == complete"
+        jjob: "JGDAS_ATMOS_TROPCY_QC_RELOC"
+
+  # ──────────────────────────────────────────────────────────────────────
+  # GDAS: Atmospheric Analysis (JEDI variational)
+  # ──────────────────────────────────────────────────────────────────────
   - path: "gdas/atmos/analysis"
     tasks:
-      - name: "anal"
-        trigger: "gdas/atmos/prep/prep == complete"
-        jjob: "JGDAS_ATMOS_ANALYSIS"
+      - name: "atm_anl_init"
+        trigger: "gdas/atmos/prep/prep_sfc == complete and gdas/atmos/prep/tropcy_qc_reloc == complete"
+        jjob: "JGDAS_ATM_ANALYSIS_INITIALIZE"
 
-      - name: "analcalc"
-        trigger: "anal == complete"
+      - name: "atm_anl_var"
+        trigger: "atm_anl_init == complete"
+        jjob: "JGDAS_ATM_ANALYSIS_VARIATIONAL"
+
+      - name: "atm_anl_fv3_inc"
+        trigger: "atm_anl_var == complete"
+        jjob: "JGDAS_ATM_ANALYSIS_FV3_INCREMENT"
+
+      - name: "atm_anl_final"
+        trigger: "atm_anl_fv3_inc == complete"
+        jjob: "JGDAS_ATM_ANALYSIS_FINALIZE"
+
+      - name: "anl_calc"
+        trigger: "atm_anl_final == complete"
         jjob: "JGDAS_ATMOS_ANALYSIS_CALC"
 
-      - name: "analdiag"
-        trigger: "anal == complete"
+      - name: "anl_diag"
+        trigger: "atm_anl_final == complete"
         jjob: "JGDAS_ATMOS_ANALYSIS_DIAG"
 
+      - name: "anl_stats"
+        trigger: "anl_diag == complete"
+        jjob: "JGDAS_ANALYSIS_STATS"
+
   # ──────────────────────────────────────────────────────────────────────
-  # GDAS Atmosphere Forecast
+  # GDAS: Surface Analysis
   # ──────────────────────────────────────────────────────────────────────
-  - path: "gdas/atmos/forecast"
+  - path: "gdas/atmos/sfcanl"
+    tasks:
+      - name: "sfcanl_gcycle"
+        trigger: "gdas/atmos/analysis/atm_anl_final == complete"
+        jjob: "JGDAS_ATMOS_SFCANL_GCYCLE"
+
+      - name: "sfcanl_regrid"
+        trigger: "sfcanl_gcycle == complete"
+        jjob: "JGDAS_ATMOS_SFCANL_REGRID"
+
+  # ──────────────────────────────────────────────────────────────────────
+  # GDAS: Snow Analysis
+  # ──────────────────────────────────────────────────────────────────────
+  - path: "gdas/snow"
+    tasks:
+      - name: "snow_analysis"
+        trigger: "gdas/atmos/sfcanl/sfcanl_regrid == complete"
+        jjob: "JGDAS_SNOW_ANALYSIS"
+
+  # ──────────────────────────────────────────────────────────────────────
+  # GDAS: Marine Analysis
+  # ──────────────────────────────────────────────────────────────────────
+  - path: "gdas/marine/analysis"
+    tasks:
+      - name: "prep_ocean_obs"
+        trigger: "gdas/stage/stage_ic == complete"
+        jjob: "JGDAS_PREP_OCEAN_OBS"
+
+      - name: "marine_anl_init"
+        trigger: "prep_ocean_obs == complete and gdas/atmos/analysis/atm_anl_final == complete"
+        jjob: "JGDAS_MARINE_ANALYSIS_INITIALIZE"
+
+      - name: "marine_anl_var"
+        trigger: "marine_anl_init == complete"
+        jjob: "JGDAS_MARINE_ANALYSIS_VARIATIONAL"
+
+      - name: "marine_anl_final"
+        trigger: "marine_anl_var == complete"
+        jjob: "JGDAS_MARINE_ANALYSIS_FINALIZE"
+
+      - name: "marine_anl_checkpoint"
+        trigger: "marine_anl_final == complete"
+        jjob: "JGDAS_MARINE_ANALYSIS_CHECKPOINT"
+
+  # ──────────────────────────────────────────────────────────────────────
+  # GDAS: Marine Background Error Matrix
+  # ──────────────────────────────────────────────────────────────────────
+  - path: "gdas/marine/bmat"
+    tasks:
+      - name: "marine_bmat_init"
+        trigger: "gdas/marine/analysis/marine_anl_final == complete"
+        jjob: "JGDAS_MARINE_BMAT_INITIALIZE"
+
+      - name: "marine_bmat"
+        trigger: "marine_bmat_init == complete"
+        jjob: "JGDAS_MARINE_BMAT"
+
+  # ──────────────────────────────────────────────────────────────────────
+  # GDAS: Ensemble Kalman Filter (EnKF)
+  # ──────────────────────────────────────────────────────────────────────
+  - path: "gdas/enkf"
+    tasks:
+      - name: "enkf_select_obs"
+        trigger: "gdas/atmos/analysis/atm_anl_final == complete"
+        jjob: "JGDAS_ENKF_SELECT_OBS"
+
+      - name: "enkf_update"
+        trigger: "enkf_select_obs == complete"
+        jjob: "JGDAS_ENKF_UPDATE"
+
+      - name: "enkf_diag"
+        trigger: "enkf_update == complete"
+        jjob: "JGDAS_ENKF_DIAG"
+
+      - name: "enkf_ecen"
+        trigger: "enkf_update == complete"
+        jjob: "JGDAS_ENKF_ECEN"
+
+      - name: "enkf_sfc_gcycle"
+        trigger: "enkf_ecen == complete"
+        jjob: "JGDAS_ENKF_SFC_GCYCLE"
+
+      - name: "enkf_sfc_regrid"
+        trigger: "enkf_sfc_gcycle == complete"
+        jjob: "JGDAS_ENKF_SFC_REGRID"
+
+  # ──────────────────────────────────────────────────────────────────────
+  # GDAS: Ensemble Atmospheric Analysis (JEDI LETKF split obs/sol)
+  # ──────────────────────────────────────────────────────────────────────
+  - path: "gdas/atmens/analysis"
+    tasks:
+      - name: "atmens_anl_init"
+        trigger: "gdas/enkf/enkf_ecen == complete"
+        jjob: "JGDAS_ATMENS_ANALYSIS_INITIALIZE"
+
+      - name: "atmens_anl_obs"
+        trigger: "atmens_anl_init == complete"
+        jjob: "JGDAS_ATMENS_ANALYSIS_OBS"
+
+      - name: "atmens_anl_sol"
+        trigger: "atmens_anl_obs == complete"
+        jjob: "JGDAS_ATMENS_ANALYSIS_SOL"
+
+      - name: "atmens_anl_final"
+        trigger: "atmens_anl_sol == complete"
+        jjob: "JGDAS_ATMENS_ANALYSIS_FINALIZE"
+
+      - name: "atmens_anl_fv3_inc"
+        trigger: "atmens_anl_final == complete"
+        jjob: "JGDAS_ATMENS_ANALYSIS_FV3_INCREMENT"
+
+  # ──────────────────────────────────────────────────────────────────────
+  # GDAS: Short Forecast (to provide background for next cycle)
+  # ──────────────────────────────────────────────────────────────────────
+  - path: "gdas/forecast"
     tasks:
       - name: "fcst"
-        trigger: "gdas/atmos/analysis/analcalc == complete"
-        jjob: "JGLOBAL_FORECAST"
+        trigger: "gdas/snow/snow_analysis == complete and gdas/marine/analysis/marine_anl_checkpoint == complete and gdas/atmens/analysis/atmens_anl_fv3_inc == complete"
+        jjob: "JGDAS_FORECAST"
         events:
           - "forecast_hour"
         meters:
@@ -76,92 +310,128 @@ families:
             max: 9
 
   # ──────────────────────────────────────────────────────────────────────
-  # GDAS Atmosphere Post-Processing
+  # GDAS: Post-Processing (UPP for short forecast hours)
   # ──────────────────────────────────────────────────────────────────────
-  - path: "gdas/atmos/post"
+  - path: "gdas/post"
     tasks:
-      - name: "post_f{{ '%03d' % fhr }}"
-        trigger: "gdas/atmos/forecast/fcst:forecast_hour ge {{ fhr }}"
-        jjob: "JGLOBAL_ATMOS_POST"
+      - name: "upp_f{{ '%03d' % fhr }}"
+        trigger: "gdas/forecast/fcst:forecast_hour ge {{ fhr }}"
+        jjob: "JGDAS_ATMOS_UPP"
         variables:
           FHOUR: "{{ fhr }}"
         for_each:
-          fhr: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+          fhr: [0, 3, 6, 9]
 
   # ──────────────────────────────────────────────────────────────────────
-  # GDAS Atmosphere Verification
+  # GDAS: Products
   # ──────────────────────────────────────────────────────────────────────
-  - path: "gdas/atmos/verification"
+  - path: "gdas/products"
+    tasks:
+      - name: "atmos_prod"
+        trigger: "gdas/post/upp_f009 == complete"
+        jjob: "JGDAS_ATMOS_PRODUCTS"
+
+      - name: "oceanice_prod"
+        trigger: "gdas/forecast/fcst:forecast_hour ge 9"
+        jjob: "JGDAS_OCEANICE_PRODUCTS"
+
+  # ──────────────────────────────────────────────────────────────────────
+  # GDAS: Verification and Monitoring
+  # ──────────────────────────────────────────────────────────────────────
+  - path: "gdas/verification"
     tasks:
       - name: "verfrad"
-        trigger: "gdas/atmos/post/post_f009 == complete"
+        trigger: "gdas/atmos/analysis/anl_diag == complete"
         jjob: "JGDAS_ATMOS_VERFRAD"
 
       - name: "verfozn"
-        trigger: "gdas/atmos/post/post_f009 == complete"
+        trigger: "gdas/atmos/analysis/anl_diag == complete"
         jjob: "JGDAS_ATMOS_VERFOZN"
 
       - name: "fit2obs"
-        trigger: "gdas/atmos/post/post_f009 == complete"
+        trigger: "gdas/products/atmos_prod == complete"
         jjob: "JGDAS_FIT2OBS"
 
+      - name: "vminmon"
+        trigger: "gdas/atmos/analysis/atm_anl_final == complete"
+        jjob: "JGDAS_ATMOS_VMINMON"
+
   # ──────────────────────────────────────────────────────────────────────
-  # GDAS Archive
+  # GDAS: Downstream Processing
   # ──────────────────────────────────────────────────────────────────────
-  - path: "gdas/atmos/archive"
+  - path: "gdas/downstream"
     tasks:
-      - name: "arch"
-        trigger: "gdas/atmos/verification/verfrad == complete and gdas/atmos/verification/verfozn == complete"
-        jjob: "JGLOBAL_ARCHIVE"
+      - name: "gempak"
+        trigger: "gdas/products/atmos_prod == complete"
+        jjob: "JGDAS_ATMOS_GEMPAK"
 
-  # ──────────────────────────────────────────────────────────────────────
-  # GDAS EnKF
-  # ──────────────────────────────────────────────────────────────────────
-  - path: "gdas/enkf/analysis"
-    tasks:
-      - name: "eobs"
-        trigger: "gdas/atmos/analysis/anal == complete"
-        jjob: "JGDAS_ENKF_OBS"
+      - name: "gempak_meta_ncdc"
+        trigger: "gempak == complete"
+        jjob: "JGDAS_ATMOS_GEMPAK_META_NCDC"
 
-      - name: "eupd"
-        trigger: "eobs == complete"
-        jjob: "JGDAS_ENKF_UPDATE"
+      - name: "chgres_forenkf"
+        trigger: "gdas/forecast/fcst:forecast_hour ge 9"
+        jjob: "JGDAS_ATMOS_CHGRES_FORENKF"
 
-  - path: "gdas/enkf/forecast"
-    tasks:
-      - name: "ecen"
-        trigger: "gdas/enkf/analysis/eupd == complete and gdas/atmos/analysis/analcalc == complete"
-        jjob: "JGDAS_ENKF_ECEN"
-
-      - name: "efcs"
-        trigger: "ecen == complete"
-        jjob: "JGDAS_ENKF_FCST"
-
-      - name: "epos"
-        trigger: "efcs == complete"
+      - name: "enkf_post"
+        trigger: "gdas/enkf/enkf_sfc_regrid == complete"
         jjob: "JGDAS_ENKF_POST"
 
+      - name: "atmos_ensstat"
+        trigger: "gdas/enkf/enkf_update == complete"
+        jjob: "JGDAS_ATMOS_ENSSTAT"
+
   # ──────────────────────────────────────────────────────────────────────
-  # GFS Atmosphere Analysis
+  # GDAS: Archive
   # ──────────────────────────────────────────────────────────────────────
-  - path: "gfs/atmos/analysis"
+  - path: "gdas/archive"
     tasks:
-      - name: "anal"
-        trigger: "gdas/atmos/analysis/analcalc == complete"
-        jjob: "JGFS_ATMOS_ANALYSIS"
+      - name: "arch_vrfy"
+        trigger: "gdas/products/atmos_prod == complete and gdas/verification/verfrad == complete and gdas/verification/verfozn == complete"
+        jjob: "JGDAS_ARCHIVE_VRFY"
 
-      - name: "analcalc"
-        trigger: "anal == complete"
-        jjob: "JGFS_ATMOS_ANALYSIS_CALC"
+      - name: "arch_tars"
+        trigger: "arch_vrfy == complete"
+        jjob: "JGDAS_ARCHIVE_TARS"
+
+      - name: "enkf_arch_vrfy"
+        trigger: "gdas/downstream/enkf_post == complete"
+        jjob: "JGDAS_ENKF_ARCHIVE_VRFY"
+
+      - name: "enkf_arch_tars"
+        trigger: "enkf_arch_vrfy == complete"
+        jjob: "JGDAS_ENKF_ARCHIVE_TARS"
 
   # ──────────────────────────────────────────────────────────────────────
-  # GFS Atmosphere Forecast
+  # GDAS: Cleanup
   # ──────────────────────────────────────────────────────────────────────
-  - path: "gfs/atmos/forecast"
+  - path: "gdas/cleanup"
+    tasks:
+      - name: "cleanup"
+        trigger: "gdas/archive/arch_tars == complete and gdas/archive/enkf_arch_tars == complete"
+        jjob: "JGDAS_CLEANUP"
+
+  # ══════════════════════════════════════════════════════════════════════
+  # GFS: Extended Deterministic Forecast Cycle
+  # ══════════════════════════════════════════════════════════════════════
+
+  # ──────────────────────────────────────────────────────────────────────
+  # GFS: Stage Initial Conditions
+  # ──────────────────────────────────────────────────────────────────────
+  - path: "gfs/stage"
+    tasks:
+      - name: "stage_ic"
+        trigger: "gdas/atmos/analysis/atm_anl_final == complete"
+        jjob: "JGFS_STAGE_IC"
+
+  # ──────────────────────────────────────────────────────────────────────
+  # GFS: Extended Forecast (16-day)
+  # ──────────────────────────────────────────────────────────────────────
+  - path: "gfs/forecast"
     tasks:
       - name: "fcst"
-        trigger: "gfs/atmos/analysis/analcalc == complete"
-        jjob: "JGLOBAL_FORECAST"
+        trigger: "gfs/stage/stage_ic == complete"
+        jjob: "JGFS_FORECAST"
         events:
           - "forecast_hour"
         meters:
@@ -170,107 +440,152 @@ families:
             max: 384
 
   # ──────────────────────────────────────────────────────────────────────
-  # GFS Atmosphere Post-Processing
+  # GFS: Post-Processing (UPP for extended forecast)
   # ──────────────────────────────────────────────────────────────────────
-  - path: "gfs/atmos/post"
+  - path: "gfs/post"
     tasks:
-      - name: "post_f{{ '%03d' % fhr }}"
-        trigger: "gfs/atmos/forecast/fcst:forecast_hour ge {{ fhr }}"
-        jjob: "JGFS_ATMOS_POST"
+      - name: "upp_f{{ '%03d' % fhr }}"
+        trigger: "gfs/forecast/fcst:forecast_hour ge {{ fhr }}"
+        jjob: "JGFS_ATMOS_UPP"
         variables:
           FHOUR: "{{ fhr }}"
         for_each:
-          fhr: [0, 6, 12, 24, 48, 72, 120, 180, 240, 384]
+          fhr: [0, 6, 12, 18, 24, 30, 36, 42, 48, 54, 60, 66, 72, 78, 84, 90, 96, 102, 108, 114, 120, 126, 132, 138, 144, 150, 156, 162, 168, 174, 180, 186, 192, 198, 204, 210, 216, 222, 228, 234, 240, 246, 252, 258, 264, 270, 276, 282, 288, 294, 300, 306, 312, 318, 324, 330, 336, 342, 348, 354, 360, 366, 372, 378, 384]
 
   # ──────────────────────────────────────────────────────────────────────
-  # GFS Atmosphere Products
+  # GFS: Products
   # ──────────────────────────────────────────────────────────────────────
-  - path: "gfs/atmos/products"
+  - path: "gfs/products"
     tasks:
-      - name: "awips"
-        trigger: "gfs/atmos/post/post_f240 == complete"
-        jjob: "JGFS_ATMOS_AWIPS_20KM_1P0DEG"
+      - name: "atmos_prod"
+        trigger: "gfs/post/upp_f384 == complete"
+        jjob: "JGFS_ATMOS_PRODUCTS"
 
-      - name: "gempak"
-        trigger: "gfs/atmos/post/post_f384 == complete"
-        jjob: "JGFS_ATMOS_GEMPAK"
-
-      - name: "postsnd"
-        trigger: "gfs/atmos/post/post_f384 == complete"
-        jjob: "JGFS_ATMOS_POSTSND"
-
-      - name: "npoess"
-        trigger: "gfs/atmos/post/post_f384 == complete"
-        jjob: "JGFS_ATMOS_PGRB2_SPEC_NPOESS"
-
-      - name: "fbwind"
-        trigger: "gfs/atmos/post/post_f024 == complete"
-        jjob: "JGFS_ATMOS_FBWIND"
+      - name: "oceanice_prod"
+        trigger: "gfs/forecast/fcst:forecast_hour ge 384"
+        jjob: "JGFS_OCEANICE_PRODUCTS"
 
   # ──────────────────────────────────────────────────────────────────────
-  # GFS Atmosphere Verification & Tracking
-  # ──────────────────────────────────────────────────────────────────────
-  - path: "gfs/atmos/verification"
-    tasks:
-      - name: "tracker"
-        trigger: "gfs/atmos/post/post_f384 == complete"
-        jjob: "JGFS_ATMOS_CYCLONE_TRACKER"
-
-      - name: "genesis"
-        trigger: "gfs/atmos/post/post_f384 == complete"
-        jjob: "JGFS_ATMOS_CYCLONE_GENESIS"
-
-      - name: "genesis_fsu"
-        trigger: "gfs/atmos/post/post_f384 == complete"
-        jjob: "JGFS_ATMOS_FSU_GENESIS"
-
-      - name: "metp"
-        trigger: "gfs/atmos/post/post_f384 == complete"
-        jjob: "JGFS_ATMOS_VERIFICATION"
-
-  # ──────────────────────────────────────────────────────────────────────
-  # GFS Archive
-  # ──────────────────────────────────────────────────────────────────────
-  - path: "gfs/atmos/archive"
-    tasks:
-      - name: "arch"
-        trigger: "gfs/atmos/products/gempak == complete and gfs/atmos/verification/tracker == complete"
-        jjob: "JGLOBAL_ARCHIVE"
-
-  # ──────────────────────────────────────────────────────────────────────
-  # GFS Wave (coupled)
+  # GFS: Wave Processing
   # ──────────────────────────────────────────────────────────────────────
   - path: "gfs/wave"
     tasks:
-      - name: "init"
-        trigger: "gfs/atmos/analysis/analcalc == complete"
-        jjob: "JGLOBAL_WAVE_INIT"
+      - name: "wave_init"
+        trigger: "gfs/stage/stage_ic == complete"
+        jjob: "JGFS_WAVE_INIT"
 
-      - name: "prep"
-        trigger: "init == complete"
-        jjob: "JGLOBAL_WAVE_PREP"
+      - name: "wave_prep"
+        trigger: "wave_init == complete"
+        jjob: "JGFS_WAVE_PREP"
 
-      - name: "postsbs"
-        trigger: "gfs/atmos/forecast/fcst == complete"
-        jjob: "JGFS_WAVE_POSTSBS"
+      - name: "wave_post_sbs"
+        trigger: "gfs/forecast/fcst:forecast_hour ge 384"
+        jjob: "JGFS_WAVE_POST_SBS"
 
-      - name: "postpnt"
-        trigger: "gfs/atmos/forecast/fcst == complete"
-        jjob: "JGFS_WAVE_POSTPNT"
+      - name: "wave_post_pnt"
+        trigger: "gfs/forecast/fcst:forecast_hour ge 384"
+        jjob: "JGFS_WAVE_POST_PNT"
 
-      - name: "awipsbulls"
-        trigger: "postpnt == complete"
-        jjob: "JGFS_WAVE_AWIPSBULLS"
+      - name: "wave_post_bndpnt"
+        trigger: "wave_post_pnt == complete"
+        jjob: "JGFS_WAVE_POST_BNDPNT"
 
-      - name: "awipsgridded"
-        trigger: "postsbs == complete"
-        jjob: "JGFS_WAVE_AWIPSGRIDDED"
+      - name: "wave_prdgen_gridded"
+        trigger: "wave_post_sbs == complete"
+        jjob: "JGFS_WAVE_PRDGEN_GRIDDED"
 
-      - name: "gempak"
-        trigger: "postsbs == complete"
+      - name: "wave_prdgen_bulls"
+        trigger: "wave_post_pnt == complete"
+        jjob: "JGFS_WAVE_PRDGEN_BULLS"
+
+      - name: "wave_gempak"
+        trigger: "wave_prdgen_gridded == complete"
         jjob: "JGFS_WAVE_GEMPAK"
 
+  # ──────────────────────────────────────────────────────────────────────
+  # GFS: Downstream Processing
+  # ──────────────────────────────────────────────────────────────────────
+  - path: "gfs/downstream"
+    tasks:
+      - name: "postsnd"
+        trigger: "gfs/post/upp_f384 == complete"
+        jjob: "JGFS_ATMOS_POSTSND"
+
+      - name: "cyclone_tracker"
+        trigger: "gfs/post/upp_f384 == complete"
+        jjob: "JGFS_ATMOS_CYCLONE_TRACKER"
+
+      - name: "cyclone_genesis"
+        trigger: "gfs/post/upp_f384 == complete"
+        jjob: "JGFS_ATMOS_CYCLONE_GENESIS"
+
+      - name: "fsu_genesis"
+        trigger: "gfs/post/upp_f384 == complete"
+        jjob: "JGFS_ATMOS_FSU_GENESIS"
+
+      - name: "fbwind"
+        trigger: "gfs/post/upp_f384 == complete"
+        jjob: "JGFS_ATMOS_FBWIND"
+
+      - name: "gempak"
+        trigger: "gfs/products/atmos_prod == complete"
+        jjob: "JGFS_ATMOS_GEMPAK"
+
+      - name: "gempak_meta"
+        trigger: "gempak == complete"
+        jjob: "JGFS_ATMOS_GEMPAK_META"
+
+      - name: "gempak_pgrb2_spec"
+        trigger: "gfs/products/atmos_prod == complete"
+        jjob: "JGFS_ATMOS_GEMPAK_PGRB2_SPEC"
+
+      - name: "gempak_ncdc_upapgif"
+        trigger: "gempak == complete"
+        jjob: "JGFS_ATMOS_GEMPAK_NCDC_UPAPGIF"
+
+      - name: "awips"
+        trigger: "gfs/products/atmos_prod == complete"
+        jjob: "JGFS_ATMOS_AWIPS_20KM_1P0DEG"
+
+      - name: "pgrb2_spec_npoess"
+        trigger: "gfs/products/atmos_prod == complete"
+        jjob: "JGFS_ATMOS_PGRB2_SPEC_NPOESS"
+
+      - name: "verification"
+        trigger: "gfs/products/atmos_prod == complete"
+        jjob: "JGFS_ATMOS_VERIFICATION"
+
+      - name: "extractvars"
+        trigger: "gfs/products/atmos_prod == complete"
+        jjob: "JGFS_EXTRACTVARS"
+
+  # ──────────────────────────────────────────────────────────────────────
+  # GFS: Archive
+  # ──────────────────────────────────────────────────────────────────────
+  - path: "gfs/archive"
+    tasks:
+      - name: "arch_vrfy"
+        trigger: "gfs/products/atmos_prod == complete and gfs/downstream/verification == complete"
+        jjob: "JGFS_ARCHIVE_VRFY"
+
+      - name: "arch_tars"
+        trigger: "arch_vrfy == complete"
+        jjob: "JGFS_ARCHIVE_TARS"
+
+      - name: "globus_arch"
+        trigger: "arch_tars == complete"
+        jjob: "JGFS_GLOBUS_ARCH"
+
+  # ──────────────────────────────────────────────────────────────────────
+  # GFS: Cleanup
+  # ──────────────────────────────────────────────────────────────────────
+  - path: "gfs/cleanup"
+    tasks:
+      - name: "cleanup"
+        trigger: "gfs/archive/arch_tars == complete and gfs/wave/wave_gempak == complete"
+        jjob: "JGFS_CLEANUP"
+
 inter_cycle_dependencies:
-  - task: "gdas/atmos/prep/prep"
-    depends_on: "gdas/atmos/archive/arch == complete"
+  - task: "gdas/stage/stage_ic"
+    depends_on: "gdas/cleanup/cleanup == complete"
     cycle_offset: -1

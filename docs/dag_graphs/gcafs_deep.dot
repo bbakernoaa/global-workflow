@@ -1,0 +1,177 @@
+digraph "gcafs_v1_deep" {
+    rankdir=LR;
+    compound=true;
+    node [fontsize=9];
+
+    subgraph cluster_tasks_gcafs {
+        label="GCAFS Tasks";
+        style=filled; color="#e8f4fd";
+        node [shape=box, style=filled, fillcolor=white];
+        "gcafs/archive/arch_tars" [label="archive/arch_tars"];
+        "gcafs/archive/arch_vrfy" [label="archive/arch_vrfy"];
+        "gcafs/chem/prep/prep_emissions" [label="prep/prep_emissions"];
+        "gcafs/cleanup/cleanup" [label="cleanup/cleanup"];
+        "gcafs/forecast/fcst" [label="forecast/fcst"];
+        "gcafs/post/upp_f000" [label="post/upp_f000"];
+        "gcafs/post/upp_f006" [label="post/upp_f006"];
+        "gcafs/post/upp_f012" [label="post/upp_f012"];
+        "gcafs/post/upp_f024" [label="post/upp_f024"];
+        "gcafs/post/upp_f048" [label="post/upp_f048"];
+        "gcafs/post/upp_f072" [label="post/upp_f072"];
+        "gcafs/post/upp_f096" [label="post/upp_f096"];
+        "gcafs/post/upp_f120" [label="post/upp_f120"];
+        "gcafs/products/atmos_prod" [label="products/atmos_prod"];
+        "gcafs/stage/stage_ic" [label="stage/stage_ic"];
+    }
+    subgraph cluster_tasks_gcdas {
+        label="GCDAS Tasks";
+        style=filled; color="#e8f4fd";
+        node [shape=box, style=filled, fillcolor=white];
+        "gcdas/archive/arch_tars" [label="archive/arch_tars"];
+        "gcdas/archive/arch_vrfy" [label="archive/arch_vrfy"];
+        "gcdas/chem/analysis/aero_anl_final" [label="analysis/aero_anl_final"];
+        "gcdas/chem/analysis/aero_anl_genb" [label="analysis/aero_anl_genb"];
+        "gcdas/chem/analysis/aero_anl_init" [label="analysis/aero_anl_init"];
+        "gcdas/chem/analysis/aero_anl_var" [label="analysis/aero_anl_var"];
+        "gcdas/chem/prep/prep_emissions" [label="prep/prep_emissions"];
+        "gcdas/cleanup/cleanup" [label="cleanup/cleanup"];
+        "gcdas/fetch/fetch" [label="fetch/fetch"];
+        "gcdas/forecast/fcst" [label="forecast/fcst"];
+        "gcdas/post/upp_f000" [label="post/upp_f000"];
+        "gcdas/post/upp_f003" [label="post/upp_f003"];
+        "gcdas/post/upp_f006" [label="post/upp_f006"];
+        "gcdas/post/upp_f009" [label="post/upp_f009"];
+        "gcdas/products/atmos_prod" [label="products/atmos_prod"];
+        "gcdas/stage/stage_ic" [label="stage/stage_ic"];
+    }
+    subgraph cluster_jjobs {
+        label="J-Jobs (dev/jobs/)";
+        style=filled; color="#fde8e8";
+        node [shape=box, style="filled,bold", fillcolor="#fff0f0"];
+        "jjob:JGDAS_AERO_ANALYSIS_GENERATE_BMATRIX" [label="JGDAS_AERO_ANALYSIS_GENERATE_BMATRIX"];
+        "jjob:JGLOBAL_AERO_ANALYSIS_FINALIZE" [label="JGLOBAL_AERO_ANALYSIS_FINALIZE"];
+        "jjob:JGLOBAL_AERO_ANALYSIS_INITIALIZE" [label="JGLOBAL_AERO_ANALYSIS_INITIALIZE"];
+        "jjob:JGLOBAL_AERO_ANALYSIS_VARIATIONAL" [label="JGLOBAL_AERO_ANALYSIS_VARIATIONAL"];
+        "jjob:JGLOBAL_ARCHIVE_TARS" [label="JGLOBAL_ARCHIVE_TARS"];
+        "jjob:JGLOBAL_ARCHIVE_VRFY" [label="JGLOBAL_ARCHIVE_VRFY"];
+        "jjob:JGLOBAL_ATMOS_PRODUCTS" [label="JGLOBAL_ATMOS_PRODUCTS"];
+        "jjob:JGLOBAL_ATMOS_UPP" [label="JGLOBAL_ATMOS_UPP"];
+        "jjob:JGLOBAL_CLEANUP" [label="JGLOBAL_CLEANUP"];
+        "jjob:JGLOBAL_FETCH" [label="JGLOBAL_FETCH"];
+        "jjob:JGLOBAL_FORECAST" [label="JGLOBAL_FORECAST"];
+        "jjob:JGLOBAL_PREP_EMISSIONS" [label="JGLOBAL_PREP_EMISSIONS"];
+        "jjob:JGLOBAL_STAGE_IC" [label="JGLOBAL_STAGE_IC"];
+    }
+    subgraph cluster_scripts {
+        label="Ex-Scripts (dev/scripts/)";
+        style=filled; color="#e8fde8";
+        node [shape=ellipse, style=filled, fillcolor="#f0fff0"];
+        "ex:exgdas_aero_analysis_generate_bmatrix.py" [label="exgdas_aero_analysis_generate_bmatrix.py"];
+        "ex:exglobal_aero_analysis_finalize.py" [label="exglobal_aero_analysis_finalize.py"];
+        "ex:exglobal_aero_analysis_initialize.py" [label="exglobal_aero_analysis_initialize.py"];
+        "ex:exglobal_aero_analysis_variational.py" [label="exglobal_aero_analysis_variational.py"];
+        "ex:exglobal_archive_tars.py" [label="exglobal_archive_tars.py"];
+        "ex:exglobal_archive_vrfy.py" [label="exglobal_archive_vrfy.py"];
+        "ex:exglobal_atmos_products.sh" [label="exglobal_atmos_products.sh"];
+        "ex:exglobal_atmos_upp.py" [label="exglobal_atmos_upp.py"];
+        "ex:exglobal_cleanup.sh" [label="exglobal_cleanup.sh"];
+        "ex:exglobal_fetch.py" [label="exglobal_fetch.py"];
+        "ex:exglobal_forecast.sh" [label="exglobal_forecast.sh"];
+        "ex:exglobal_prep_emissions.py" [label="exglobal_prep_emissions.py"];
+        "ex:exglobal_stage_ic.py" [label="exglobal_stage_ic.py"];
+    }
+    subgraph cluster_ush {
+        label="Ush Scripts (dev/ush/)";
+        style=filled; color="#fdf8e8";
+        node [shape=parallelogram, style=filled, fillcolor="#fffff0"];
+        "ush:forecast_det.sh" [label="forecast_det.sh"];
+        "ush:forecast_postdet.sh" [label="forecast_postdet.sh"];
+        "ush:forecast_predet.sh" [label="forecast_predet.sh"];
+        "ush:set_strict.sh" [label="set_strict.sh"];
+        "ush:unset_strict.sh" [label="unset_strict.sh"];
+    }
+
+    // Task dependency edges
+    "gcdas/stage/stage_ic" -> "gcdas/chem/prep/prep_emissions" [color=gray60, style=solid];
+    "gcdas/fetch/fetch" -> "gcdas/chem/analysis/aero_anl_init" [color=gray60, style=solid];
+    "gcdas/chem/prep/prep_emissions" -> "gcdas/chem/analysis/aero_anl_init" [color=gray60, style=solid];
+    "gcdas/chem/analysis/aero_anl_init" -> "gcdas/chem/analysis/aero_anl_var" [color=gray60, style=solid];
+    "gcdas/chem/analysis/aero_anl_var" -> "gcdas/chem/analysis/aero_anl_final" [color=gray60, style=solid];
+    "gcdas/chem/analysis/aero_anl_final" -> "gcdas/chem/analysis/aero_anl_genb" [color=gray60, style=solid];
+    "gcdas/chem/analysis/aero_anl_final" -> "gcdas/forecast/fcst" [color=gray60, style=solid];
+    "gcdas/forecast/fcst" -> "gcdas/post/upp_f000" [color=gray60, style=solid];
+    "gcdas/forecast/fcst" -> "gcdas/post/upp_f003" [color=gray60, style=solid];
+    "gcdas/forecast/fcst" -> "gcdas/post/upp_f006" [color=gray60, style=solid];
+    "gcdas/forecast/fcst" -> "gcdas/post/upp_f009" [color=gray60, style=solid];
+    "gcdas/post/upp_f009" -> "gcdas/products/atmos_prod" [color=gray60, style=solid];
+    "gcdas/products/atmos_prod" -> "gcdas/archive/arch_vrfy" [color=gray60, style=solid];
+    "gcdas/chem/analysis/aero_anl_genb" -> "gcdas/archive/arch_vrfy" [color=gray60, style=solid];
+    "gcdas/archive/arch_vrfy" -> "gcdas/archive/arch_tars" [color=gray60, style=solid];
+    "gcdas/archive/arch_tars" -> "gcdas/cleanup/cleanup" [color=gray60, style=solid];
+    "gcdas/chem/analysis/aero_anl_final" -> "gcafs/stage/stage_ic" [color=red, penwidth=2, label="cross-cycle"];
+    "gcafs/stage/stage_ic" -> "gcafs/chem/prep/prep_emissions" [color=gray60, style=solid];
+    "gcafs/chem/prep/prep_emissions" -> "gcafs/forecast/fcst" [color=gray60, style=solid];
+    "gcafs/forecast/fcst" -> "gcafs/post/upp_f000" [color=gray60, style=solid];
+    "gcafs/forecast/fcst" -> "gcafs/post/upp_f006" [color=gray60, style=solid];
+    "gcafs/forecast/fcst" -> "gcafs/post/upp_f012" [color=gray60, style=solid];
+    "gcafs/forecast/fcst" -> "gcafs/post/upp_f024" [color=gray60, style=solid];
+    "gcafs/forecast/fcst" -> "gcafs/post/upp_f048" [color=gray60, style=solid];
+    "gcafs/forecast/fcst" -> "gcafs/post/upp_f072" [color=gray60, style=solid];
+    "gcafs/forecast/fcst" -> "gcafs/post/upp_f096" [color=gray60, style=solid];
+    "gcafs/forecast/fcst" -> "gcafs/post/upp_f120" [color=gray60, style=solid];
+    "gcafs/post/upp_f120" -> "gcafs/products/atmos_prod" [color=gray60, style=solid];
+    "gcafs/products/atmos_prod" -> "gcafs/archive/arch_vrfy" [color=gray60, style=solid];
+    "gcafs/archive/arch_vrfy" -> "gcafs/archive/arch_tars" [color=gray60, style=solid];
+    "gcafs/archive/arch_tars" -> "gcafs/cleanup/cleanup" [color=gray60, style=solid];
+
+    // Execution chain edges
+    "gcdas/stage/stage_ic" -> "jjob:JGLOBAL_STAGE_IC" [color=blue, style=dashed];
+    "gcdas/fetch/fetch" -> "jjob:JGLOBAL_FETCH" [color=blue, style=dashed];
+    "gcdas/chem/prep/prep_emissions" -> "jjob:JGLOBAL_PREP_EMISSIONS" [color=blue, style=dashed];
+    "gcdas/chem/analysis/aero_anl_init" -> "jjob:JGLOBAL_AERO_ANALYSIS_INITIALIZE" [color=blue, style=dashed];
+    "gcdas/chem/analysis/aero_anl_var" -> "jjob:JGLOBAL_AERO_ANALYSIS_VARIATIONAL" [color=blue, style=dashed];
+    "gcdas/chem/analysis/aero_anl_final" -> "jjob:JGLOBAL_AERO_ANALYSIS_FINALIZE" [color=blue, style=dashed];
+    "gcdas/chem/analysis/aero_anl_genb" -> "jjob:JGDAS_AERO_ANALYSIS_GENERATE_BMATRIX" [color=blue, style=dashed];
+    "gcdas/forecast/fcst" -> "jjob:JGLOBAL_FORECAST" [color=blue, style=dashed];
+    "gcdas/post/upp_f000" -> "jjob:JGLOBAL_ATMOS_UPP" [color=blue, style=dashed];
+    "gcdas/post/upp_f003" -> "jjob:JGLOBAL_ATMOS_UPP" [color=blue, style=dashed];
+    "gcdas/post/upp_f006" -> "jjob:JGLOBAL_ATMOS_UPP" [color=blue, style=dashed];
+    "gcdas/post/upp_f009" -> "jjob:JGLOBAL_ATMOS_UPP" [color=blue, style=dashed];
+    "gcdas/products/atmos_prod" -> "jjob:JGLOBAL_ATMOS_PRODUCTS" [color=blue, style=dashed];
+    "gcdas/archive/arch_vrfy" -> "jjob:JGLOBAL_ARCHIVE_VRFY" [color=blue, style=dashed];
+    "gcdas/archive/arch_tars" -> "jjob:JGLOBAL_ARCHIVE_TARS" [color=blue, style=dashed];
+    "gcdas/cleanup/cleanup" -> "jjob:JGLOBAL_CLEANUP" [color=blue, style=dashed];
+    "gcafs/stage/stage_ic" -> "jjob:JGLOBAL_STAGE_IC" [color=blue, style=dashed];
+    "gcafs/chem/prep/prep_emissions" -> "jjob:JGLOBAL_PREP_EMISSIONS" [color=blue, style=dashed];
+    "gcafs/forecast/fcst" -> "jjob:JGLOBAL_FORECAST" [color=blue, style=dashed];
+    "gcafs/post/upp_f000" -> "jjob:JGLOBAL_ATMOS_UPP" [color=blue, style=dashed];
+    "gcafs/post/upp_f006" -> "jjob:JGLOBAL_ATMOS_UPP" [color=blue, style=dashed];
+    "gcafs/post/upp_f012" -> "jjob:JGLOBAL_ATMOS_UPP" [color=blue, style=dashed];
+    "gcafs/post/upp_f024" -> "jjob:JGLOBAL_ATMOS_UPP" [color=blue, style=dashed];
+    "gcafs/post/upp_f048" -> "jjob:JGLOBAL_ATMOS_UPP" [color=blue, style=dashed];
+    "gcafs/post/upp_f072" -> "jjob:JGLOBAL_ATMOS_UPP" [color=blue, style=dashed];
+    "gcafs/post/upp_f096" -> "jjob:JGLOBAL_ATMOS_UPP" [color=blue, style=dashed];
+    "gcafs/post/upp_f120" -> "jjob:JGLOBAL_ATMOS_UPP" [color=blue, style=dashed];
+    "gcafs/products/atmos_prod" -> "jjob:JGLOBAL_ATMOS_PRODUCTS" [color=blue, style=dashed];
+    "gcafs/archive/arch_vrfy" -> "jjob:JGLOBAL_ARCHIVE_VRFY" [color=blue, style=dashed];
+    "gcafs/archive/arch_tars" -> "jjob:JGLOBAL_ARCHIVE_TARS" [color=blue, style=dashed];
+    "gcafs/cleanup/cleanup" -> "jjob:JGLOBAL_CLEANUP" [color=blue, style=dashed];
+    "jjob:JGDAS_AERO_ANALYSIS_GENERATE_BMATRIX" -> "ex:exgdas_aero_analysis_generate_bmatrix.py" [color=green, style=dashed];
+    "jjob:JGLOBAL_AERO_ANALYSIS_FINALIZE" -> "ex:exglobal_aero_analysis_finalize.py" [color=green, style=dashed];
+    "jjob:JGLOBAL_AERO_ANALYSIS_INITIALIZE" -> "ex:exglobal_aero_analysis_initialize.py" [color=green, style=dashed];
+    "jjob:JGLOBAL_AERO_ANALYSIS_VARIATIONAL" -> "ex:exglobal_aero_analysis_variational.py" [color=green, style=dashed];
+    "jjob:JGLOBAL_ARCHIVE_TARS" -> "ex:exglobal_archive_tars.py" [color=green, style=dashed];
+    "jjob:JGLOBAL_ARCHIVE_VRFY" -> "ex:exglobal_archive_vrfy.py" [color=green, style=dashed];
+    "jjob:JGLOBAL_ATMOS_PRODUCTS" -> "ex:exglobal_atmos_products.sh" [color=green, style=dashed];
+    "jjob:JGLOBAL_ATMOS_UPP" -> "ex:exglobal_atmos_upp.py" [color=green, style=dashed];
+    "jjob:JGLOBAL_CLEANUP" -> "ex:exglobal_cleanup.sh" [color=green, style=dashed];
+    "jjob:JGLOBAL_FETCH" -> "ex:exglobal_fetch.py" [color=green, style=dashed];
+    "jjob:JGLOBAL_FORECAST" -> "ex:exglobal_forecast.sh" [color=green, style=dashed];
+    "jjob:JGLOBAL_PREP_EMISSIONS" -> "ex:exglobal_prep_emissions.py" [color=green, style=dashed];
+    "jjob:JGLOBAL_STAGE_IC" -> "ex:exglobal_stage_ic.py" [color=green, style=dashed];
+    "ex:exglobal_atmos_products.sh" -> "ush:set_strict.sh" [color=orange, style=dashed];
+    "ex:exglobal_atmos_products.sh" -> "ush:unset_strict.sh" [color=orange, style=dashed];
+    "ex:exglobal_forecast.sh" -> "ush:forecast_det.sh" [color=orange, style=dashed];
+    "ex:exglobal_forecast.sh" -> "ush:forecast_postdet.sh" [color=orange, style=dashed];
+    "ex:exglobal_forecast.sh" -> "ush:forecast_predet.sh" [color=orange, style=dashed];
+}

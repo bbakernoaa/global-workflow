@@ -1,0 +1,229 @@
+# Workflow_Configuration for GEFS (Global Ensemble Forecast System)
+# Schema: suite, defaults, cycles, families, tasks, inter_cycle_dependencies
+# This configuration defines the GEFS forecast-only workflow as an ecFlow DAG.
+#
+# GEFS (Global Ensemble Forecast System) produces ensemble probabilistic
+# forecasts using 30 perturbed members plus a control deterministic run.
+#
+# Forecast-only mode:
+#   - Single gefs cycle: stage ICs, run ensemble forecasts, post-process,
+#     compute ensemble statistics, wave products, archive
+#
+# Traces to: GEFS v13 operational documentation, EMC ensemble design §7.1
+
+# Experiment-level context variables (normally provided by setup_expt.py)
+# These are deploy-time variables resolved into config templates.
+HOMEglobal: "/tmp/EXPDIR/gefs_test"
+ACCOUNT: "nems"
+QUEUE: "batch"
+QUEUE_SERVICE: "service"
+QUEUE_EXCLUSIVE: "batch"
+QUEUE_DTN: "service"
+PARTITION_BATCH: "hera"
+PARTITION_SERVICE: "service"
+PARTITION_EXCLUSIVE: ""
+PARTITION_DTN: ""
+RESERVATION: ""
+CLUSTERS: ""
+CLUSTERS_SERVICE: ""
+CLUSTERS_EXCLUSIVE: ""
+CLUSTERS_DTN: ""
+PSLOT: "gefs_forecast"
+SDATE: "2021122012"
+EDATE: "2021123100"
+idate: "2021122012"
+edate: "2021123100"
+EXP_WARM_START: ".false."
+assim_freq: 6
+APP: "S2SWA"
+CASE_CTL: "C384"
+CASE_ENS: "C192"
+CASE_HIST: ""
+OCNRES: "100"
+LEVS: 128
+NMEM_ENS: 30
+NMEM_ENS_GFS: 30
+NMEM_ENS_GFS_OFFSET: 0
+FHMAX: 384
+FHMAX_GFS: 384
+FHMAX_HF_GFS: 120
+FHOUT_HF_GFS: 3
+FHOUT_GFS: 6
+INTERVAL_GFS: 6
+SDATE_GFS: "2021122012"
+FCST_BREAKPOINTS: ""
+DO_GOES: "NO"
+DO_BUFRSND: "NO"
+DO_GEMPAK: "NO"
+DO_AWIPS: "NO"
+DO_NPOESS: "NO"
+DO_TRACKER: "NO"
+DO_GENESIS: "NO"
+DO_GENESIS_FSU: "NO"
+DO_METP: "NO"
+DO_TEST_MODE: "NO"
+DO_JEDIATMVAR: "NO"
+DO_JEDIATMENS: "NO"
+DO_JEDIOCNVAR: "NO"
+DO_JEDISNOWDA: "NO"
+DO_WAVE: "YES"
+DO_OCN: "YES"
+DO_ICE: "YES"
+DO_ARCHCOM: "YES"
+ARCHCOM_TO: "hpss"
+CLIENT_GLOBUS_UUID: ""
+FETCHDIR: ""
+CHECK_LAND_RESTART_OROG: ".true."
+
+suite:
+  name: "gefs_v1"
+  ecf_home: "{{ EXPDIR }}/ecf"
+  ecf_files: "{{ EXPDIR }}/ecf/scripts"
+  ecf_include: "{{ EXPDIR }}/ecf/include"
+
+defaults:
+  ECF_TRIES: 2
+  ECF_JOB_CMD: "uwtools submit %ECF_JOB% %ECF_JOBOUT%"
+  ACCOUNT: "nems"
+  QUEUE: "batch"
+  PARTITION: "hera"
+
+cycles:
+  - name: "gefs"
+    repeat:
+      type: "date"
+      variable: "YMD"
+      start: "{{ idate }}"
+      end: "{{ edate }}"
+      step: 1
+    time: "00:00 06:00 12:00 18:00"
+
+families:
+  # ══════════════════════════════════════════════════════════════════════
+  # GEFS: Ensemble Forecast-Only Cycle
+  # ══════════════════════════════════════════════════════════════════════
+
+  # ──────────────────────────────────────────────────────────────────────
+  # GEFS: Stage Initial Conditions
+  # ──────────────────────────────────────────────────────────────────────
+  - path: "gefs/stage"
+    tasks:
+      - name: "stage_ic"
+        trigger: ""
+        jjob: "JGEFS_STAGE_IC"
+
+  # ──────────────────────────────────────────────────────────────────────
+  # GEFS: Ensemble Forecast (30 members + control)
+  # ──────────────────────────────────────────────────────────────────────
+  - path: "gefs/forecast"
+    tasks:
+      - name: "fcst_mem{{ '%03d' % mem }}"
+        trigger: "gefs/stage/stage_ic == complete"
+        jjob: "JGEFS_FORECAST"
+        variables:
+          ENSMEM: "{{ '%03d' % mem }}"
+        events:
+          - "forecast_hour"
+        meters:
+          - name: "forecast_hour"
+            min: 0
+            max: 384
+        for_each:
+          mem: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
+
+  # ──────────────────────────────────────────────────────────────────────
+  # GEFS: Post-Processing (UPP per member per forecast hour)
+  # ──────────────────────────────────────────────────────────────────────
+  - path: "gefs/post"
+    tasks:
+      - name: "upp_mem{{ '%03d' % mem }}_f{{ '%03d' % fhr }}"
+        trigger: "gefs/forecast/fcst_mem{{ '%03d' % mem }}:forecast_hour ge {{ fhr }}"
+        jjob: "JGEFS_ATMOS_UPP"
+        variables:
+          FHOUR: "{{ fhr }}"
+          ENSMEM: "{{ '%03d' % mem }}"
+        for_each:
+          mem: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
+          fhr: [0, 6, 12, 18, 24, 30, 36, 42, 48, 54, 60, 66, 72, 78, 84, 90, 96, 102, 108, 114, 120, 132, 144, 156, 168, 180, 192, 204, 216, 228, 240, 252, 264, 276, 288, 300, 312, 324, 336, 348, 360, 372, 384]
+
+  # ──────────────────────────────────────────────────────────────────────
+  # GEFS: Products (atmosphere)
+  # ──────────────────────────────────────────────────────────────────────
+  - path: "gefs/products"
+    tasks:
+      - name: "atmos_prod"
+        trigger: "gefs/post/upp_mem000_f384 == complete"
+        jjob: "JGEFS_ATMOS_PRODUCTS"
+
+  # ──────────────────────────────────────────────────────────────────────
+  # GEFS: Wave Processing
+  # ──────────────────────────────────────────────────────────────────────
+  - path: "gefs/wave"
+    tasks:
+      - name: "wave_init"
+        trigger: "gefs/stage/stage_ic == complete"
+        jjob: "JGEFS_WAVE_INIT"
+
+      - name: "wave_prep"
+        trigger: "wave_init == complete"
+        jjob: "JGEFS_WAVE_PREP"
+
+      - name: "wave_post_sbs"
+        trigger: "gefs/forecast/fcst_mem000:forecast_hour ge 384"
+        jjob: "JGEFS_WAVE_POST_SBS"
+
+      - name: "wave_post_pnt"
+        trigger: "gefs/forecast/fcst_mem000:forecast_hour ge 384"
+        jjob: "JGEFS_WAVE_POST_PNT"
+
+      - name: "wave_prdgen_gridded"
+        trigger: "wave_post_sbs == complete"
+        jjob: "JGEFS_WAVE_PRDGEN_GRIDDED"
+
+      - name: "wave_stat"
+        trigger: "wave_prdgen_gridded == complete"
+        jjob: "JGEFS_WAVE_STAT"
+
+      - name: "wave_stat_pnt"
+        trigger: "wave_post_pnt == complete"
+        jjob: "JGEFS_WAVE_STAT_PNT"
+
+  # ──────────────────────────────────────────────────────────────────────
+  # GEFS: Ensemble Statistics
+  # ──────────────────────────────────────────────────────────────────────
+  - path: "gefs/ensstat"
+    tasks:
+      - name: "atmos_ensstat"
+        trigger: "gefs/products/atmos_prod == complete"
+        jjob: "JGEFS_ATMOS_ENSSTAT"
+
+  # ──────────────────────────────────────────────────────────────────────
+  # GEFS: Archive
+  # ──────────────────────────────────────────────────────────────────────
+  - path: "gefs/archive"
+    tasks:
+      - name: "arch_vrfy"
+        trigger: "gefs/ensstat/atmos_ensstat == complete and gefs/wave/wave_stat == complete"
+        jjob: "JGEFS_ARCHIVE_VRFY"
+
+      - name: "arch_tars"
+        trigger: "arch_vrfy == complete"
+        jjob: "JGEFS_ARCHIVE_TARS"
+
+      - name: "ens_globus_arch"
+        trigger: "arch_tars == complete"
+        jjob: "JGEFS_ENS_GLOBUS_ARCH"
+
+  # ──────────────────────────────────────────────────────────────────────
+  # GEFS: Cleanup
+  # ──────────────────────────────────────────────────────────────────────
+  - path: "gefs/cleanup"
+    tasks:
+      - name: "cleanup"
+        trigger: "gefs/archive/arch_tars == complete and gefs/wave/wave_stat_pnt == complete"
+        jjob: "JGEFS_CLEANUP"
+
+inter_cycle_dependencies:
+  - task: "gefs/stage/stage_ic"
+    depends_on: "gefs/cleanup/cleanup == complete"
+    cycle_offset: -1
