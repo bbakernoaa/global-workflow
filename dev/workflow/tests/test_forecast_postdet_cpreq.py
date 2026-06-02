@@ -19,7 +19,7 @@ import pytest
 
 # Repo root: tests -> workflow -> dev -> <repo root>
 REPO_ROOT = Path(__file__).resolve().parents[3]
-FORECAST_POSTDET = REPO_ROOT / "ush" / "forecast_postdet.sh"
+FORECAST_POSTDET = REPO_ROOT / "dev" / "ush" / "forecast_postdet.sh"
 
 # Components whose runtime namelist generation must be eliminated.
 COMPONENTS = ("WW3", "MOM6", "CICE", "GOCART")

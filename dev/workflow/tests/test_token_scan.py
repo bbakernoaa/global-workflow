@@ -241,13 +241,13 @@ def test_real_forecast_postdet_has_no_parsing_sources():
     Task 1 already converted the WW3/MOM6/CICE/GOCART blocks to cpreq, so the
     live script must yield zero parsing-source violations (Req 1.5).
     """
-    forecast_postdet = REPO_ROOT / "ush" / "forecast_postdet.sh"
+    forecast_postdet = REPO_ROOT / "dev" / "ush" / "forecast_postdet.sh"
     if not forecast_postdet.is_file():
-        pytest.skip("ush/forecast_postdet.sh not present in this checkout")
+        pytest.skip("dev/ush/forecast_postdet.sh not present in this checkout")
 
     registry = load_exemptions(REPO_ROOT / "dev" / "parm" / "atparse_exemptions.yaml")
-    # Scope the scan to ush/ so this unit test does not depend on the whole repo.
-    result = scan_repo_runtime(REPO_ROOT, registry=registry, scan_dirs=("ush",))
+    # Scope the scan to dev/ush/ so this unit test does not depend on the whole repo.
+    result = scan_repo_runtime(REPO_ROOT, registry=registry, scan_dirs=("dev/ush",))
 
     assert result.parsing_source_violations == [], (
         "forecast_postdet.sh still sources parsing_namelists_*.sh:\n"

@@ -275,7 +275,7 @@ class TestCheckAgainstBaseline:
         i.e. the cpreq staging blocks are NOT flagged (Req 10.4, 10.6).
         """
         repo_root = Path(__file__).resolve().parents[3]
-        target = repo_root / "ush" / "forecast_postdet.sh"
+        target = repo_root / "dev" / "ush" / "forecast_postdet.sh"
         assert target.is_file(), target
 
         scanner_result = scan_file(target, categories=SCANNER_CATEGORIES)
