@@ -186,6 +186,85 @@ A successful deployment produces:
 
 ---
 
+## DAG Visualization
+
+The `dag_visualize.py` tool generates visual representations of the workflow DAG from any Workflow_Configuration YAML.
+
+### Basic Usage (Task Dependencies)
+
+```bash
+# Mermaid diagram (renders in GitHub/GitLab markdown)
+.venv/bin/python dag_visualize.py --config ../../dev/parm/workflow/gcafs.yaml
+
+# Graphviz DOT file (for PNG/SVG rendering)
+.venv/bin/python dag_visualize.py --config ../../dev/parm/workflow/gcafs.yaml --format dot -o gcafs.dot
+dot -Tpng gcafs.dot -o gcafs.png
+
+# Plain text summary
+.venv/bin/python dag_visualize.py --config ../../dev/parm/workflow/gcafs.yaml --format text
+
+# Left-to-right layout
+.venv/bin/python dag_visualize.py --config ../../dev/parm/workflow/gcafs.yaml --direction LR
+```
+
+### Deep Mode (Full Execution Chain)
+
+The `--deep` flag traces the complete execution path: **ecFlow task → J-Job → ex-script → ush scripts**, showing how application naming resolves back to shared source files.
+
+```bash
+# Deep text view (shows full call chain per task)
+.venv/bin/python dag_visualize.py --config ../../dev/parm/workflow/gcafs.yaml --deep --format text
+
+# Deep Mermaid diagram
+.venv/bin/python dag_visualize.py --config ../../dev/parm/workflow/gcafs.yaml --deep --direction LR
+
+# Deep Graphviz DOT (best for large graphs)
+.venv/bin/python dag_visualize.py --config ../../dev/parm/workflow/gcafs.yaml --deep --format dot -o gcafs_deep.dot
+dot -Tpng gcafs_deep.dot -o gcafs_deep.png
+```
+
+### Example Deep Text Output
+
+```
+DAG: gcafs_v1 (Deep Execution Chain)
+Tasks: 31
+Unique J-Jobs (source): 13
+Ex-Scripts: 13
+Ush Scripts: 5
+
+  gcafs/forecast/
+  ────────────────────────────────────────────────────────────
+    ecf: gcafs/forecast/fcst.ecf
+      → jjob: JGCAFS_FORECAST (source: JGLOBAL_FORECAST)
+          → script: exglobal_forecast.sh
+                → ush: forecast_det.sh
+                → ush: forecast_postdet.sh
+                → ush: forecast_predet.sh
+
+  gcdas/chem/analysis/
+  ────────────────────────────────────────────────────────────
+    ecf: gcdas/chem/analysis/aero_anl_init.ecf
+      → jjob: JGCDAS_AERO_ANALYSIS_INITIALIZE (source: JGLOBAL_AERO_ANALYSIS_INITIALIZE)
+          → script: exglobal_aero_analysis_initialize.py
+```
+
+### CLI Reference
+
+```
+dag_visualize --config <YAML> [--format mermaid|dot|text] [--output FILE]
+              [--direction TD|LR|BT|RL] [--deep]
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--config` | *required* | Path to Workflow_Configuration YAML |
+| `--format` | `mermaid` | Output format: `mermaid`, `dot`, or `text` |
+| `--output` | stdout | Write to file instead of stdout |
+| `--direction` | `TD` | Graph direction (TD=top-down, LR=left-right) |
+| `--deep` | disabled | Include full execution chain (J-Jobs → scripts → ush) |
+
+---
+
 ## Running Tests
 
 ```bash
