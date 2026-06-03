@@ -17,8 +17,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-import pytest
-from hypothesis import given, settings, HealthCheck
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "workflow"))
@@ -27,7 +26,6 @@ from deployment.pipeline import (
     SUBMODULE_COPY_MANIFEST,
     _stage_submodule_copy,
 )
-
 
 # ---------------------------------------------------------------------------
 # Hypothesis strategies for file content generation
@@ -50,9 +48,7 @@ jinja2_like_text = st.one_of(
     ),
     # Text with Jinja2 block syntax {% if %} ... {% endif %}
     st.builds(
-        lambda prefix, var, body, suffix: (
-            f"{prefix}{{% if {var} %}}{body}{{% endif %}}{suffix}"
-        ),
+        lambda prefix, var, body, suffix: f"{prefix}{{% if {var} %}}{body}{{% endif %}}{suffix}",
         prefix=st.text(min_size=0, max_size=128),
         var=st.from_regex(r"[a-z_][a-z0-9_]*", fullmatch=True),
         body=st.text(min_size=0, max_size=256),
@@ -60,9 +56,7 @@ jinja2_like_text = st.one_of(
     ),
     # Text with Jinja2 for loops {% for x in items %}
     st.builds(
-        lambda var, items, body: (
-            f"{{% for {var} in {items} %}}{body}{{% endfor %}}"
-        ),
+        lambda var, items, body: f"{{% for {var} in {items} %}}{body}{{% endfor %}}",
         var=st.from_regex(r"[a-z_][a-z0-9_]*", fullmatch=True),
         items=st.from_regex(r"[a-z_][a-z0-9_]*", fullmatch=True),
         body=st.text(min_size=0, max_size=256),
@@ -76,9 +70,7 @@ file_content_strategy = st.one_of(
 )
 
 # Strategy for valid filenames (no path separators, non-empty)
-filename_strategy = st.from_regex(
-    r"[a-zA-Z][a-zA-Z0-9_.\-]{0,30}", fullmatch=True
-)
+filename_strategy = st.from_regex(r"[a-zA-Z][a-zA-Z0-9_.\-]{0,30}", fullmatch=True)
 
 
 # ---------------------------------------------------------------------------
@@ -110,6 +102,7 @@ def _create_workspace() -> tuple[Path, Path, Path]:
 def _cleanup_workspace(tmpdir: Path) -> None:
     """Remove the temporary workspace."""
     import shutil
+
     shutil.rmtree(tmpdir, ignore_errors=True)
 
 
@@ -137,9 +130,7 @@ class TestSubmoduleCopyIntegrity:
         content=file_content_strategy,
         filename=filename_strategy,
     )
-    def test_copied_file_is_byte_identical_to_source(
-        self, content: bytes, filename: str
-    ):
+    def test_copied_file_is_byte_identical_to_source(self, content: bytes, filename: str):
         """Copied submodule file is byte-identical to the source.
 
         **Validates: Requirements 13.3**
@@ -163,12 +154,8 @@ class TestSubmoduleCopyIntegrity:
 
             # Verify the copied file is byte-identical
             dst_file = expdir / dest_rel / filename
-            assert dst_file.exists(), (
-                f"Expected copied file at {dst_file} but it does not exist"
-            )
-            assert dst_file.read_bytes() == content, (
-                f"Copied file content differs from source for file '{filename}'"
-            )
+            assert dst_file.exists(), f"Expected copied file at {dst_file} but it does not exist"
+            assert dst_file.read_bytes() == content, f"Copied file content differs from source for file '{filename}'"
         finally:
             _cleanup_workspace(tmpdir)
 
@@ -178,9 +165,7 @@ class TestSubmoduleCopyIntegrity:
         deadline=None,
     )
     @given(content=jinja2_like_text)
-    def test_jinja2_syntax_not_rendered_in_submodule_files(
-        self, content: str
-    ):
+    def test_jinja2_syntax_not_rendered_in_submodule_files(self, content: str):
         """Content with Jinja2 syntax ({{ var }}, {% if %}) is NOT rendered.
 
         **Validates: Requirements 13.4, 13.5**
@@ -207,13 +192,10 @@ class TestSubmoduleCopyIntegrity:
 
             # Verify the content is preserved verbatim (no rendering)
             dst_file = expdir / dest_rel / test_filename
-            assert dst_file.exists(), (
-                f"Expected copied file at {dst_file} but it does not exist"
-            )
+            assert dst_file.exists(), f"Expected copied file at {dst_file} but it does not exist"
             dst_content_bytes = dst_file.read_bytes()
             assert dst_content_bytes == content_bytes, (
-                f"Jinja2-like content was modified during copy. "
-                f"Expected: {content_bytes!r}, Got: {dst_content_bytes!r}"
+                f"Jinja2-like content was modified during copy. Expected: {content_bytes!r}, Got: {dst_content_bytes!r}"
             )
         finally:
             _cleanup_workspace(tmpdir)
@@ -225,13 +207,9 @@ class TestSubmoduleCopyIntegrity:
     )
     @given(
         content=arbitrary_bytes,
-        manifest_idx=st.integers(
-            min_value=0, max_value=len(SUBMODULE_COPY_MANIFEST) - 1
-        ),
+        manifest_idx=st.integers(min_value=0, max_value=len(SUBMODULE_COPY_MANIFEST) - 1),
     )
-    def test_all_manifest_entries_copy_verbatim(
-        self, content: bytes, manifest_idx: int
-    ):
+    def test_all_manifest_entries_copy_verbatim(self, content: bytes, manifest_idx: int):
         """All manifest entries produce byte-identical copies.
 
         **Validates: Requirements 13.3, 13.4, 13.5**
@@ -253,13 +231,7 @@ class TestSubmoduleCopyIntegrity:
 
             # Verify byte-identical copy
             dst_file = expdir / dest_rel / test_filename
-            assert dst_file.exists(), (
-                f"Expected copied file at {dst_file} for manifest entry "
-                f"'{source_rel}' → '{dest_rel}'"
-            )
-            assert dst_file.read_bytes() == content, (
-                f"File content differs for manifest entry "
-                f"'{source_rel}' → '{dest_rel}'"
-            )
+            assert dst_file.exists(), f"Expected copied file at {dst_file} for manifest entry '{source_rel}' → '{dest_rel}'"
+            assert dst_file.read_bytes() == content, f"File content differs for manifest entry '{source_rel}' → '{dest_rel}'"
         finally:
             _cleanup_workspace(tmpdir)

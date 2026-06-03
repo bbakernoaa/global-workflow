@@ -8,14 +8,14 @@
 ###############################################################
 
 if [[ "$-" == *x* ]]; then
-    set_x=YES
+  set_x=YES
 else
-    set_x=NO
+  set_x=NO
 fi
 
 if [[ "${DEBUG_WORKFLOW:-NO}" == "NO" ]]; then
-    echo "Loading modules quietly..."
-    set +x
+  echo "Loading modules quietly..."
+  set +x
 fi
 
 # Parse module type argument
@@ -24,11 +24,11 @@ MODULE_TYPE="${1:-run}"
 # For backwards compatibility, handle ufsda options
 UFSDA_MODS="GDAS"
 if [[ "${MODULE_TYPE}" == "--eva" ]]; then
-    MODULE_TYPE="ufsda"
-    UFSDA_MODS="EVA"
+  MODULE_TYPE="ufsda"
+  UFSDA_MODS="EVA"
 elif [[ "${MODULE_TYPE}" == "--gdas" ]]; then
-    MODULE_TYPE="ufsda"
-    UFSDA_MODS="GDAS"
+  MODULE_TYPE="ufsda"
+  UFSDA_MODS="GDAS"
 fi
 
 # Setup runtime environment by loading modules
@@ -37,25 +37,25 @@ ulimit_s=$(ulimit -S -s)
 # Test if HOMEglobal is defined.  If not, then try to determine it with git rev-parse
 _unset_homegfs="NO"
 if [[ -z ${HOMEglobal+x} ]]; then
-    echo "INFO: HOMEglobal is not defined.  Attempting to find the global-workflow root directory"
-    # HOMEglobal will be removed from the environment at the end of this script
-    _unset_homegfs="YES"
+  echo "INFO: HOMEglobal is not defined.  Attempting to find the global-workflow root directory"
+  # HOMEglobal will be removed from the environment at the end of this script
+  _unset_homegfs="YES"
 
-    script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
-    HOMEglobal=$(cd "${script_dir}" && git rev-parse --show-toplevel)
-    export HOMEglobal
-    err=$?
-    if [[ ${err} -ne 0 ]]; then
-        is_git_dir=$(cd -- "${script_dir}" &> /dev/null && git rev-parse --is-inside-work-tree)
-        git_stat=$?
-        if [[ ${git_stat} -ne 0 || ${is_git_dir} != "true" ]]; then
-            echo "FATAL ERROR: unable to determine the root because it is not a git repository."
-        else
-            echo "FATAL ERROR: unable to determine the root because git rev-parse --show-toplevel failed for an unknown reason"
-        fi
-        echo "FATAL ERROR: Unable to load modules.  Exiting"
-        exit 1
+  script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
+  HOMEglobal=$(cd "${script_dir}" && git rev-parse --show-toplevel)
+  export HOMEglobal
+  err=$?
+  if [[ ${err} -ne 0 ]]; then
+    is_git_dir=$(cd -- "${script_dir}" &> /dev/null && git rev-parse --is-inside-work-tree)
+    git_stat=$?
+    if [[ ${git_stat} -ne 0 || ${is_git_dir} != "true" ]]; then
+      echo "FATAL ERROR: unable to determine the root because it is not a git repository."
+    else
+      echo "FATAL ERROR: unable to determine the root because git rev-parse --show-toplevel failed for an unknown reason"
     fi
+    echo "FATAL ERROR: Unable to load modules.  Exiting"
+    exit 1
+  fi
 fi
 
 # Find module command and purge:
@@ -64,157 +64,157 @@ source "${HOMEglobal}/ush/module-setup.sh"
 
 # Handle different module types
 case "${MODULE_TYPE}" in
-    "ufswm")
-        # UFS Weather Model modules - special handling
-        module use "${HOMEglobal}/sorc/ufs_model.fd/modulefiles"
-        module load "ufs_${MACHINE_ID}.intel"
+  "ufswm")
+    # UFS Weather Model modules - special handling
+    module use "${HOMEglobal}/sorc/ufs_model.fd/modulefiles"
+    module load "ufs_${MACHINE_ID}.intel"
+    export err=$?
+    if [[ ${err} -ne 0 ]]; then
+      echo "FATAL ERROR: Failed to load ufs_${MACHINE_ID}.intel"
+      exit 1
+    fi
+    # Do not load prod_util on an ecflow system
+    if [[ -z "${ECF_JOB:-}" ]]; then
+      module load prod_util
+    fi
+    if [[ "${MACHINE_ID}" == "wcoss2" ]]; then
+      module load cray-pals
+      module load cfp
+      module load libjpeg
+      module load craype-network-ucx
+      module load cray-mpich-ucx
+      module load python/3.8.6
+      module load wgrib2
+    else
+      export UTILROOT=${prod_util_ROOT}
+      source "${HOMEglobal}/versions/run.ver"
+      module load "wgrib2/${wgrib2_ver}"
+    fi
+    export WGRIB2=wgrib2
+
+    module list
+    unset MACHINE_ID
+    ;;
+
+  "ufsda")
+    # UFSDA modules - special handling
+    module use "${HOMEglobal}/sorc/gdas.cd/modulefiles"
+
+    case "${MACHINE_ID}" in
+      "hera" | "orion" | "hercules" | "wcoss2" | "gaeac6" | "ursa" | "derecho" | "noaacloud")
+        #TODO: Remove LMOD_TMOD_FIND_FIRST line when spack-stack on WCOSS2
+        if [[ "${MACHINE_ID}" == "wcoss2" ]]; then
+          export LMOD_TMOD_FIND_FIRST=yes
+          # TODO: Add path to GDASApp libraries and cray-mpich as temporary patches
+          export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${HOMEglobal}/sorc/gdas.cd/build/lib"
+          # TODO: Remove LD_LIBRARY_PATH line as soon as permanent solution is available
+          export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/opt/cray/pe/mpich/8.1.29/ofi/intel/2022.1/lib"
+        fi
+        module load "${UFSDA_MODS}/${MACHINE_ID}"
         export err=$?
         if [[ ${err} -ne 0 ]]; then
-            echo "FATAL ERROR: Failed to load ufs_${MACHINE_ID}.intel"
-            exit 1
+          echo "FATAL ERROR: Failed to load ${UFSDA_MODS}/${MACHINE_ID}"
+          exit 1
         fi
-        # Do not load prod_util on an ecflow system
-        if [[ -z "${ECF_JOB:-}" ]]; then
-            module load prod_util
-        fi
-        if [[ "${MACHINE_ID}" == "wcoss2" ]]; then
-            module load cray-pals
-            module load cfp
-            module load libjpeg
-            module load craype-network-ucx
-            module load cray-mpich-ucx
-            module load python/3.8.6
-            module load wgrib2
-        else
-            export UTILROOT=${prod_util_ROOT}
-            source "${HOMEglobal}/versions/run.ver"
-            module load "wgrib2/${wgrib2_ver}"
-        fi
-        export WGRIB2=wgrib2
-
-        module list
-        unset MACHINE_ID
+        ncdump=$(command -v ncdump)
+        NETCDF=$(echo "${ncdump}" | cut -d " " -f 3)
+        export NETCDF
         ;;
-
-    "ufsda")
-        # UFSDA modules - special handling
-        module use "${HOMEglobal}/sorc/gdas.cd/modulefiles"
-
-        case "${MACHINE_ID}" in
-            "hera" | "orion" | "hercules" | "wcoss2" | "gaeac6" | "ursa" | "derecho" | "noaacloud")
-                #TODO: Remove LMOD_TMOD_FIND_FIRST line when spack-stack on WCOSS2
-                if [[ "${MACHINE_ID}" == "wcoss2" ]]; then
-                    export LMOD_TMOD_FIND_FIRST=yes
-                    # TODO: Add path to GDASApp libraries and cray-mpich as temporary patches
-                    export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${HOMEglobal}/sorc/gdas.cd/build/lib"
-                    # TODO: Remove LD_LIBRARY_PATH line as soon as permanent solution is available
-                    export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/opt/cray/pe/mpich/8.1.29/ofi/intel/2022.1/lib"
-                fi
-                module load "${UFSDA_MODS}/${MACHINE_ID}"
-                export err=$?
-                if [[ ${err} -ne 0 ]]; then
-                    echo "FATAL ERROR: Failed to load ${UFSDA_MODS}/${MACHINE_ID}"
-                    exit 1
-                fi
-                ncdump=$(command -v ncdump)
-                NETCDF=$(echo "${ncdump}" | cut -d " " -f 3)
-                export NETCDF
-                ;;
-            "acorn")
-                echo WARNING: UFSDA NOT SUPPORTED ON 'acorn'
-                ;;
-            *)
-                echo "WARNING: UNKNOWN PLATFORM"
-                ;;
-        esac
-
-        module list
-
-        if [[ "${set_x}" == "YES" ]]; then
-            set -x
-        fi
-
-        pip list
-
-        # Detect the Python major.minor version
-        _regex="[0-9]+\.[0-9]+"
-        if [[ $(python --version) =~ ${_regex} ]]; then
-            export PYTHON_VERSION="${BASH_REMATCH[0]}"
-        else
-            echo "FATAL ERROR: Could not detect the python version"
-            exit 1
-        fi
-
-        ###############################################################
-        # setup python path for ioda utilities
-        # TODO: a better solution should be created for setting paths to package python scripts
-        # shellcheck disable=SC2311
-        pyiodaPATH="${HOMEglobal}/sorc/gdas.cd/build/lib/python${PYTHON_VERSION}/"
-        pybufrPATH="${HOMEglobal}/sorc/gdas.cd/build/lib/python${PYTHON_VERSION}/site-packages/"
-        PYTHONPATH="${pyiodaPATH}:${pybufrPATH}${PYTHONPATH:+:${PYTHONPATH}}"
-        export PYTHONPATH
+      "acorn")
+        echo WARNING: UFSDA NOT SUPPORTED ON 'acorn'
         ;;
-
-    "run" | "gsi" | "verif" | "setup" | "upp")
-
-        # Test that the version file exists
-        if [[ ! -f "${HOMEglobal}/versions/run.ver" ]]; then
-            echo "FATAL ERROR: ${HOMEglobal}/versions/run.ver does not exist!"
-            echo "HINT: Run link_workflow.sh first."
-            exit 1
-        fi
-
-        # Load our modules:
-        module use "${HOMEglobal}/modulefiles"
-
-        # Determine target module based on type and machine
-        target_module="gw_${MODULE_TYPE}.${MACHINE_ID}"
-
-        # Check if the target module file exists, fall back to gw_run if not
-        if ! module is-avail "${target_module}" 2> /dev/null; then
-            if [[ "${MODULE_TYPE}" != "run" ]]; then
-                echo "INFO: ${target_module} module not available, falling back to gw_run.${MACHINE_ID}"
-                mod_type="run"
-            fi
-            target_module="gw_run.${MACHINE_ID}"
-        else
-            mod_type="${MODULE_TYPE}"
-        fi
-
-        # Source versions file (except for upp)
-        if [[ "${mod_type}" != "upp" ]]; then
-            source "${HOMEglobal}/versions/run.ver"
-        fi
-
-        if [[ -n "${target_module}" ]]; then
-            module load "${target_module}"
-            export err=$?
-            if [[ ${err} -ne 0 ]]; then
-                echo "FATAL ERROR: Failed to load ${target_module}"
-                exit 1
-            fi
-        else
-            echo "FATAL ERROR: Could not determine target module for MODULE_TYPE='${MODULE_TYPE}' and MACHINE_ID='${MACHINE_ID}'"
-            exit 1
-        fi
-
-        module list
-
-        if [[ "${set_x}" == "YES" ]]; then
-            set -x
-        fi
+      *)
+        echo "WARNING: UNKNOWN PLATFORM"
         ;;
+    esac
 
-    *)
-        echo "FATAL ERROR: Unknown module type '${MODULE_TYPE}'"
-        echo "Valid types: run, gsi, verif, ufsda, ufswm, setup"
-        ;;
+    module list
+
+    if [[ "${set_x}" == "YES" ]]; then
+      set -x
+    fi
+
+    pip list
+
+    # Detect the Python major.minor version
+    _regex="[0-9]+\.[0-9]+"
+    if [[ $(python --version) =~ ${_regex} ]]; then
+      export PYTHON_VERSION="${BASH_REMATCH[0]}"
+    else
+      echo "FATAL ERROR: Could not detect the python version"
+      exit 1
+    fi
+
+    ###############################################################
+    # setup python path for ioda utilities
+    # TODO: a better solution should be created for setting paths to package python scripts
+    # shellcheck disable=SC2311
+    pyiodaPATH="${HOMEglobal}/sorc/gdas.cd/build/lib/python${PYTHON_VERSION}/"
+    pybufrPATH="${HOMEglobal}/sorc/gdas.cd/build/lib/python${PYTHON_VERSION}/site-packages/"
+    PYTHONPATH="${pyiodaPATH}:${pybufrPATH}${PYTHONPATH:+:${PYTHONPATH}}"
+    export PYTHONPATH
+    ;;
+
+  "run" | "gsi" | "verif" | "setup" | "upp")
+
+    # Test that the version file exists
+    if [[ ! -f "${HOMEglobal}/versions/run.ver" ]]; then
+      echo "FATAL ERROR: ${HOMEglobal}/versions/run.ver does not exist!"
+      echo "HINT: Run link_workflow.sh first."
+      exit 1
+    fi
+
+    # Load our modules:
+    module use "${HOMEglobal}/modulefiles"
+
+    # Determine target module based on type and machine
+    target_module="gw_${MODULE_TYPE}.${MACHINE_ID}"
+
+    # Check if the target module file exists, fall back to gw_run if not
+    if ! module is-avail "${target_module}" 2> /dev/null; then
+      if [[ "${MODULE_TYPE}" != "run" ]]; then
+        echo "INFO: ${target_module} module not available, falling back to gw_run.${MACHINE_ID}"
+        mod_type="run"
+      fi
+      target_module="gw_run.${MACHINE_ID}"
+    else
+      mod_type="${MODULE_TYPE}"
+    fi
+
+    # Source versions file (except for upp)
+    if [[ "${mod_type}" != "upp" ]]; then
+      source "${HOMEglobal}/versions/run.ver"
+    fi
+
+    if [[ -n "${target_module}" ]]; then
+      module load "${target_module}"
+      export err=$?
+      if [[ ${err} -ne 0 ]]; then
+        echo "FATAL ERROR: Failed to load ${target_module}"
+        exit 1
+      fi
+    else
+      echo "FATAL ERROR: Could not determine target module for MODULE_TYPE='${MODULE_TYPE}' and MACHINE_ID='${MACHINE_ID}'"
+      exit 1
+    fi
+
+    module list
+
+    if [[ "${set_x}" == "YES" ]]; then
+      set -x
+    fi
+    ;;
+
+  *)
+    echo "FATAL ERROR: Unknown module type '${MODULE_TYPE}'"
+    echo "Valid types: run, gsi, verif, ufsda, ufswm, setup"
+    ;;
 
 esac
 
 # Set up the PYTHONPATH to include wxflow from HOMEglobal
 if [[ -d "${HOMEglobal}/sorc/wxflow/src" ]]; then
-    PYTHONPATH="${HOMEglobal}/sorc/wxflow/src${PYTHONPATH:+:${PYTHONPATH}}"
+  PYTHONPATH="${HOMEglobal}/sorc/wxflow/src${PYTHONPATH:+:${PYTHONPATH}}"
 fi
 
 # Add HOMEglobal/ush/python to PYTHONPATH
@@ -227,5 +227,5 @@ unset ulimit_s
 
 # Unset HOMEglobal if it was not set at the beginning of this script
 if [[ ${_unset_homegfs} == "YES" ]]; then
-    unset HOMEglobal
+  unset HOMEglobal
 fi

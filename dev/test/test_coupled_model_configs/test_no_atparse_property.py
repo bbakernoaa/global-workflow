@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 
 import pytest
-from hypothesis import given, settings, HealthCheck
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "workflow"))
@@ -65,15 +65,23 @@ def valid_model_context(draw: st.DrawFn) -> dict:
     do_sppt = draw(st.booleans())
     dt_ocean = draw(st.sampled_from([450, 900, 1800, 3600, 7200]))
     dt_therm = draw(st.sampled_from([1800, 3600, 7200, 14400]))
-    diag_coord_def_z_file = draw(st.sampled_from([
-        "oceanda_zgrid_75L.nc",
-        "oceanda_zgrid_100L.nc",
-        "ocean_zgrid_50L.nc",
-    ]))
-    frunoff = draw(st.sampled_from([
-        "INPUT/runoff.daitren.clim.nc",
-        "INPUT/runoff.monthly.nc",
-    ]))
+    diag_coord_def_z_file = draw(
+        st.sampled_from(
+            [
+                "oceanda_zgrid_75L.nc",
+                "oceanda_zgrid_100L.nc",
+                "ocean_zgrid_50L.nc",
+            ]
+        )
+    )
+    frunoff = draw(
+        st.sampled_from(
+            [
+                "INPUT/runoff.daitren.clim.nc",
+                "INPUT/runoff.monthly.nc",
+            ]
+        )
+    )
 
     ocean_context = {
         "resolution": resolution,
@@ -93,20 +101,35 @@ def valid_model_context(draw: st.DrawFn) -> dict:
     warm_start = draw(st.booleans())
     ice_context = {
         "nprocs": draw(st.integers(min_value=1, max_value=512)),
-        "decomposition": draw(st.sampled_from([
-            "slenderX2", "slenderX1", "cartesian", "roundrobin",
-        ])),
+        "decomposition": draw(
+            st.sampled_from(
+                [
+                    "slenderX2",
+                    "slenderX1",
+                    "cartesian",
+                    "roundrobin",
+                ]
+            )
+        ),
         "dt_ice": draw(st.sampled_from([450, 600, 900, 1800, 3600])),
-        "grid": draw(st.sampled_from([
-            "grid_cice_NEMS_mx025.nc",
-            "grid_cice_NEMS_mx050.nc",
-            "grid_cice_NEMS_mx100.nc",
-        ])),
-        "mask": draw(st.sampled_from([
-            "kmtu_cice_NEMS_mx025.nc",
-            "kmtu_cice_NEMS_mx050.nc",
-            "kmtu_cice_NEMS_mx100.nc",
-        ])),
+        "grid": draw(
+            st.sampled_from(
+                [
+                    "grid_cice_NEMS_mx025.nc",
+                    "grid_cice_NEMS_mx050.nc",
+                    "grid_cice_NEMS_mx100.nc",
+                ]
+            )
+        ),
+        "mask": draw(
+            st.sampled_from(
+                [
+                    "kmtu_cice_NEMS_mx025.nc",
+                    "kmtu_cice_NEMS_mx050.nc",
+                    "kmtu_cice_NEMS_mx100.nc",
+                ]
+            )
+        ),
         "nx_glb": draw(st.sampled_from([72, 360, 720, 1440])),
         "ny_glb": draw(st.sampled_from([35, 320, 576, 1080])),
         "warm_start": warm_start,
@@ -122,11 +145,15 @@ def valid_model_context(draw: st.DrawFn) -> dict:
     wave_context = {
         "ice_input": draw(st.sampled_from(["CPL", "YES"])),
         "current_input": draw(st.sampled_from(["CPL", "YES"])),
-        "output_params": draw(st.sampled_from([
-            "HS FP DP PHS PTP PDIR CHA",
-            "HS FP DP",
-            "HS LM T02 T01 DIR DP SPR",
-        ])),
+        "output_params": draw(
+            st.sampled_from(
+                [
+                    "HS FP DP PHS PTP PDIR CHA",
+                    "HS FP DP",
+                    "HS LM T02 T01 DIR DP SPR",
+                ]
+            )
+        ),
         "dt_field_output": draw(st.integers(min_value=1, max_value=86400)),
         "dt_point_output": draw(st.integers(min_value=1, max_value=86400)),
         "grid_output_dir": draw(st.sampled_from(["./", "./OUTPUT/"])),
@@ -169,9 +196,14 @@ def valid_model_context(draw: st.DrawFn) -> dict:
             "post": post_context,
             "fv3": fv3_context,
             "dt_atmos": draw(st.sampled_from([225, 450, 600, 900])),
-            "output_grid": draw(st.sampled_from([
-                "gaussian_grid", "regional_latlon",
-            ])),
+            "output_grid": draw(
+                st.sampled_from(
+                    [
+                        "gaussian_grid",
+                        "regional_latlon",
+                    ]
+                )
+            ),
         },
     }
 
@@ -247,7 +279,4 @@ class TestNoLegacyAtparseTokens:
 
             # Assert no legacy atparse tokens remain
             atparse_matches = _ATPARSE_RE.findall(rendered)
-            assert atparse_matches == [], (
-                f"Legacy @[...] atparse tokens found in rendered "
-                f"'{template_name}': {atparse_matches}"
-            )
+            assert atparse_matches == [], f"Legacy @[...] atparse tokens found in rendered '{template_name}': {atparse_matches}"

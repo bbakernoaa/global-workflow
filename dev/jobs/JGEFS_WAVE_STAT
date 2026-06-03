@@ -18,9 +18,9 @@ source "${USHglobal}/wave_domain_grid.sh"
 # Set COM Paths
 
 for grid in ${wavepostGRD}; do
-    process_grdID "${grid}"
-    prod_dir_grid="COMOUT_WAVE_GRID_${grid}"
-    declare -rx "${prod_dir_grid}"="${ROTDIR}/${RUN}.${PDY}/${cyc}/ensstat/products/wave/gridded"
+  process_grdID "${grid}"
+  prod_dir_grid="COMOUT_WAVE_GRID_${grid}"
+  declare -rx "${prod_dir_grid}"="${ROTDIR}/${RUN}.${PDY}/${cyc}/ensstat/products/wave/gridded"
 done
 
 # Execute the Script
@@ -31,7 +31,7 @@ err_chk
 ###########################################
 cd "${DATAROOT}" || true
 if [[ "${KEEPDATA}" != "YES" ]]; then
-    rm -rf "${DATA}"
+  rm -rf "${DATA}"
 fi
 
 exit 0

@@ -29,20 +29,20 @@
 #---------------------------------------------------------
 
 wait_for_file() {
-    set +x
-    local file_name=${1:?"wait_for_file() requires a file name"}
-    local sleep_interval=${2:-60}
-    local max_tries=${3:-100}
+  set +x
+  local file_name=${1:?"wait_for_file() requires a file name"}
+  local sleep_interval=${2:-60}
+  local max_tries=${3:-100}
 
-    for ((iter = 0; iter < max_tries; iter++)); do
-        if [[ -r ${file_name} ]]; then
-            set -x
-            return 0
-        fi
-        sleep "${sleep_interval}"
-    done
-    set -x
-    return 1
+  for ((iter = 0; iter < max_tries; iter++)); do
+    if [[ -r ${file_name} ]]; then
+      set -x
+      return 0
+    fi
+    sleep "${sleep_interval}"
+  done
+  set -x
+  return 1
 }
 
 declare -xf wait_for_file

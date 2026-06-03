@@ -28,9 +28,10 @@ Traces to: design Component 7; parent spec immutable-dag-workflow-modernization
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Mapping, Optional
+from typing import Optional
 
 import yaml
 
@@ -43,9 +44,7 @@ STATUS_PASS = "pass"
 STATUS_FAIL = "fail"
 STATUS_UNMAPPED = "unmapped"
 
-VALID_STATUSES = frozenset(
-    {STATUS_PENDING, STATUS_PASS, STATUS_FAIL, STATUS_UNMAPPED}
-)
+VALID_STATUSES = frozenset({STATUS_PENDING, STATUS_PASS, STATUS_FAIL, STATUS_UNMAPPED})
 
 #: Parent spec defines 14 requirements (R1-R14) and 14 correctness Properties.
 PARENT_REQUIREMENT_KEYS = tuple(f"R{n}" for n in range(1, 15))
@@ -63,13 +62,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_MATRIX_PATH = _WORKFLOW_DIR / "traceability_matrix.yaml"
 
 #: Default parent ``tasks.md`` whose completion claims are reconciled.
-DEFAULT_PARENT_TASKS_PATH = (
-    _REPO_ROOT
-    / ".kiro"
-    / "specs"
-    / "immutable-dag-workflow-modernization"
-    / "tasks.md"
-)
+DEFAULT_PARENT_TASKS_PATH = _REPO_ROOT / ".kiro" / "specs" / "immutable-dag-workflow-modernization" / "tasks.md"
 
 
 # ---------------------------------------------------------------------------
@@ -181,9 +174,7 @@ def _coerce_tests(raw) -> list[str]:
         return [raw.strip()] if raw.strip() else []
     if isinstance(raw, (list, tuple)):
         return [str(t).strip() for t in raw if str(t).strip()]
-    raise TraceabilityMatrixError(
-        f"'tests' must be a string or list, got {type(raw).__name__}"
-    )
+    raise TraceabilityMatrixError(f"'tests' must be a string or list, got {type(raw).__name__}")
 
 
 def _coerce_status(raw) -> str:
@@ -192,9 +183,7 @@ def _coerce_status(raw) -> str:
         return STATUS_PENDING
     status = str(raw).strip().lower()
     if status not in VALID_STATUSES:
-        raise TraceabilityMatrixError(
-            f"invalid status {raw!r}; expected one of {sorted(VALID_STATUSES)}"
-        )
+        raise TraceabilityMatrixError(f"invalid status {raw!r}; expected one of {sorted(VALID_STATUSES)}")
     return status
 
 
@@ -225,9 +214,7 @@ def load_traceability_matrix(
         raise TraceabilityMatrixError(f"cannot parse {path}: {exc}") from exc
 
     if not isinstance(data, Mapping):
-        raise TraceabilityMatrixError(
-            f"{path}: top-level document must be a mapping"
-        )
+        raise TraceabilityMatrixError(f"{path}: top-level document must be a mapping")
 
     matrix = TraceabilityMatrix(source_path=path)
 
@@ -239,14 +226,10 @@ def load_traceability_matrix(
         try:
             number = int(raw_num)
         except (TypeError, ValueError) as exc:
-            raise TraceabilityMatrixError(
-                f"{path}: property key {raw_num!r} is not an integer"
-            ) from exc
+            raise TraceabilityMatrixError(f"{path}: property key {raw_num!r} is not an integer") from exc
         entry = entry or {}
         if not isinstance(entry, Mapping):
-            raise TraceabilityMatrixError(
-                f"{path}: property {number} entry must be a mapping"
-            )
+            raise TraceabilityMatrixError(f"{path}: property {number} entry must be a mapping")
         matrix.properties[number] = MatrixItem(
             key=str(number),
             label=str(entry.get("name", f"Property {number}")),
@@ -262,9 +245,7 @@ def load_traceability_matrix(
         key = str(raw_key).strip()
         entry = entry or {}
         if not isinstance(entry, Mapping):
-            raise TraceabilityMatrixError(
-                f"{path}: requirement {key} entry must be a mapping"
-            )
+            raise TraceabilityMatrixError(f"{path}: requirement {key} entry must be a mapping")
         matrix.requirements[key] = MatrixItem(
             key=key,
             label=str(entry.get("title", key)),
@@ -310,30 +291,16 @@ def find_unmapped_parent_items(
     for number in property_numbers:
         item = matrix.property_item(number)
         if item is None:
-            errors.append(
-                f"VERIFICATION ERROR: parent Property {number} is not present "
-                f"in the Traceability_Matrix (no proving test mapped)."
-            )
+            errors.append(f"VERIFICATION ERROR: parent Property {number} is not present in the Traceability_Matrix (no proving test mapped).")
         elif not item.is_mapped or item.status == STATUS_UNMAPPED:
-            errors.append(
-                f"VERIFICATION ERROR: parent Property {number} "
-                f"({item.label!r}) has no proving test in the "
-                f"Traceability_Matrix."
-            )
+            errors.append(f"VERIFICATION ERROR: parent Property {number} ({item.label!r}) has no proving test in the Traceability_Matrix.")
 
     for key in requirement_keys:
         item = matrix.requirement_item(key)
         if item is None:
-            errors.append(
-                f"VERIFICATION ERROR: parent requirement {key} is not present "
-                f"in the Traceability_Matrix (no proving test mapped)."
-            )
+            errors.append(f"VERIFICATION ERROR: parent requirement {key} is not present in the Traceability_Matrix (no proving test mapped).")
         elif not item.is_mapped or item.status == STATUS_UNMAPPED:
-            errors.append(
-                f"VERIFICATION ERROR: parent requirement {key} "
-                f"({item.label!r}) has no proving test in the "
-                f"Traceability_Matrix."
-            )
+            errors.append(f"VERIFICATION ERROR: parent requirement {key} ({item.label!r}) has no proving test in the Traceability_Matrix.")
 
     return errors
 
@@ -343,9 +310,7 @@ def find_unmapped_parent_items(
 # ---------------------------------------------------------------------------
 
 #: Markdown checkbox line, e.g. ``- [x] 8.1 Add the version-gate unit test``.
-_CHECKBOX_RE = re.compile(
-    r"^\s*-\s*\[(?P<mark>[ xX~\-])\]\s*(?P<rest>.*)$"
-)
+_CHECKBOX_RE = re.compile(r"^\s*-\s*\[(?P<mark>[ xX~\-])\]\s*(?P<rest>.*)$")
 
 #: Leading dotted task id + title, e.g. ``8.1 Add the ...`` / ``8. Build ...``.
 _TASK_ID_RE = re.compile(r"^(?P<id>\d+(?:\.\d+)*)\.?\s+(?P<title>.*)$")
@@ -354,9 +319,7 @@ _TASK_ID_RE = re.compile(r"^(?P<id>\d+(?:\.\d+)*)\.?\s+(?P<title>.*)$")
 _REQ_LINE_RE = re.compile(r"_Requirements?:\s*(?P<refs>[^_]+)_")
 
 #: ``**Validates: Requirements 4.6**`` reference (property-test tasks).
-_VALIDATES_RE = re.compile(
-    r"\*\*Validates:\s*Requirements?\s*(?P<refs>[^*]+)\*\*", re.IGNORECASE
-)
+_VALIDATES_RE = re.compile(r"\*\*Validates:\s*Requirements?\s*(?P<refs>[^*]+)\*\*", re.IGNORECASE)
 
 #: ``**Property 9: Parser Round-Trip**`` declaration.
 _PROPERTY_RE = re.compile(r"\*\*Property\s+(?P<num>\d+)", re.IGNORECASE)
@@ -402,9 +365,7 @@ def parse_parent_tasks(
     try:
         text = tasks_path.read_text(encoding="utf-8")
     except OSError as exc:
-        raise TraceabilityMatrixError(
-            f"cannot read parent tasks file {tasks_path}: {exc}"
-        ) from exc
+        raise TraceabilityMatrixError(f"cannot read parent tasks file {tasks_path}: {exc}") from exc
 
     tasks: list[ParentTask] = []
     current: Optional[ParentTask] = None
@@ -412,13 +373,9 @@ def parse_parent_tasks(
     def _harvest(task: ParentTask, line: str) -> None:
         """Pull requirement/Property references out of a body line."""
         for match in _REQ_LINE_RE.finditer(line):
-            task.requirement_numbers |= _extract_requirement_majors(
-                match.group("refs")
-            )
+            task.requirement_numbers |= _extract_requirement_majors(match.group("refs"))
         for match in _VALIDATES_RE.finditer(line):
-            task.requirement_numbers |= _extract_requirement_majors(
-                match.group("refs")
-            )
+            task.requirement_numbers |= _extract_requirement_majors(match.group("refs"))
         for match in _PROPERTY_RE.finditer(line):
             task.property_numbers.add(int(match.group("num")))
 
@@ -529,21 +486,15 @@ def reconcile_completed_tasks(
             if item is None:
                 continue
             for test_id in item.tests:
-                evidence.append(
-                    (test_id, _test_passed(test_id, item.status, test_results))
-                )
+                evidence.append((test_id, _test_passed(test_id, item.status, test_results)))
         for number in sorted(prop_numbers):
             item = matrix.property_item(number)
             if item is None:
                 continue
             for test_id in item.tests:
-                evidence.append(
-                    (test_id, _test_passed(test_id, item.status, test_results))
-                )
+                evidence.append((test_id, _test_passed(test_id, item.status, test_results)))
 
-        label = f"task {task.task_id} ({task.title!r})" if task.task_id else (
-            f"task {task.title!r}"
-        )
+        label = f"task {task.task_id} ({task.title!r})" if task.task_id else (f"task {task.title!r}")
 
         if not evidence:
             # The task cites parent items, but those items carry no proving
@@ -557,9 +508,6 @@ def reconcile_completed_tasks(
 
         if not any(passed for _, passed in evidence):
             non_passing = sorted({test_id for test_id, passed in evidence if not passed})
-            mismatches.append(
-                f"RECONCILIATION MISMATCH: completed parent {label} has no "
-                f"passing proving test; non-passing test(s): {non_passing}"
-            )
+            mismatches.append(f"RECONCILIATION MISMATCH: completed parent {label} has no passing proving test; non-passing test(s): {non_passing}")
 
     return mismatches

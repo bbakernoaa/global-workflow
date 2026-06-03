@@ -18,8 +18,8 @@
 #   - .gitlab-ci-hosts.yml: Contains host-specific configurations and test matrices
 #                          that can be extended to support additional hosts
 #
-# The host configuration in .gitlab-ci-hosts.yml is designed to be easily 
-# extended with new computing platforms and allows per-host specification 
+# The host configuration in .gitlab-ci-hosts.yml is designed to be easily
+# extended with new computing platforms and allows per-host specification
 # of which test cases to run.
 
 stages:
@@ -203,7 +203,7 @@ include:
         # TODO We need to add local python env to support PyGitHub not being in Spack-Stack 1.9
         # this should be part of the spack environment setup in Spack-Stack 2.x
         PYTHONPATH=${PYTHONPATH}:$HOME/.local/lib/python3.11/site-packages
-        echo "Updated PYTHONPATH: $PYTHONPATH"       
+        echo "Updated PYTHONPATH: $PYTHONPATH"
 
         # Re-setup GH if needed
         export GH=$(which gh 2>/dev/null || echo "${HOME}/bin/gh")
@@ -233,7 +233,7 @@ include:
             done < "${error_log_file}"
 
             comment_body=$(printf "**BUILD FAILED** on %s (pipeline ID: %s)\n\nIn directory: \`%s/sorc\`\n\n**Error log files:**\n\`\`\`\n%s\n\`\`\`\n\n [View Error Logs](%s)\n\n_This failure was detected automatically by global-workflow's CI/CD Pipeline_" "${Machine}" "${CI_PIPELINE_ID}" "${GW_HOMEgfs}" "${error_logs_markdown}" "${pr_error_log_links}")
-        
+
             "${GH}" pr comment "${PR_NUMBER}" --repo "${GW_REPO_URL}" --body "${comment_body}" || true
           fi
 

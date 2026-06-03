@@ -16,8 +16,7 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from deployment.dag_filter import DAGFilter, _USH_SOURCE_PATTERNS
-
+from deployment.dag_filter import _USH_SOURCE_PATTERNS, DAGFilter
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -133,7 +132,7 @@ class TestParseSourceRefs:
         """Extracts multiple ush script references from a single file."""
         script = tmp_dev_root / "scripts" / "exglobal_forecast.sh"
         script.write_text(
-            '#!/bin/bash\n'
+            "#!/bin/bash\n"
             'source "${USHglobal}/forecast_predet.sh"\n'
             'source "${USHglobal}/forecast_det.sh"\n'
             'source "${USHglobal}/forecast_postdet.sh"\n'
@@ -145,10 +144,7 @@ class TestParseSourceRefs:
         """Skips lines that are comments."""
         script = tmp_dev_root / "scripts" / "extest.sh"
         script.write_text(
-            '#!/bin/bash\n'
-            '# source "${USHglobal}/commented.sh"\n'
-            'source "${USHglobal}/active.sh"\n'
-            '  # . "${USHglobal}/also_commented.sh"\n'
+            '#!/bin/bash\n# source "${USHglobal}/commented.sh"\nsource "${USHglobal}/active.sh"\n  # . "${USHglobal}/also_commented.sh"\n'
         )
         refs = dag_filter._parse_source_refs(script)
         assert refs == ["active.sh"]
@@ -186,11 +182,7 @@ class TestExtractUshScripts:
         """Resolves ush scripts directly sourced by an ex-script."""
         # Create ex-script that sources two ush scripts
         ex_script = tmp_dev_root / "scripts" / "exglobal_forecast.sh"
-        ex_script.write_text(
-            '#!/bin/bash\n'
-            'source "${USHglobal}/forecast_predet.sh"\n'
-            'source "${USHglobal}/forecast_det.sh"\n'
-        )
+        ex_script.write_text('#!/bin/bash\nsource "${USHglobal}/forecast_predet.sh"\nsource "${USHglobal}/forecast_det.sh"\n')
         # Create the ush scripts (no further dependencies)
         (tmp_dev_root / "ush" / "forecast_predet.sh").write_text("#!/bin/bash\n")
         (tmp_dev_root / "ush" / "forecast_det.sh").write_text("#!/bin/bash\n")
@@ -214,9 +206,7 @@ class TestExtractUshScripts:
         result = dag_filter.extract_ush_scripts({"extest.sh"})
         assert result == {"a.sh", "b.sh", "c.sh"}
 
-    def test_circular_dependency_no_infinite_loop(
-        self, dag_filter: DAGFilter, tmp_dev_root: Path
-    ):
+    def test_circular_dependency_no_infinite_loop(self, dag_filter: DAGFilter, tmp_dev_root: Path):
         """Handles circular dependencies without infinite loop."""
         # ex-script sources A
         ex_script = tmp_dev_root / "scripts" / "extest.sh"
@@ -231,9 +221,7 @@ class TestExtractUshScripts:
         # Should have a circular dependency warning
         assert any("Circular dependency" in w for w in dag_filter._warnings)
 
-    def test_missing_ush_script_warning(
-        self, dag_filter: DAGFilter, tmp_dev_root: Path
-    ):
+    def test_missing_ush_script_warning(self, dag_filter: DAGFilter, tmp_dev_root: Path):
         """Emits WARNING for missing ush scripts (non-fatal)."""
         ex_script = tmp_dev_root / "scripts" / "extest.sh"
         ex_script.write_text('source "${USHglobal}/missing_script.sh"\n')
@@ -245,9 +233,7 @@ class TestExtractUshScripts:
         assert any("missing_script.sh" in w for w in dag_filter._warnings)
         assert any("not found" in w for w in dag_filter._warnings)
 
-    def test_missing_ex_script_skipped(
-        self, dag_filter: DAGFilter, tmp_dev_root: Path
-    ):
+    def test_missing_ex_script_skipped(self, dag_filter: DAGFilter, tmp_dev_root: Path):
         """Skips ex-scripts that don't exist (handled by Layer 2)."""
         result = dag_filter.extract_ush_scripts({"nonexistent_ex.sh"})
         assert result == set()
@@ -255,29 +241,19 @@ class TestExtractUshScripts:
     def test_multiple_ex_scripts(self, dag_filter: DAGFilter, tmp_dev_root: Path):
         """Resolves ush scripts from multiple ex-scripts."""
         # Two ex-scripts sourcing different ush scripts
-        (tmp_dev_root / "scripts" / "ex_a.sh").write_text(
-            'source "${USHglobal}/helper_a.sh"\n'
-        )
-        (tmp_dev_root / "scripts" / "ex_b.sh").write_text(
-            'source "${USHglobal}/helper_b.sh"\n'
-        )
+        (tmp_dev_root / "scripts" / "ex_a.sh").write_text('source "${USHglobal}/helper_a.sh"\n')
+        (tmp_dev_root / "scripts" / "ex_b.sh").write_text('source "${USHglobal}/helper_b.sh"\n')
         (tmp_dev_root / "ush" / "helper_a.sh").write_text("#!/bin/bash\n")
         (tmp_dev_root / "ush" / "helper_b.sh").write_text("#!/bin/bash\n")
 
         result = dag_filter.extract_ush_scripts({"ex_a.sh", "ex_b.sh"})
         assert result == {"helper_a.sh", "helper_b.sh"}
 
-    def test_shared_dependency_counted_once(
-        self, dag_filter: DAGFilter, tmp_dev_root: Path
-    ):
+    def test_shared_dependency_counted_once(self, dag_filter: DAGFilter, tmp_dev_root: Path):
         """Shared dependencies are only counted once in the result."""
         # Two ex-scripts both source the same ush script
-        (tmp_dev_root / "scripts" / "ex_a.sh").write_text(
-            'source "${USHglobal}/shared.sh"\n'
-        )
-        (tmp_dev_root / "scripts" / "ex_b.sh").write_text(
-            'source "${USHglobal}/shared.sh"\n'
-        )
+        (tmp_dev_root / "scripts" / "ex_a.sh").write_text('source "${USHglobal}/shared.sh"\n')
+        (tmp_dev_root / "scripts" / "ex_b.sh").write_text('source "${USHglobal}/shared.sh"\n')
         (tmp_dev_root / "ush" / "shared.sh").write_text("#!/bin/bash\n")
 
         result = dag_filter.extract_ush_scripts({"ex_a.sh", "ex_b.sh"})
@@ -286,10 +262,7 @@ class TestExtractUshScripts:
     def test_diamond_dependency(self, dag_filter: DAGFilter, tmp_dev_root: Path):
         """Handles diamond dependencies (A->B, A->C, B->D, C->D)."""
         ex_script = tmp_dev_root / "scripts" / "extest.sh"
-        ex_script.write_text(
-            'source "${USHglobal}/b.sh"\n'
-            'source "${USHglobal}/c.sh"\n'
-        )
+        ex_script.write_text('source "${USHglobal}/b.sh"\nsource "${USHglobal}/c.sh"\n')
         (tmp_dev_root / "ush" / "b.sh").write_text('source "${USHglobal}/d.sh"\n')
         (tmp_dev_root / "ush" / "c.sh").write_text('source "${USHglobal}/d.sh"\n')
         (tmp_dev_root / "ush" / "d.sh").write_text("#!/bin/bash\n")
@@ -309,9 +282,7 @@ class TestExtractUshScripts:
 
         # Create a chain: level1 -> level2 -> level3 -> level4
         for i in range(1, 4):
-            (tmp_dev_root / "ush" / f"level{i}.sh").write_text(
-                f'source "${{USHglobal}}/level{i+1}.sh"\n'
-            )
+            (tmp_dev_root / "ush" / f"level{i}.sh").write_text(f'source "${{USHglobal}}/level{i + 1}.sh"\n')
         (tmp_dev_root / "ush" / "level4.sh").write_text("#!/bin/bash\n")
 
         result = dag_filter.extract_ush_scripts({"extest.sh"})

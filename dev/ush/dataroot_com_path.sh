@@ -23,26 +23,26 @@
 #---------------------------------------------------------
 
 dataroot_com_path() {
-    set +x
-    if [[ $# -ne 1 ]]; then
-        echo "FATAL ERROR in dataroot_com_path: Incorrect number of arguments!"
-        echo "Usage: dataroot_com_path original_com_path"
-        exit 2
-    fi
+  set +x
+  if [[ $# -ne 1 ]]; then
+    echo "FATAL ERROR in dataroot_com_path: Incorrect number of arguments!"
+    echo "Usage: dataroot_com_path original_com_path"
+    exit 2
+  fi
 
-    local original_com_path=${1}
+  local original_com_path=${1}
 
-    if [[ -z "${COMROOT:-}" || -z "${DATAROOT:-}" ]]; then
-        echo "FATAL ERROR in dataroot_com_path: COMROOT and DATAROOT must be defined!"
-        exit 2
-    fi
+  if [[ -z "${COMROOT:-}" || -z "${DATAROOT:-}" ]]; then
+    echo "FATAL ERROR in dataroot_com_path: COMROOT and DATAROOT must be defined!"
+    exit 2
+  fi
 
-    local relative_path
-    relative_path=$(realpath --relative-to="${COMROOT}" "${original_com_path}")
-    local new_com_path="${DATAROOT}/${relative_path}"
+  local relative_path
+  relative_path=$(realpath --relative-to="${COMROOT}" "${original_com_path}")
+  local new_com_path="${DATAROOT}/${relative_path}"
 
-    echo "${new_com_path}"
-    set -x
+  echo "${new_com_path}"
+  set -x
 }
 
 declare -xf dataroot_com_path

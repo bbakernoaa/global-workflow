@@ -58,9 +58,9 @@ err=0
 
 have_diag_rpt=0
 if [[ -s "${diag_rpt}" ]]; then
-    have_diag_rpt=1
+  have_diag_rpt=1
 else
-    err=1
+  err=1
 fi
 echo "have_diag_rpt = ${have_diag_rpt}"
 
@@ -70,112 +70,112 @@ echo "have_diag_rpt = ${have_diag_rpt}"
 #  if same combination is in both files, add the values to the output file
 #
 { while read -r myline; do
-    echo "myline = ${myline}"
-    bound=""
+  echo "myline = ${myline}"
+  bound=""
 
-    echo "${myline}"
-    satname=$(echo "${myline}" | gawk '{print $1}')
-    channel=$(echo "${myline}" | gawk '{print $3}')
-    region=$(echo "${myline}" | gawk '{print $5}')
-    value1=$(echo "${myline}" | gawk '{print $7}')
-    bound=$(echo "${myline}" | gawk '{print $9}')
+  echo "${myline}"
+  satname=$(echo "${myline}" | gawk '{print $1}')
+  channel=$(echo "${myline}" | gawk '{print $3}')
+  region=$(echo "${myline}" | gawk '{print $5}')
+  value1=$(echo "${myline}" | gawk '{print $7}')
+  bound=$(echo "${myline}" | gawk '{print $9}')
 
-    #
-    #     Check findings against diag_report.  If the satellite/instrument is on the
-    #     diagnostic report it means the diagnostic file file for the
-    #     satelite/instrument is missing for this cycle, so skip any additional
-    #     error checking for that source.  Otherwise, evaluate as per normal.
-    #
+  #
+  #     Check findings against diag_report.  If the satellite/instrument is on the
+  #     diagnostic report it means the diagnostic file file for the
+  #     satelite/instrument is missing for this cycle, so skip any additional
+  #     error checking for that source.  Otherwise, evaluate as per normal.
+  #
 
-    diag_match=""
-    diag_match_len=0
+  diag_match=""
+  diag_match_len=0
 
-    if [[ "${have_diag_rpt}" -eq 1 ]]; then
-        diag_match=$(gawk "/${satname}/" "${diag_rpt}")
-        diag_match_len=${#diag_match}
-    fi
+  if [[ "${have_diag_rpt}" -eq 1 ]]; then
+    diag_match=$(gawk "/${satname}/" "${diag_rpt}")
+    diag_match_len=${#diag_match}
+  fi
 
-    if [[ "${diag_match_len}" -eq 0 ]]; then
+  if [[ "${diag_match_len}" -eq 0 ]]; then
 
-        if [[ "${type}" == "chan" ]]; then
-            echo "looking for match for ${satname} and ${channel}"
-            { while read -r myline2; do
-                satname2=$(echo "${myline2}" | gawk '{print $1}')
-                channel2=$(echo "${myline2}" | gawk '{print $3}')
+    if [[ "${type}" == "chan" ]]; then
+      echo "looking for match for ${satname} and ${channel}"
+      { while read -r myline2; do
+        satname2=$(echo "${myline2}" | gawk '{print $1}')
+        channel2=$(echo "${myline2}" | gawk '{print $3}')
 
-                if [[ "${satname}" == "${satname2}" && "${channel}" == "${channel2}" ]]; then
-                    match="${satname}  channel=  ${channel}"
-                    echo "match from gawk = ${match}"
-                    break
-                else
-                    match=""
-                fi
-
-            done; } < "${file2}"
-
+        if [[ "${satname}" == "${satname2}" && "${channel}" == "${channel2}" ]]; then
+          match="${satname}  channel=  ${channel}"
+          echo "match from gawk = ${match}"
+          break
         else
-            match=$(gawk "/${satname}/ && /channel= ${channel} / && /region= ${region} /" "${file2}")
-            echo match = "${match}"
-
-            match_len=${#match}
-            if ((match_len > 0)); then
-                channel2=$(echo "${match}" | gawk '{print $3}')
-
-                if [[ "${channel2}" != "${channel}" ]]; then
-                    match=""
-                fi
-            fi
-
+          match=""
         fi
-        match_len=${#match}
 
-        if [[ "${match_len}" -gt 0 ]]; then
+      done; } < "${file2}"
 
-            value2=$(echo "${match}" | gawk '{print $7}')
-            bound2=$(echo "${match}" | gawk '{print $9}')
+    else
+      match=$(gawk "/${satname}/ && /channel= ${channel} / && /region= ${region} /" "${file2}")
+      echo match = "${match}"
 
-            if [[ ${type} == "chan" ]]; then
-                tmpa="    ${satname}              channel= ${channel}"
-                tmpb=""
+      match_len=${#match}
+      if ((match_len > 0)); then
+        channel2=$(echo "${match}" | gawk '{print $3}')
 
-            elif [[ ${type} == "pen" ]]; then
-                tmpa="${satname}  channel= ${channel} region= ${region}"
-                tmpb="${cycle1}         	${value1}	${bound}"
-
-            elif [[ ${type} == "cnt" ]]; then
-                tmpa="${satname}  channel= ${channel} region= ${region}"
-                tmpb="${cycle1}         	${value1}	${bound}"
-
-            else
-                tmpa="${satname}  channel= ${channel} region= ${region}"
-                tmpb="${cycle1}: ${type}= ${value1}"
-            fi
-
-            line1="${tmpa} ${tmpb}"
-            echo "${line1}" >> "${outfile}"
-
-            if [[ ${type} != "chan" ]]; then
-                tmpc="${tmpa//[a-z0-9\-_\=]/}"
-
-                if [[ ${type} == "pen" || ${type} == "cnt" ]]; then
-                    line2=" ${tmpc} ${cycle2}         	${value2}	${bound2}"
-                else
-                    line2=" ${tmpc} ${cycle2}: ${type}= ${value2}"
-                fi
-
-                echo "${line2}" >> "${outfile}"
-            fi
-
-            #-----------------------------------------
-            # add hyperlink to warning entry
-            #
-            line3="   http://www.emc.ncep.noaa.gov/gmb/gdas/radiance/es_rad/${RADMON_SUFFIX}/index.html?sat=${satname}&region=${region}&channel=${channel}&stat=${type}"
-            if [[ "${channel}" -gt 0 ]]; then
-                echo "${line3}" >> "${outfile}"
-                echo "" >> "${outfile}"
-            fi
+        if [[ "${channel2}" != "${channel}" ]]; then
+          match=""
         fi
+      fi
+
     fi
+    match_len=${#match}
+
+    if [[ "${match_len}" -gt 0 ]]; then
+
+      value2=$(echo "${match}" | gawk '{print $7}')
+      bound2=$(echo "${match}" | gawk '{print $9}')
+
+      if [[ ${type} == "chan" ]]; then
+        tmpa="    ${satname}              channel= ${channel}"
+        tmpb=""
+
+      elif [[ ${type} == "pen" ]]; then
+        tmpa="${satname}  channel= ${channel} region= ${region}"
+        tmpb="${cycle1}         	${value1}	${bound}"
+
+      elif [[ ${type} == "cnt" ]]; then
+        tmpa="${satname}  channel= ${channel} region= ${region}"
+        tmpb="${cycle1}         	${value1}	${bound}"
+
+      else
+        tmpa="${satname}  channel= ${channel} region= ${region}"
+        tmpb="${cycle1}: ${type}= ${value1}"
+      fi
+
+      line1="${tmpa} ${tmpb}"
+      echo "${line1}" >> "${outfile}"
+
+      if [[ ${type} != "chan" ]]; then
+        tmpc="${tmpa//[a-z0-9\-_\=]/}"
+
+        if [[ ${type} == "pen" || ${type} == "cnt" ]]; then
+          line2=" ${tmpc} ${cycle2}         	${value2}	${bound2}"
+        else
+          line2=" ${tmpc} ${cycle2}: ${type}= ${value2}"
+        fi
+
+        echo "${line2}" >> "${outfile}"
+      fi
+
+      #-----------------------------------------
+      # add hyperlink to warning entry
+      #
+      line3="   http://www.emc.ncep.noaa.gov/gmb/gdas/radiance/es_rad/${RADMON_SUFFIX}/index.html?sat=${satname}&region=${region}&channel=${channel}&stat=${type}"
+      if [[ "${channel}" -gt 0 ]]; then
+        echo "${line3}" >> "${outfile}"
+        echo "" >> "${outfile}"
+      fi
+    fi
+  fi
 done; } < "${file1}"
 
 ################################################################################

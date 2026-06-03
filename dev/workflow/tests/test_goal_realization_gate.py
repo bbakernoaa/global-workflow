@@ -35,15 +35,14 @@ import yaml
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-import goal_realization_gate as gate  # noqa: E402
-from deployment.traceability import (  # noqa: E402
+import goal_realization_gate as gate
+from deployment.traceability import (
     PARENT_PROPERTY_NUMBERS,
     PARENT_REQUIREMENT_KEYS,
     STATUS_PASS,
     STATUS_PENDING,
     load_traceability_matrix,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -92,10 +91,7 @@ def _junit_xml(testcases: list[dict]) -> str:
         elif status == "error":
             rows.append(f'<testcase {attrs}><error message="runtime boom">x</error></testcase>')
         elif status == "collection_error":
-            rows.append(
-                f'<testcase {attrs}><error message="collection failure: import error">'
-                f"x</error></testcase>"
-            )
+            rows.append(f'<testcase {attrs}><error message="collection failure: import error">x</error></testcase>')
         elif status == "skipped":
             rows.append(f"<testcase {attrs}><skipped/></testcase>")
     body = "".join(rows)
@@ -120,14 +116,8 @@ def _all_properties_passing_testcases() -> list[dict]:
 
 def _full_matrix_yaml(*, prop_status=STATUS_PENDING, req_status=STATUS_PENDING) -> str:
     """A complete matrix (Properties 1-14, R1-R14) with one test each."""
-    props = {
-        n: {"name": f"Property {n}", "tests": [f"tests/test_property_{n}.py"], "status": prop_status}
-        for n in PARENT_PROPERTY_NUMBERS
-    }
-    reqs = {
-        key: {"title": key, "tests": [f"tests/test_req_{key.lower()}.py"], "status": req_status}
-        for key in PARENT_REQUIREMENT_KEYS
-    }
+    props = {n: {"name": f"Property {n}", "tests": [f"tests/test_property_{n}.py"], "status": prop_status} for n in PARENT_PROPERTY_NUMBERS}
+    reqs = {key: {"title": key, "tests": [f"tests/test_req_{key.lower()}.py"], "status": req_status} for key in PARENT_REQUIREMENT_KEYS}
     return yaml.dump({"properties": props, "requirements": reqs}, sort_keys=False)
 
 
@@ -349,15 +339,11 @@ class TestReconciliation:
             "properties": {
                 1: {
                     "name": "Deployment Determinism",
-                    "tests": [
-                        "tests/test_deployment_determinism.py::test_deployment_determinism_property"
-                    ],
+                    "tests": ["tests/test_deployment_determinism.py::test_deployment_determinism_property"],
                     "status": STATUS_PENDING,
                 }
             },
-            "requirements": {
-                "R1": {"title": "R1", "tests": ["tests/test_manifest_integrity_property.py"]}
-            },
+            "requirements": {"R1": {"title": "R1", "tests": ["tests/test_manifest_integrity_property.py"]}},
         }
         matrix_path = _write(tmp_path / "m.yaml", yaml.dump(data, sort_keys=False))
         matrix = load_traceability_matrix(matrix_path)
@@ -378,9 +364,7 @@ class TestReconciliation:
         )
         report = gate.parse_junit_report(_write(tmp_path / "r.xml", xml))
         results = gate.junit_test_results(report, matrix)
-        assert results[
-            "tests/test_deployment_determinism.py::test_deployment_determinism_property"
-        ] is True
+        assert results["tests/test_deployment_determinism.py::test_deployment_determinism_property"] is True
         assert results["tests/test_manifest_integrity_property.py"] is False
 
 
@@ -398,12 +382,7 @@ class TestOfflineEE2:
         expdir = tmp_path / "EXPDIR"
         _write(
             expdir / "ush" / "stage.sh",
-            "#!/bin/bash\n"
-            'if [[ ! -f "${EXPDIR}/x" ]]; then\n'
-            '    echo "FATAL ERROR: missing x"\n'
-            "    exit 1\n"
-            "fi\n"
-            'cpreq "${EXPDIR}/x" "${DATA}/x"\n',
+            '#!/bin/bash\nif [[ ! -f "${EXPDIR}/x" ]]; then\n    echo "FATAL ERROR: missing x"\n    exit 1\nfi\ncpreq "${EXPDIR}/x" "${DATA}/x"\n',
         )
 
         # A repo with one baselined, EE2-clean script and a matching baseline.
@@ -412,15 +391,9 @@ class TestOfflineEE2:
         baseline = {
             "passed": True,
             "scanner_categories": list(gate.SCANNER_CATEGORIES),
-            "files": {
-                "ush/forecast_postdet.sh": {
-                    "scan": {c: "clean" for c in gate.SCANNER_CATEGORIES}
-                }
-            },
+            "files": {"ush/forecast_postdet.sh": {"scan": {c: "clean" for c in gate.SCANNER_CATEGORIES}}},
         }
-        baseline_path = _write(
-            tmp_path / "baseline.json", json.dumps(baseline)
-        )
+        baseline_path = _write(tmp_path / "baseline.json", json.dumps(baseline))
 
         outcome = gate.run_offline_ee2(expdir, baseline_path=baseline_path, repo_root=repo_root)
         assert outcome.ee2_passed is True
@@ -442,11 +415,7 @@ class TestOfflineEE2:
         baseline = {
             "passed": True,
             "scanner_categories": list(gate.SCANNER_CATEGORIES),
-            "files": {
-                "ush/forecast_postdet.sh": {
-                    "scan": {c: "clean" for c in gate.SCANNER_CATEGORIES}
-                }
-            },
+            "files": {"ush/forecast_postdet.sh": {"scan": {c: "clean" for c in gate.SCANNER_CATEGORIES}}},
         }
         baseline_path = _write(tmp_path / "baseline.json", json.dumps(baseline))
 
@@ -474,11 +443,7 @@ def _clean_baseline(tmp_path: Path, repo: Path) -> Path:
     baseline = {
         "passed": True,
         "scanner_categories": list(gate.SCANNER_CATEGORIES),
-        "files": {
-            "ush/forecast_postdet.sh": {
-                "scan": {c: "clean" for c in gate.SCANNER_CATEGORIES}
-            }
-        },
+        "files": {"ush/forecast_postdet.sh": {"scan": {c: "clean" for c in gate.SCANNER_CATEGORIES}}},
     }
     return _write(tmp_path / "baseline.json", json.dumps(baseline))
 
@@ -493,12 +458,7 @@ class TestRunGateOrchestration:
             expdir = Path(expdir)
             _write(
                 expdir / "ush" / "stage.sh",
-                "#!/bin/bash\n"
-                'if [[ ! -f "${EXPDIR}/x" ]]; then\n'
-                '    echo "FATAL ERROR: missing"\n'
-                "    exit 1\n"
-                "fi\n"
-                'cpreq "${EXPDIR}/x" "${DATA}/x"\n',
+                '#!/bin/bash\nif [[ ! -f "${EXPDIR}/x" ]]; then\n    echo "FATAL ERROR: missing"\n    exit 1\nfi\ncpreq "${EXPDIR}/x" "${DATA}/x"\n',
             )
             return {"snapshot_id": "v17.0.0+deadbeef", "expdir": str(expdir)}
 
@@ -530,9 +490,7 @@ class TestRunGateOrchestration:
 
         def _run_suite(workflow_dir, junit_path):
             Path(junit_path).parent.mkdir(parents=True, exist_ok=True)
-            Path(junit_path).write_text(
-                _junit_xml(_all_properties_passing_testcases()), encoding="utf-8"
-            )
+            Path(junit_path).write_text(_junit_xml(_all_properties_passing_testcases()), encoding="utf-8")
             return 0
 
         result = gate.run_gate(
@@ -557,9 +515,7 @@ class TestRunGateOrchestration:
 
         def _run_suite(workflow_dir, junit_path):
             cases = _all_properties_passing_testcases()
-            cases.append(
-                {"file": "tests/test_unrelated.py", "name": "test_x", "status": "failed"}
-            )
+            cases.append({"file": "tests/test_unrelated.py", "name": "test_x", "status": "failed"})
             Path(junit_path).parent.mkdir(parents=True, exist_ok=True)
             Path(junit_path).write_text(_junit_xml(cases), encoding="utf-8")
             return 1
@@ -588,9 +544,7 @@ class TestRunGateOrchestration:
         gate.assert_verification_environment = lambda *a, **k: ["uwtools"]
         try:
             with pytest.raises(gate.GateError, match="missing required"):
-                gate.run_gate(
-                    deploy_fn=_boom_deploy, run_suite_fn=_boom_suite, **kwargs
-                )
+                gate.run_gate(deploy_fn=_boom_deploy, run_suite_fn=_boom_suite, **kwargs)
         finally:
             gate.assert_verification_environment = original
 
@@ -610,11 +564,7 @@ def test_gate_module_has_no_rag_server_dependency():
     offline EE2_Baseline_Recording.
     """
     source = Path(gate.__file__).read_text(encoding="utf-8")
-    import_lines = [
-        line.strip()
-        for line in source.splitlines()
-        if line.strip().startswith(("import ", "from "))
-    ]
+    import_lines = [line.strip() for line in source.splitlines() if line.strip().startswith(("import ", "from "))]
     joined = "\n".join(import_lines).lower()
     assert "mcp" not in joined
     assert "agentcore" not in joined

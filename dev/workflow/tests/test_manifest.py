@@ -12,10 +12,8 @@ Traces to: Requirements 3.3, 3.6, 3.7
 
 import os
 import sys
-import tempfile
 from collections import OrderedDict
 from datetime import datetime, timezone
-from pathlib import Path
 
 import pytest
 
@@ -32,7 +30,6 @@ from deployment.manifest import (
     write_manifest,
 )
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -47,15 +44,9 @@ def sample_expdir(tmp_path):
     (tmp_path / "parm" / "config" / "gfs").mkdir(parents=True)
 
     # Create sample files
-    (tmp_path / "jobs" / "JGFS_ATMOS_FORECAST").write_text(
-        "#!/bin/bash\necho forecast\n"
-    )
-    (tmp_path / "scripts" / "exgfs_atmos_forecast.sh").write_text(
-        "#!/bin/bash\necho running forecast\n"
-    )
-    (tmp_path / "parm" / "config" / "gfs" / "config.base").write_text(
-        "NET=gfs\nRUN=gfs\n"
-    )
+    (tmp_path / "jobs" / "JGFS_ATMOS_FORECAST").write_text("#!/bin/bash\necho forecast\n")
+    (tmp_path / "scripts" / "exgfs_atmos_forecast.sh").write_text("#!/bin/bash\necho running forecast\n")
+    (tmp_path / "parm" / "config" / "gfs" / "config.base").write_text("NET=gfs\nRUN=gfs\n")
 
     return tmp_path
 
@@ -79,8 +70,6 @@ class TestSHA256Helpers:
         f = tmp_path / "test.txt"
         f.write_text("hello world\n")
         result = sha256_file(f)
-        # Known SHA-256 of "hello world\n"
-        expected = "a948904f2f0f479b8f8564e9d7a7e6e5e0e9e7e3e2e1e0"
         # Just verify it's a 64-char hex string
         assert len(result) == 64
         assert all(c in "0123456789abcdef" for c in result)
@@ -440,9 +429,7 @@ class TestWriteAndVerify:
         errors = verify_manifest(sample_expdir)
         assert errors == []
 
-    def test_verify_manifest_detects_modified_file(
-        self, sample_expdir, fixed_timestamp
-    ):
+    def test_verify_manifest_detects_modified_file(self, sample_expdir, fixed_timestamp):
         """Verification detects when a file has been modified."""
         content = generate_manifest(
             expdir=sample_expdir,
@@ -464,9 +451,7 @@ class TestWriteAndVerify:
         assert len(errors) > 0
         assert any("JGFS_ATMOS_FORECAST" in e for e in errors)
 
-    def test_verify_manifest_detects_missing_file(
-        self, sample_expdir, fixed_timestamp
-    ):
+    def test_verify_manifest_detects_missing_file(self, sample_expdir, fixed_timestamp):
         """Verification detects when a file has been deleted."""
         content = generate_manifest(
             expdir=sample_expdir,

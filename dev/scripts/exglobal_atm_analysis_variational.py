@@ -5,15 +5,15 @@
 # variational analysis application
 import os
 
-from wxflow import Logger, cast_strdict_as_dtypedict
 from pygfs.task.atm_analysis import AtmAnalysis
 
+from wxflow import Logger, cast_strdict_as_dtypedict
+
 # Initialize root logger
-logger = Logger(level='DEBUG', colored_log=True)
+logger = Logger(level="DEBUG", colored_log=True)
 
 
-if __name__ == '__main__':
-
+if __name__ == "__main__":
     # Take configuration from environment and cast it as python dictionary
     config = cast_strdict_as_dtypedict(os.environ)
 
@@ -21,4 +21,4 @@ if __name__ == '__main__':
     AtmAnl = AtmAnalysis(config)
 
     # Execute JEDI variational analysis
-    AtmAnl.execute('atmanlvar')
+    AtmAnl.execute("atmanlvar")

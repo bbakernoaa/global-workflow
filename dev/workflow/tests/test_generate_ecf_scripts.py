@@ -21,7 +21,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from deployment.dag_generator import generate_ecf_scripts
 from deployment.workflow_config import DAG, TaskNode
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -265,17 +264,13 @@ class TestTemplateRendering:
             generate_ecf_scripts(dag, output_dir, _TEMPLATE_PATH, "HERA")
 
             # Check prep task
-            prep_path = os.path.join(
-                output_dir, "gdas", "atmos", "prep", "prep.ecf"
-            )
+            prep_path = os.path.join(output_dir, "gdas", "atmos", "prep", "prep.ecf")
             prep_content = open(prep_path).read()
             assert "Task: prep" in prep_content
             assert "JGDAS_ATMOS_PREP" in prep_content
 
             # Check anal task
-            anal_path = os.path.join(
-                output_dir, "gdas", "atmos", "analysis", "anal.ecf"
-            )
+            anal_path = os.path.join(output_dir, "gdas", "atmos", "analysis", "anal.ecf")
             anal_content = open(anal_path).read()
             assert "Task: anal" in anal_content
             assert "JGDAS_ATMOS_ANALYSIS" in anal_content
@@ -295,9 +290,7 @@ class TestErrorHandling:
         with tempfile.TemporaryDirectory() as tmpdir:
             output_dir = os.path.join(tmpdir, "ecf", "scripts")
             with pytest.raises(FileNotFoundError):
-                generate_ecf_scripts(
-                    dag, output_dir, "/nonexistent/template.ecf.j2", "HERA"
-                )
+                generate_ecf_scripts(dag, output_dir, "/nonexistent/template.ecf.j2", "HERA")
 
     def test_empty_dag_produces_no_files(self):
         """An empty DAG should produce no .ecf files."""
@@ -320,9 +313,7 @@ class TestIntegration:
         """Generate ecf scripts from the gfs_forecast_only.yaml config."""
         from deployment.workflow_config import parse
 
-        sample_dir = os.path.join(
-            os.path.dirname(__file__), "..", "..", "parm", "workflow"
-        )
+        sample_dir = os.path.join(os.path.dirname(__file__), "..", "..", "parm", "workflow")
         path = os.path.join(sample_dir, "gfs_forecast_only.yaml")
         dag = parse(path)
 
@@ -355,12 +346,8 @@ class TestIntegration:
             generate_ecf_scripts(dag, hera_dir, _TEMPLATE_PATH, "HERA")
             generate_ecf_scripts(dag, wcoss2_dir, _TEMPLATE_PATH, "WCOSS2")
 
-            hera_content = open(
-                os.path.join(hera_dir, "app", "run", "task1.ecf")
-            ).read()
-            wcoss2_content = open(
-                os.path.join(wcoss2_dir, "app", "run", "task1.ecf")
-            ).read()
+            hera_content = open(os.path.join(hera_dir, "app", "run", "task1.ecf")).read()
+            wcoss2_content = open(os.path.join(wcoss2_dir, "app", "run", "task1.ecf")).read()
 
             # Both should have the same template body
             assert "Task: task1" in hera_content

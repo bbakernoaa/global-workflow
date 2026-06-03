@@ -10,14 +10,13 @@ Validates: Requirements 6.9
 """
 
 import os
-import subprocess
 import stat
+import subprocess
+
 import pytest
 
 # Path to the project root
-PROJECT_ROOT = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "..", "..")
-)
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 DEV_USH = os.path.join(PROJECT_ROOT, "dev", "ush")
 
 
@@ -43,54 +42,54 @@ class TestShimFilesExist:
 class TestShimSyntax:
     """Verify all shim files have valid bash syntax."""
 
-    @pytest.mark.parametrize("script", [
-        "jjob_header.sh",
-        "jjob_standard_vars.sh",
-        "jjob_shell_setup.sh",
-    ])
+    @pytest.mark.parametrize(
+        "script",
+        [
+            "jjob_header.sh",
+            "jjob_standard_vars.sh",
+            "jjob_shell_setup.sh",
+        ],
+    )
     def test_bash_syntax_valid(self, script):
         """Each shim passes bash -n syntax check."""
         path = os.path.join(DEV_USH, script)
-        result = subprocess.run(
-            ["bash", "-n", path],
-            capture_output=True, text=True
-        )
-        assert result.returncode == 0, (
-            f"Syntax error in {script}: {result.stderr}"
-        )
+        result = subprocess.run(["bash", "-n", path], capture_output=True, text=True)
+        assert result.returncode == 0, f"Syntax error in {script}: {result.stderr}"
 
 
 class TestShimDelegation:
     """Verify shims check for universal_wrapper.sh and fall back correctly."""
 
-    @pytest.mark.parametrize("script", [
-        "jjob_header.sh",
-        "jjob_standard_vars.sh",
-        "jjob_shell_setup.sh",
-    ])
+    @pytest.mark.parametrize(
+        "script",
+        [
+            "jjob_header.sh",
+            "jjob_standard_vars.sh",
+            "jjob_shell_setup.sh",
+        ],
+    )
     def test_shim_references_universal_wrapper(self, script):
         """Each shim references universal_wrapper.sh for delegation."""
         path = os.path.join(DEV_USH, script)
-        with open(path, "r") as f:
+        with open(path) as f:
             content = f.read()
-        assert "universal_wrapper.sh" in content, (
-            f"{script} does not reference universal_wrapper.sh"
-        )
+        assert "universal_wrapper.sh" in content, f"{script} does not reference universal_wrapper.sh"
 
-    @pytest.mark.parametrize("script", [
-        "jjob_header.sh",
-        "jjob_standard_vars.sh",
-        "jjob_shell_setup.sh",
-    ])
+    @pytest.mark.parametrize(
+        "script",
+        [
+            "jjob_header.sh",
+            "jjob_standard_vars.sh",
+            "jjob_shell_setup.sh",
+        ],
+    )
     def test_shim_has_fallback_path(self, script):
         """Each shim has a fallback path when universal_wrapper.sh is absent."""
         path = os.path.join(DEV_USH, script)
-        with open(path, "r") as f:
+        with open(path) as f:
             content = f.read()
         # The fallback is indicated by an else branch
-        assert "else" in content, (
-            f"{script} does not have a fallback (else) branch"
-        )
+        assert "else" in content, f"{script} does not have a fallback (else) branch"
 
 
 class TestStandardVarsFallback:
@@ -125,9 +124,7 @@ echo "envir=${{envir}}"
         test_script.chmod(test_script.stat().st_mode | stat.S_IEXEC)
 
         result = subprocess.run(
-            ["bash", str(test_script)],
-            capture_output=True, text=True,
-            env={**os.environ, "PATH": os.environ.get("PATH", "/usr/bin:/bin")}
+            ["bash", str(test_script)], capture_output=True, text=True, env={**os.environ, "PATH": os.environ.get("PATH", "/usr/bin:/bin")}
         )
 
         assert result.returncode == 0, f"Script failed: {result.stderr}"
@@ -177,9 +174,7 @@ source "{DEV_USH}/jjob_header.sh"
         test_script.chmod(test_script.stat().st_mode | stat.S_IEXEC)
 
         result = subprocess.run(
-            ["bash", str(test_script)],
-            capture_output=True, text=True,
-            env={**os.environ, "PATH": os.environ.get("PATH", "/usr/bin:/bin")}
+            ["bash", str(test_script)], capture_output=True, text=True, env={**os.environ, "PATH": os.environ.get("PATH", "/usr/bin:/bin")}
         )
 
         # Should fail because -e was not provided
@@ -228,9 +223,7 @@ echo "MY_ENV_VAR=${{MY_ENV_VAR}}"
         test_script.chmod(test_script.stat().st_mode | stat.S_IEXEC)
 
         result = subprocess.run(
-            ["bash", str(test_script)],
-            capture_output=True, text=True,
-            env={**os.environ, "PATH": os.environ.get("PATH", "/usr/bin:/bin")}
+            ["bash", str(test_script)], capture_output=True, text=True, env={**os.environ, "PATH": os.environ.get("PATH", "/usr/bin:/bin")}
         )
 
         assert result.returncode == 0, f"Script failed: {result.stderr}"
@@ -241,16 +234,17 @@ echo "MY_ENV_VAR=${{MY_ENV_VAR}}"
 class TestShimRequirementTraceability:
     """Verify shims document their requirement traceability."""
 
-    @pytest.mark.parametrize("script", [
-        "jjob_header.sh",
-        "jjob_standard_vars.sh",
-        "jjob_shell_setup.sh",
-    ])
+    @pytest.mark.parametrize(
+        "script",
+        [
+            "jjob_header.sh",
+            "jjob_standard_vars.sh",
+            "jjob_shell_setup.sh",
+        ],
+    )
     def test_shim_references_requirement_6_9(self, script):
         """Each shim references Requirement 6.9 in its header."""
         path = os.path.join(DEV_USH, script)
-        with open(path, "r") as f:
+        with open(path) as f:
             content = f.read()
-        assert "6.9" in content, (
-            f"{script} does not reference Requirement 6.9"
-        )
+        assert "6.9" in content, f"{script} does not reference Requirement 6.9"

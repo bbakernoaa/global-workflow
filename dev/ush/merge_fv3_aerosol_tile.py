@@ -25,22 +25,26 @@ optional arguments:
   -h, --help     show this help message and exit
 
 """
+
+import argparse
 import os
-import sys
 import subprocess
-from typing import List
+import sys
 from functools import partial
 from shutil import copyfile
-import argparse
-import numpy as np
+from typing import List
+
 import netCDF4
+import numpy as np
 
 # Make sure print statements are flushed immediately, otherwise
 #   print statments may be out-of-order with subprocess output
 print = partial(print, flush=True)
 
 
-def merge_tile(base_file_name: str, ctrl_file_name: str, core_file_name: str, rest_file_name: str, append_file_name: str, tracers_to_append: List[str]) -> None:
+def merge_tile(
+    base_file_name: str, ctrl_file_name: str, core_file_name: str, rest_file_name: str, append_file_name: str, tracers_to_append: List[str]
+) -> None:
     if not os.path.isfile(base_file_name):
         print("FATAL ERROR: Atmosphere file " + base_file_name + " does not exist!")
         sys.exit(102)
@@ -109,7 +113,7 @@ def merge_tile(base_file_name: str, ctrl_file_name: str, core_file_name: str, re
         if variable_name not in base_file.variables.keys():
             new_ntracer = new_ntracer + 1
             base_file.createVariable(variable_name, variable.datatype, base_file["sphum"].dimensions)
-        base_file[variable_name][0, :, :] = 0.
+        base_file[variable_name][0, :, :] = 0.0
         base_file[variable_name][1:, :, :] = scale_factor * variable[0, :, :, :]
         base_file[variable_name].setncatts(variable.__dict__)
         mass_src = variable * delp
@@ -117,7 +121,7 @@ def merge_tile(base_file_name: str, ctrl_file_name: str, core_file_name: str, re
         mass_err_max = np.max(np.abs(mass_src - mass_dst))
         total_mass_src = np.sum(mass_src)
         total_mass_dst = np.sum(mass_dst)
-        print(f' {variable_name:6}   {total_mass_src:20}   {total_mass_dst:20}    {mass_err_max:22}')
+        print(f" {variable_name:6}   {total_mass_src:20}   {total_mass_dst:20}    {mass_err_max:22}")
         # print("Done adding " + variable_name)
 
     print("-" * 79 + "\n")
@@ -140,15 +144,16 @@ def merge_tile(base_file_name: str, ctrl_file_name: str, core_file_name: str, re
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Appends tracer data from one NetCDF file to another and updates the tracer count.")
-    parser.add_argument('atm_file', type=str, help="File containing the atmospheric initial conditions data")
-    parser.add_argument('chem_file', type=str, help="File containing the chemistry tracer data to be added")
-    parser.add_argument('core_file', type=str, help="File containing the dycore sigma level coefficients")
-    parser.add_argument('ctrl_file', type=str, help="File containing the sigma level coefficients for atmospheric IC data")
-    parser.add_argument('rest_file', type=str, help="File containing the pressure level thickness for the restart state")
-    parser.add_argument('variable_file', type=str, help="File with list of tracer variable_names in the chem_file to add to the atm_file, one tracer per line")
-    parser.add_argument('out_file', type=str, nargs="?", help="Name of file to create")
+    parser = argparse.ArgumentParser(description="Appends tracer data from one NetCDF file to another and updates the tracer count.")
+    parser.add_argument("atm_file", type=str, help="File containing the atmospheric initial conditions data")
+    parser.add_argument("chem_file", type=str, help="File containing the chemistry tracer data to be added")
+    parser.add_argument("core_file", type=str, help="File containing the dycore sigma level coefficients")
+    parser.add_argument("ctrl_file", type=str, help="File containing the sigma level coefficients for atmospheric IC data")
+    parser.add_argument("rest_file", type=str, help="File containing the pressure level thickness for the restart state")
+    parser.add_argument(
+        "variable_file", type=str, help="File with list of tracer variable_names in the chem_file to add to the atm_file, one tracer per line"
+    )
+    parser.add_argument("out_file", type=str, nargs="?", help="Name of file to create")
 
     args = parser.parse_args()
 

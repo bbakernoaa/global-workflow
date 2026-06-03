@@ -18,7 +18,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from hypothesis import given, settings, HealthCheck, assume
+from hypothesis import HealthCheck, assume, given, settings
 from hypothesis import strategies as st
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -88,12 +88,7 @@ def _create_test_env(tmp_path: Path) -> dict:
 
     # Create mock utilities
     mock_utils = tmp_path / "mock_utils.sh"
-    mock_utils.write_text(
-        '#!/usr/bin/env bash\n'
-        'err_exit() { echo "ERR_EXIT: $*" >&2; exit 1; }\n'
-        'cpfs() { cp "$1" "$2"; }\n'
-        'export -f err_exit cpfs\n'
-    )
+    mock_utils.write_text('#!/usr/bin/env bash\nerr_exit() { echo "ERR_EXIT: $*" >&2; exit 1; }\ncpfs() { cp "$1" "$2"; }\nexport -f err_exit cpfs\n')
 
     env = os.environ.copy()
     env["COMOUT"] = str(comout)
@@ -131,9 +126,7 @@ def _run_script(tmp_path: Path, script_content: str, env: dict) -> subprocess.Co
     deadline=None,
     suppress_health_check=[HealthCheck.too_slow],
 )
-def test_atomicity_partial_staging_failure_leaves_comout_unchanged(
-    deliverable_set, tmp_path_factory
-):
+def test_atomicity_partial_staging_failure_leaves_comout_unchanged(deliverable_set, tmp_path_factory):
     """Property 5: Partial failure during staging leaves COMOUT unchanged.
 
     **Validates: Requirements 7.6**
@@ -167,19 +160,19 @@ def test_atomicity_partial_staging_failure_leaves_comout_unchanged(
     # Create a mock cpfs that fails on the Nth invocation
     mock_utils = tmp_path / "mock_utils.sh"
     mock_utils.write_text(
-        '#!/usr/bin/env bash\n'
+        "#!/usr/bin/env bash\n"
         'err_exit() { echo "ERR_EXIT: $*" >&2; exit 1; }\n'
-        f'CPFS_CALL_COUNT=0\n'
-        f'CPFS_FAIL_AT={fail_at}\n'
-        'cpfs() {\n'
-        '    CPFS_CALL_COUNT=$((CPFS_CALL_COUNT + 1))\n'
-        '    if [[ $CPFS_CALL_COUNT -ge $CPFS_FAIL_AT ]]; then\n'
-        '        return 1\n'
-        '    fi\n'
+        f"CPFS_CALL_COUNT=0\n"
+        f"CPFS_FAIL_AT={fail_at}\n"
+        "cpfs() {\n"
+        "    CPFS_CALL_COUNT=$((CPFS_CALL_COUNT + 1))\n"
+        "    if [[ $CPFS_CALL_COUNT -ge $CPFS_FAIL_AT ]]; then\n"
+        "        return 1\n"
+        "    fi\n"
         '    cp "$1" "$2"\n'
-        '}\n'
-        'export -f err_exit cpfs\n'
-        'export CPFS_CALL_COUNT CPFS_FAIL_AT\n'
+        "}\n"
+        "export -f err_exit cpfs\n"
+        "export CPFS_CALL_COUNT CPFS_FAIL_AT\n"
     )
     env["MOCK_UTILS"] = str(mock_utils)
 
@@ -188,20 +181,12 @@ def test_atomicity_partial_staging_failure_leaves_comout_unchanged(
 
     # Build the script that sources mock utils and runs atomic_publish
     file_args = " ".join(f'"{f}"' for f in source_files)
-    script_content = (
-        f'#!/usr/bin/env bash\n'
-        f'source "{mock_utils}"\n'
-        f'source "{SCRIPT_PATH}" {file_args}\n'
-    )
+    script_content = f'#!/usr/bin/env bash\nsource "{mock_utils}"\nsource "{SCRIPT_PATH}" {file_args}\n'
 
     result = _run_script(tmp_path, script_content, env)
 
     # The script should have failed (non-zero exit)
-    assert result.returncode != 0, (
-        f"Expected failure during staging but script succeeded.\n"
-        f"stdout: {result.stdout}\n"
-        f"stderr: {result.stderr}"
-    )
+    assert result.returncode != 0, f"Expected failure during staging but script succeeded.\nstdout: {result.stdout}\nstderr: {result.stderr}"
 
     # COMOUT should remain unchanged — no deliverable files at final location
     final_files = set(f.name for f in comout.iterdir() if f.is_file())
@@ -217,11 +202,7 @@ def test_atomicity_partial_staging_failure_leaves_comout_unchanged(
     )
 
     # COMOUT should be exactly as it was before
-    assert final_files == initial_files, (
-        f"COMOUT state changed after staging failure!\n"
-        f"Before: {initial_files}\n"
-        f"After: {final_files}"
-    )
+    assert final_files == initial_files, f"COMOUT state changed after staging failure!\nBefore: {initial_files}\nAfter: {final_files}"
 
 
 @given(deliverable_set=_deliverable_set())
@@ -230,9 +211,7 @@ def test_atomicity_partial_staging_failure_leaves_comout_unchanged(
     deadline=None,
     suppress_health_check=[HealthCheck.too_slow],
 )
-def test_atomicity_verification_failure_leaves_comout_unchanged(
-    deliverable_set, tmp_path_factory
-):
+def test_atomicity_verification_failure_leaves_comout_unchanged(deliverable_set, tmp_path_factory):
     """Property 5: Verification failure leaves COMOUT unchanged.
 
     **Validates: Requirements 7.6**
@@ -265,17 +244,17 @@ def test_atomicity_verification_failure_leaves_comout_unchanged(
     # Create a mock cpfs that copies normally but truncates one specific file
     mock_utils = tmp_path / "mock_utils.sh"
     mock_utils.write_text(
-        '#!/usr/bin/env bash\n'
+        "#!/usr/bin/env bash\n"
         'err_exit() { echo "ERR_EXIT: $*" >&2; exit 1; }\n'
-        'cpfs() {\n'
+        "cpfs() {\n"
         f'    local basename=$(basename "$2")\n'
         f'    if [[ "$basename" == "{corrupt_filename}" ]]; then\n'
         f'        : > "$2"\n'  # Truncate to empty
-        '    else\n'
+        "    else\n"
         '        cp "$1" "$2"\n'
-        '    fi\n'
-        '}\n'
-        'export -f err_exit cpfs\n'
+        "    fi\n"
+        "}\n"
+        "export -f err_exit cpfs\n"
     )
     env["MOCK_UTILS"] = str(mock_utils)
 
@@ -284,20 +263,12 @@ def test_atomicity_verification_failure_leaves_comout_unchanged(
 
     # Build the script
     file_args = " ".join(f'"{f}"' for f in source_files)
-    script_content = (
-        f'#!/usr/bin/env bash\n'
-        f'source "{mock_utils}"\n'
-        f'source "{SCRIPT_PATH}" {file_args}\n'
-    )
+    script_content = f'#!/usr/bin/env bash\nsource "{mock_utils}"\nsource "{SCRIPT_PATH}" {file_args}\n'
 
     result = _run_script(tmp_path, script_content, env)
 
     # The script should have failed due to empty file verification
-    assert result.returncode != 0, (
-        f"Expected failure during verification but script succeeded.\n"
-        f"stdout: {result.stdout}\n"
-        f"stderr: {result.stderr}"
-    )
+    assert result.returncode != 0, f"Expected failure during verification but script succeeded.\nstdout: {result.stdout}\nstderr: {result.stderr}"
 
     # COMOUT should remain unchanged — no deliverable files at final location
     final_files = set(f.name for f in comout.iterdir() if f.is_file())
@@ -313,11 +284,7 @@ def test_atomicity_verification_failure_leaves_comout_unchanged(
     )
 
     # COMOUT should be exactly as it was before
-    assert final_files == initial_files, (
-        f"COMOUT state changed after verification failure!\n"
-        f"Before: {initial_files}\n"
-        f"After: {final_files}"
-    )
+    assert final_files == initial_files, f"COMOUT state changed after verification failure!\nBefore: {initial_files}\nAfter: {final_files}"
 
 
 @given(deliverable_set=_deliverable_set())
@@ -326,9 +293,7 @@ def test_atomicity_verification_failure_leaves_comout_unchanged(
     deadline=None,
     suppress_health_check=[HealthCheck.too_slow],
 )
-def test_atomicity_all_or_nothing_on_success(
-    deliverable_set, tmp_path_factory
-):
+def test_atomicity_all_or_nothing_on_success(deliverable_set, tmp_path_factory):
     """Property 5: On success, ALL files in the deliverable set are in COMOUT.
 
     **Validates: Requirements 7.6**
@@ -353,21 +318,12 @@ def test_atomicity_all_or_nothing_on_success(
 
     # Use normal cpfs (just cp)
     mock_utils = tmp_path / "mock_utils.sh"
-    mock_utils.write_text(
-        '#!/usr/bin/env bash\n'
-        'err_exit() { echo "ERR_EXIT: $*" >&2; exit 1; }\n'
-        'cpfs() { cp "$1" "$2"; }\n'
-        'export -f err_exit cpfs\n'
-    )
+    mock_utils.write_text('#!/usr/bin/env bash\nerr_exit() { echo "ERR_EXIT: $*" >&2; exit 1; }\ncpfs() { cp "$1" "$2"; }\nexport -f err_exit cpfs\n')
     env["MOCK_UTILS"] = str(mock_utils)
 
     # Build the script
     file_args = " ".join(f'"{f}"' for f in source_files)
-    script_content = (
-        f'#!/usr/bin/env bash\n'
-        f'source "{mock_utils}"\n'
-        f'source "{SCRIPT_PATH}" {file_args}\n'
-    )
+    script_content = f'#!/usr/bin/env bash\nsource "{mock_utils}"\nsource "{SCRIPT_PATH}" {file_args}\n'
 
     result = _run_script(tmp_path, script_content, env)
 
@@ -390,7 +346,5 @@ def test_atomicity_all_or_nothing_on_success(
     # If the script succeeded, all files should be present
     if result.returncode == 0:
         assert present_deliverables == deliverable_names, (
-            f"Script succeeded but not all deliverables are in COMOUT.\n"
-            f"Expected: {deliverable_names}\n"
-            f"Found: {present_deliverables}"
+            f"Script succeeded but not all deliverables are in COMOUT.\nExpected: {deliverable_names}\nFound: {present_deliverables}"
         )

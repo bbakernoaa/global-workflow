@@ -40,15 +40,16 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Union
 
-
-VALID_NET_VALUES = ('gfs', 'gefs', 'sfs', 'gcafs')
-ALL_NET_VALUES = ('gefs', 'gfs', 'gcafs', 'sfs')
+VALID_NET_VALUES = ("gfs", "gefs", "sfs", "gcafs")
+ALL_NET_VALUES = ("gefs", "gfs", "gcafs", "sfs")
 
 _SELF_PATH = Path(__file__).resolve()
-_SELF_SCRIPTS = frozenset({
-    'global_net_converter.py',
-    'example_convert.py',
-})
+_SELF_SCRIPTS = frozenset(
+    {
+        "global_net_converter.py",
+        "example_convert.py",
+    }
+)
 
 
 @dataclass
@@ -82,6 +83,7 @@ class ConversionResult:
 # Shared file-processing helpers
 # ---------------------------------------------------------------------------
 
+
 def _process_file(filepath: Path, patterns: dict):
     """Apply word-boundary replacements to a file.
 
@@ -91,14 +93,14 @@ def _process_file(filepath: Path, patterns: dict):
         (modified, failed)
     """
     try:
-        content = filepath.read_text(errors='replace')
+        content = filepath.read_text(errors="replace")
     except OSError as exc:
         print(f"ERROR: Could not read {filepath}: {exc}", file=sys.stderr)
         return False, True
 
     new_content = content
     for pattern, replacement in patterns.items():
-        new_content = re.sub(rf'\b{re.escape(pattern)}\b', replacement, new_content)
+        new_content = re.sub(rf"\b{re.escape(pattern)}\b", replacement, new_content)
 
     if new_content == content:
         return False, False
@@ -113,7 +115,7 @@ def _process_file(filepath: Path, patterns: dict):
 
 
 def _iter_files(dirpath: Path, exclude_names):
-    for path in dirpath.rglob('*'):
+    for path in dirpath.rglob("*"):
         if path.is_dir():
             continue
         if path.resolve() == _SELF_PATH:
@@ -133,6 +135,7 @@ def _validate_target(target: Path) -> None:
 # ---------------------------------------------------------------------------
 # GlobalToNetConverter
 # ---------------------------------------------------------------------------
+
 
 class GlobalToNetConverter:
     """Convert HOMEglobal-style variables to HOME${NET}-specific variables.
@@ -200,7 +203,7 @@ class GlobalToNetConverter:
         FileNotFoundError
             If target does not exist.
         """
-        target = Path(base_path) / relative_path.strip('/')
+        target = Path(base_path) / relative_path.strip("/")
         self._validate_net(net)
         _validate_target(target)
 
@@ -319,20 +322,18 @@ class GlobalToNetConverter:
     @staticmethod
     def _get_patterns(net: str) -> dict:
         return {
-            'HOMEglobal': f'HOME{net}',
-            'PARMglobal': f'PARM{net}',
-            'USHglobal': f'USH{net}',
-            'SCRglobal': f'SCR{net}',
-            'EXECglobal': f'EXEC{net}',
-            'FIXglobal': f'FIX{net}',
+            "HOMEglobal": f"HOME{net}",
+            "PARMglobal": f"PARM{net}",
+            "USHglobal": f"USH{net}",
+            "SCRglobal": f"SCR{net}",
+            "EXECglobal": f"EXEC{net}",
+            "FIXglobal": f"FIX{net}",
         }
 
     @staticmethod
     def _validate_net(net: str) -> None:
         if net not in VALID_NET_VALUES:
-            raise ValueError(
-                f"Invalid NET value '{net}'. Must be one of: {', '.join(VALID_NET_VALUES)}"
-            )
+            raise ValueError(f"Invalid NET value '{net}'. Must be one of: {', '.join(VALID_NET_VALUES)}")
 
     @staticmethod
     def _print_summary(result: ConversionResult, net: str) -> None:
@@ -352,6 +353,7 @@ class GlobalToNetConverter:
 # ---------------------------------------------------------------------------
 # NetToGlobalConverter
 # ---------------------------------------------------------------------------
+
 
 class NetToGlobalConverter:
     """Convert HOME${NET}-style variables back to HOMEglobal-style variables.
@@ -420,7 +422,7 @@ class NetToGlobalConverter:
         FileNotFoundError
             If target does not exist.
         """
-        target = Path(base_path) / relative_path.strip('/')
+        target = Path(base_path) / relative_path.strip("/")
         self._validate_net(net)
         _validate_target(target)
 
@@ -449,7 +451,7 @@ class NetToGlobalConverter:
         filepath = Path(filepath)
         self._validate_net(net)
 
-        net_list = ALL_NET_VALUES if net == 'all' else (net,)
+        net_list = ALL_NET_VALUES if net == "all" else (net,)
         result = ConversionResult()
 
         for current_net in net_list:
@@ -500,13 +502,12 @@ class NetToGlobalConverter:
         exclude = exclude or []
         exclude_names = {Path(e).name for e in exclude} | _SELF_SCRIPTS
         display_exclude = [e for e in exclude if Path(e).name not in _SELF_SCRIPTS]
-        net_list = ALL_NET_VALUES if net == 'all' else (net,)
+        net_list = ALL_NET_VALUES if net == "all" else (net,)
 
         if self.verbose:
             print("=========================================")
-            if net == 'all':
-                print(f"Converting NET-specific variables to global-workflow variables "
-                      f"from: {' '.join(net_list)}")
+            if net == "all":
+                print(f"Converting NET-specific variables to global-workflow variables from: {' '.join(net_list)}")
             else:
                 print(f"Converting {net}-specific variables to global-workflow variables")
             print(f"Target: {dirpath}")
@@ -563,20 +564,18 @@ class NetToGlobalConverter:
     @staticmethod
     def _get_patterns(net: str) -> dict:
         return {
-            f'HOME{net}': 'HOMEglobal',
-            f'PARM{net}': 'PARMglobal',
-            f'USH{net}': 'USHglobal',
-            f'SCR{net}': 'SCRglobal',
-            f'EXEC{net}': 'EXECglobal',
-            f'FIX{net}': 'FIXglobal',
+            f"HOME{net}": "HOMEglobal",
+            f"PARM{net}": "PARMglobal",
+            f"USH{net}": "USHglobal",
+            f"SCR{net}": "SCRglobal",
+            f"EXEC{net}": "EXECglobal",
+            f"FIX{net}": "FIXglobal",
         }
 
     @staticmethod
     def _validate_net(net: str) -> None:
-        if net != 'all' and net not in VALID_NET_VALUES:
-            raise ValueError(
-                f"Invalid NET value '{net}'. Must be one of: {', '.join(VALID_NET_VALUES)}, or all"
-            )
+        if net != "all" and net not in VALID_NET_VALUES:
+            raise ValueError(f"Invalid NET value '{net}'. Must be one of: {', '.join(VALID_NET_VALUES)}, or all")
 
     @staticmethod
     def _print_net_summary(result: ConversionResult, net: str) -> None:
@@ -593,33 +592,22 @@ class NetToGlobalConverter:
 # CLI entry point
 # ---------------------------------------------------------------------------
 
+
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description='Convert between HOMEglobal-style and HOME${NET}-style variable names.'
-    )
-    subparsers = parser.add_subparsers(dest='direction', required=True)
+    parser = argparse.ArgumentParser(description="Convert between HOMEglobal-style and HOME${NET}-style variable names.")
+    subparsers = parser.add_subparsers(dest="direction", required=True)
 
-    to_net = subparsers.add_parser(
-        'to-net',
-        help='Convert HOMEglobal etc. to HOME${NET} etc.'
-    )
-    to_net.add_argument('net', metavar='NET_value',
-                        help=f'One of: {", ".join(VALID_NET_VALUES)}')
-    to_net.add_argument('base_path', help='Absolute base path (e.g. repository root)')
-    to_net.add_argument('relative_path', help='Relative path to the target within base_path')
-    to_net.add_argument('--exclude', nargs='+', default=[], metavar='dir',
-                        help='Paths to exclude (matched by basename)')
+    to_net = subparsers.add_parser("to-net", help="Convert HOMEglobal etc. to HOME${NET} etc.")
+    to_net.add_argument("net", metavar="NET_value", help=f"One of: {', '.join(VALID_NET_VALUES)}")
+    to_net.add_argument("base_path", help="Absolute base path (e.g. repository root)")
+    to_net.add_argument("relative_path", help="Relative path to the target within base_path")
+    to_net.add_argument("--exclude", nargs="+", default=[], metavar="dir", help="Paths to exclude (matched by basename)")
 
-    to_global = subparsers.add_parser(
-        'to-global',
-        help='Convert HOME${NET} etc. back to HOMEglobal etc.'
-    )
-    to_global.add_argument('net', metavar='NET_value',
-                           help=f'One of: {", ".join(VALID_NET_VALUES)}, or all')
-    to_global.add_argument('base_path', help='Absolute base path (e.g. repository root)')
-    to_global.add_argument('relative_path', help='Relative path to the target within base_path')
-    to_global.add_argument('--exclude', nargs='+', default=[], metavar='dir',
-                           help='Paths to exclude (matched by basename)')
+    to_global = subparsers.add_parser("to-global", help="Convert HOME${NET} etc. back to HOMEglobal etc.")
+    to_global.add_argument("net", metavar="NET_value", help=f"One of: {', '.join(VALID_NET_VALUES)}, or all")
+    to_global.add_argument("base_path", help="Absolute base path (e.g. repository root)")
+    to_global.add_argument("relative_path", help="Relative path to the target within base_path")
+    to_global.add_argument("--exclude", nargs="+", default=[], metavar="dir", help="Paths to exclude (matched by basename)")
 
     return parser
 
@@ -627,9 +615,9 @@ def _build_parser() -> argparse.ArgumentParser:
 def main() -> None:
     args = _build_parser().parse_args()
 
-    if args.direction == 'to-net':
+    if args.direction == "to-net":
         converter = GlobalToNetConverter(verbose=True)
-    elif args.direction == 'to-global':
+    elif args.direction == "to-global":
         converter = NetToGlobalConverter(verbose=True)
     else:
         raise ValueError(f"Unknown direction '{args.direction}'. Must be 'to-net' or 'to-global'.")
@@ -644,5 +632,5 @@ def main() -> None:
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

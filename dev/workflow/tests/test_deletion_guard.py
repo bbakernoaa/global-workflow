@@ -59,9 +59,7 @@ def test_comment_only_reference_does_not_block(tmp_path: Path):
     _write(tmp_path / "ush" / "victim.sh", "echo bye\n")
     _write(
         tmp_path / "ush" / "doc.sh",
-        "#!/bin/bash\n"
-        "# This replaces the legacy victim.sh runtime generator.\n"
-        'cpreq "${EXPDIR}/x" "${DATA}/x"  # was victim.sh\n',
+        '#!/bin/bash\n# This replaces the legacy victim.sh runtime generator.\ncpreq "${EXPDIR}/x" "${DATA}/x"  # was victim.sh\n',
     )
     refs = find_blocking_references(tmp_path, "ush/victim.sh")
     assert refs == []

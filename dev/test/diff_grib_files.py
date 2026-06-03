@@ -1,5 +1,5 @@
 #! /usr/bin/env python3
-'''
+"""
 Compares two grib2 files and print any variables that have a
   non-identity correlation.
 
@@ -14,16 +14,17 @@ fileA: string
 fileB: string
     Path to the second grib2 file
 
-'''
+"""
+
 import re
-import sys
 import subprocess
+import sys
 
 # TODO - Update to also check the min just in case the grib files have a constant offset
 
 
 def count_nonid_corr(test_string: str, quiet=False):
-    '''
+    """
     Scan a wgrib2 print of the correlation between two values and count
       how many variables have a non-identity correlation. Any such variables
       are printed.
@@ -45,13 +46,13 @@ def count_nonid_corr(test_string: str, quiet=False):
         Number of non-identify correlations represented in the string.
 
 
-    '''
+    """
     pattern = re.compile(r"(\d+:\d+:)(?P<var>.*):rpn_corr=(?P<corr>.*)")
     matches = [m.groupdict() for m in pattern.finditer(test_string)]
 
     count = 0
     for match in matches:
-        if float(match['corr']) != 1.0:
+        if float(match["corr"]) != 1.0:
             count = count + 1
             if not quiet:
                 print(f"{match['var']}: corr={match['corr']}")
@@ -65,7 +66,7 @@ def count_nonid_corr(test_string: str, quiet=False):
     return count
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     fileA = sys.argv[0]
     fileB = sys.argv[1]
 

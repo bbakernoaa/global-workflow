@@ -47,8 +47,8 @@ from .validators import (
     DiagTableValidator,
     ESMFConfigValidator,
     FieldTableValidator,
-    MOM6ParameterValidator,
     ModelConfigureValidator,
+    MOM6ParameterValidator,
     NamelistValidator,
 )
 
@@ -103,12 +103,14 @@ _RC_VALIDATOR = ESMFConfigValidator()
 # These files require proper Fortran namelist formatting conventions:
 # .true./.false. booleans, proper string quoting, &group / syntax.
 # Traces to: Requirements 6.1, 6.2, 14.1, 14.2, 14.3, 14.4
-_FORTRAN_NAMELIST_FILENAMES: frozenset[str] = frozenset({
-    "input.nml",
-    "ice_in",
-    "ww3_shel.nml",
-    "input_global_nest.nml",
-})
+_FORTRAN_NAMELIST_FILENAMES: frozenset[str] = frozenset(
+    {
+        "input.nml",
+        "ice_in",
+        "ww3_shel.nml",
+        "input_global_nest.nml",
+    }
+)
 
 # Coupled-model template subdirectories (Requirements 9.1-9.6)
 _COUPLED_TEMPLATE_DIRS: list[str] = ["ocean", "ice", "wave", "post"]
@@ -146,9 +148,9 @@ _UFS_COMPONENT_FLAGS: dict[str, list[str]] = {
 # Patterns that indicate unresolved Jinja2 tokens in rendered output.
 # These should NEVER appear in a fully-rendered file.
 _UNRESOLVED_TOKEN_PATTERNS: list[re.Pattern[str]] = [
-    re.compile(r"\{\{"),   # Variable expression
-    re.compile(r"\{%"),    # Block/statement tag
-    re.compile(r"\{#"),    # Comment tag
+    re.compile(r"\{\{"),  # Variable expression
+    re.compile(r"\{%"),  # Block/statement tag
+    re.compile(r"\{#"),  # Comment tag
 ]
 
 
@@ -253,10 +255,7 @@ class ModelConfigRenderer:
         # Step 2: Validate atmosphere schema (after defaults merge)
         errors = self._schema.validate(model_context)
         if errors:
-            raise TemplateRenderError(
-                f"Model_Context schema validation failed:\n"
-                + "\n".join(f"  - {e}" for e in errors)
-            )
+            raise TemplateRenderError("Model_Context schema validation failed:\n" + "\n".join(f"  - {e}" for e in errors))
 
         # Step 3: Validate coupled-model schema if coupled sections present
         # AND coupled template directories contain templates to render.
@@ -265,17 +264,11 @@ class ModelConfigRenderer:
         # intending to render coupled templates.
         has_coupled_templates = self._has_coupled_templates()
         if has_coupled_templates:
-            has_coupled = any(
-                model_context.get(section) is not None
-                for section in _COUPLED_TEMPLATE_DIRS
-            )
+            has_coupled = any(model_context.get(section) is not None for section in _COUPLED_TEMPLATE_DIRS)
             if has_coupled:
                 coupled_errors = validate_coupled_model_context(model_context)
                 if coupled_errors:
-                    raise TemplateRenderError(
-                        f"Coupled model context validation failed:\n"
-                        + "\n".join(f"  - {e}" for e in coupled_errors)
-                    )
+                    raise TemplateRenderError("Coupled model context validation failed:\n" + "\n".join(f"  - {e}" for e in coupled_errors))
 
         # Step 4: Merge ocean resolution defaults (if ocean section present
         # and coupled templates exist)
@@ -359,9 +352,7 @@ class ModelConfigRenderer:
                     return True
         return False
 
-    def _discover_static_files(
-        self, rendered_templates: list[Path]
-    ) -> list[Path]:
+    def _discover_static_files(self, rendered_templates: list[Path]) -> list[Path]:
         """Find static files that have no corresponding .j2 template.
 
         These are files that should be copied verbatim to the EXPDIR
@@ -400,9 +391,7 @@ class ModelConfigRenderer:
 
         return static_files
 
-    def _create_renderer(
-        self, model_context: dict[str, Any]
-    ) -> TemplateRenderer:
+    def _create_renderer(self, model_context: dict[str, Any]) -> TemplateRenderer:
         """Create a TemplateRenderer configured for model config rendering.
 
         The context is wrapped as {'model': model_context} so templates
@@ -492,7 +481,7 @@ class ModelConfigRenderer:
             # Use uwtools for Fortran namelist rendering (Req 6.1, 14.1-14.4)
             self._render_fortran_namelist(
                 template_path=template_path,
-                context=renderer.context if hasattr(renderer, 'context') else {},
+                context=renderer.context if hasattr(renderer, "context") else {},
                 output_path=output_path,
             )
         else:
@@ -582,8 +571,7 @@ class ModelConfigRenderer:
 
         if errors:
             raise TemplateRenderError(
-                f"Format validation failed for '{filename}':\n"
-                + "\n".join(f"  - {e}" for e in errors),
+                f"Format validation failed for '{filename}':\n" + "\n".join(f"  - {e}" for e in errors),
                 file=str(output_path),
             )
 
@@ -630,10 +618,7 @@ class ModelConfigRenderer:
         # Deferred import to avoid circular dependency (pipeline -> model_config_renderer -> pipeline)
         from .pipeline import PipelineError
 
-        logger.debug(
-            f"Rendering Fortran namelist '{output_path.name}' via uwtools "
-            f"from template '{template_path.name}'"
-        )
+        logger.debug(f"Rendering Fortran namelist '{output_path.name}' via uwtools from template '{template_path.name}'")
 
         try:
             _uw_render(
@@ -656,8 +641,7 @@ class ModelConfigRenderer:
             if errors:
                 raise PipelineError(
                     "model_input_render",
-                    f"Post-render validation failed for '{filename}': "
-                    + "; ".join(errors),
+                    f"Post-render validation failed for '{filename}': " + "; ".join(errors),
                 )
 
         # Verify Fortran namelist formatting conventions are preserved
@@ -684,9 +668,7 @@ class ModelConfigRenderer:
 
         # Check for Python-style booleans that should be Fortran-style
         # Pattern: assignment with bare True/False (not .true./.false.)
-        _PYTHON_BOOL_PATTERN = re.compile(
-            r'=\s*(?:True|False)\s*(?:,|\n|$)', re.MULTILINE
-        )
+        _PYTHON_BOOL_PATTERN = re.compile(r"=\s*(?:True|False)\s*(?:,|\n|$)", re.MULTILINE)
         matches = _PYTHON_BOOL_PATTERN.findall(content)
         if matches:
             logger.warning(
@@ -729,13 +711,8 @@ class ModelConfigRenderer:
         Traces to: Requirements 6.1, 6.3, 6.7
         """
         # Determine which UFS components are active
-        active_components = self._determine_active_components(
-            reachability_set, model_context
-        )
-        logger.info(
-            f"DAG-aware rendering: active UFS components = "
-            f"{sorted(active_components)}"
-        )
+        active_components = self._determine_active_components(reachability_set, model_context)
+        logger.info(f"DAG-aware rendering: active UFS components = {sorted(active_components)}")
 
         # Step 1: Merge atmosphere resolution defaults
         model_context = merge_resolution_defaults(model_context)
@@ -743,10 +720,7 @@ class ModelConfigRenderer:
         # Step 2: Validate atmosphere schema
         errors = self._schema.validate(model_context)
         if errors:
-            raise TemplateRenderError(
-                f"Model_Context schema validation failed:\n"
-                + "\n".join(f"  - {e}" for e in errors)
-            )
+            raise TemplateRenderError("Model_Context schema validation failed:\n" + "\n".join(f"  - {e}" for e in errors))
 
         # Step 3: Coupled-model schema validation is intentionally skipped
         # in DAG-aware rendering. Unlike render_all() which validates all
@@ -761,14 +735,9 @@ class ModelConfigRenderer:
 
         # Step 5: Discover all templates, then filter to active components
         all_templates = self._discover_templates()
-        templates = self._filter_templates_by_components(
-            all_templates, active_components
-        )
+        templates = self._filter_templates_by_components(all_templates, active_components)
 
-        logger.info(
-            f"DAG-aware rendering: {len(templates)}/{len(all_templates)} "
-            f"templates selected for active components"
-        )
+        logger.info(f"DAG-aware rendering: {len(templates)}/{len(all_templates)} templates selected for active components")
 
         # Step 6: Build the renderer
         template_overrides = model_context.get("template_overrides", None)
@@ -789,9 +758,7 @@ class ModelConfigRenderer:
 
         # Step 8: Handle static file fallback (only for active components)
         static_files = self._discover_static_files(all_templates)
-        active_static_files = self._filter_static_by_components(
-            static_files, active_components
-        )
+        active_static_files = self._filter_static_by_components(static_files, active_components)
         for static_path in active_static_files:
             rendered_file = self._copy_static_file(
                 static_path=static_path,
@@ -807,9 +774,7 @@ class ModelConfigRenderer:
     # Zero-token verification and shell-var preservation (Reqs 6.4, 6.5, 6.6)
     # ------------------------------------------------------------------
 
-    def verify_no_unresolved_tokens(
-        self, rendered_files: list[RenderedFile]
-    ) -> None:
+    def verify_no_unresolved_tokens(self, rendered_files: list[RenderedFile]) -> None:
         """Scan all rendered files for unresolved Jinja2 tokens.
 
         Checks every rendered file for the presence of ``{{``, ``{%``, or
@@ -839,9 +804,7 @@ class ModelConfigRenderer:
                         token = match.group(0)
                         raise PipelineError(
                             "model_input_render",
-                            f"Unresolved Jinja2 token '{token}' found in "
-                            f"'{rendered_file.path}' at line {line_num}: "
-                            f"{line.strip()}"
+                            f"Unresolved Jinja2 token '{token}' found in '{rendered_file.path}' at line {line_num}: {line.strip()}",
                         )
 
     def verify_shell_vars_preserved(
@@ -875,9 +838,7 @@ class ModelConfigRenderer:
         # Match ${VAR} or $VAR patterns
         var_patterns: dict[str, re.Pattern[str]] = {}
         for var in runtime_vars:
-            var_patterns[var] = re.compile(
-                r"\$\{" + re.escape(var) + r"\}" + r"|\$" + re.escape(var) + r"\b"
-            )
+            var_patterns[var] = re.compile(r"\$\{" + re.escape(var) + r"\}" + r"|\$" + re.escape(var) + r"\b")
 
         # Scan each rendered file for expected runtime variables
         for rendered_file in rendered_files:
@@ -1010,10 +971,7 @@ class ModelConfigRenderer:
                 if component_dir in active_components:
                     filtered.append(template_path)
                 else:
-                    logger.debug(
-                        f"Skipping template '{rel}': component "
-                        f"'{component_dir}' not active in DAG"
-                    )
+                    logger.debug(f"Skipping template '{rel}': component '{component_dir}' not active in DAG")
 
         return filtered
 
@@ -1070,6 +1028,11 @@ def _is_truthy(value: Any) -> bool:
         return value != 0
     if isinstance(value, str):
         return value.strip().lower() in (
-            "yes", "true", ".true.", "1", "on", "enabled",
+            "yes",
+            "true",
+            ".true.",
+            "1",
+            "on",
+            "enabled",
         )
     return False

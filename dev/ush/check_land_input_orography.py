@@ -31,13 +31,15 @@ Example
 python check_land_input_orography.py --input_dir /path/to/input --orog_dir /path/to/orog --fatal
 """
 
-from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+import os
+from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 from logging import getLogger
 from typing import Dict
-import os
-from netCDF4 import Dataset
+
 import numpy as np
-from wxflow import Logger, logit, AttrDict
+from netCDF4 import Dataset
+
+from wxflow import AttrDict, Logger, logit
 
 logger = getLogger(__name__)
 NTILES = 6  # Number of tiles expected in the input and orography data
@@ -76,8 +78,8 @@ def count_points_from_input(input_dir: str) -> Dict:
         try:
             fname = os.path.join(input_dir, f"sfc_data.tile{tt}.nc")
             logger.debug(f"Processing input file: {fname}")
-            with Dataset(fname, mode='r') as ncid:
-                counts.vtype[f"tile{tt}"] = np.sum(ncid.variables['vtype'][:] > 0)
+            with Dataset(fname, mode="r") as ncid:
+                counts.vtype[f"tile{tt}"] = np.sum(ncid.variables["vtype"][:] > 0)
         except FileNotFoundError:
             logger.warning(f"File {fname} not found. Skipping tile {tt}.")
             continue
@@ -118,8 +120,8 @@ def count_points_from_orog(orog_dir: str) -> Dict:
         try:
             fname = os.path.join(orog_dir, f"oro_data.tile{tt}.nc")
             logger.debug(f"Processing orography file: {fname}")
-            with Dataset(fname, mode='r') as ncid:
-                counts.land_frac[f"tile{tt}"] = np.sum(ncid.variables['land_frac'][:] > 0)
+            with Dataset(fname, mode="r") as ncid:
+                counts.land_frac[f"tile{tt}"] = np.sum(ncid.variables["land_frac"][:] > 0)
         except FileNotFoundError:
             logger.warning(f"File {fname} not found. Skipping tile {tt}.")
             continue
@@ -159,38 +161,32 @@ def compare_counts(input_counts: Dict, orog_counts: Dict, fatal: bool = False) -
             logger.error(f"Tile {tile_key} missing in either input or orography counts.")
             raise ValueError(f"Tile {tile_key} missing in either input or orography counts.")
 
-        logger.debug(f"Comparing counts for {tile_key}: input={input_counts.vtype[tile_key]}, "
-                     f"orography={orog_counts.land_frac[tile_key]}")
+        logger.debug(f"Comparing counts for {tile_key}: input={input_counts.vtype[tile_key]}, orography={orog_counts.land_frac[tile_key]}")
 
         if input_counts.vtype[tile_key] != orog_counts.land_frac[tile_key]:
             if fatal:
-                logger.error(f"Count mismatch for {tile_key}: input={input_counts.vtype[tile_key]}, "
-                             f"orography={orog_counts.land_frac[tile_key]}")
-                raise ValueError(f"Count mismatch for {tile_key}: input={input_counts.vtype[tile_key]}, "
-                                 f"orography={orog_counts.land_frac[tile_key]}")
+                logger.error(f"Count mismatch for {tile_key}: input={input_counts.vtype[tile_key]}, orography={orog_counts.land_frac[tile_key]}")
+                raise ValueError(f"Count mismatch for {tile_key}: input={input_counts.vtype[tile_key]}, orography={orog_counts.land_frac[tile_key]}")
             else:
-                logger.warning(f"Count mismatch for {tile_key}: input={input_counts.vtype[tile_key]}, "
-                               f"orography={orog_counts.land_frac[tile_key]}")
+                logger.warning(f"Count mismatch for {tile_key}: input={input_counts.vtype[tile_key]}, orography={orog_counts.land_frac[tile_key]}")
 
 
 if __name__ == "__main__":
-
     description = """
         Compare land mask between inputs and orography files for consistency
     """
 
-    parser = ArgumentParser(description=description,
-                            formatter_class=ArgumentDefaultsHelpFormatter)
+    parser = ArgumentParser(description=description, formatter_class=ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('--input_dir', help='full path to where the sfc_data.ttX.nc inputs are', required=True)
-    parser.add_argument('--orog_dir', help='full path to where the oro_data.ttX.nc files are located', required=True)
-    parser.add_argument('--fatal', action='store_true', help='fail on first error', default=False)
+    parser.add_argument("--input_dir", help="full path to where the sfc_data.ttX.nc inputs are", required=True)
+    parser.add_argument("--orog_dir", help="full path to where the oro_data.ttX.nc files are located", required=True)
+    parser.add_argument("--fatal", action="store_true", help="fail on first error", default=False)
 
     args = parser.parse_args()
 
-    logger = Logger(logfile_path=os.environ.get("LOGFILE_PATH"),
-                    level=os.environ.get("LOGGING_LEVEL", "INFO"),
-                    colored_log=os.environ.get("COLORED_LOG", False))
+    logger = Logger(
+        logfile_path=os.environ.get("LOGFILE_PATH"), level=os.environ.get("LOGGING_LEVEL", "INFO"), colored_log=os.environ.get("COLORED_LOG", False)
+    )
 
     input_counts = count_points_from_input(input_dir=args.input_dir)
     orog_counts = count_points_from_orog(orog_dir=args.orog_dir)

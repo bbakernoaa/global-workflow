@@ -26,7 +26,7 @@ declare -rx COMOUT_ATMOS_WMO="${ROTDIR}/${RUN}.${PDY}/${cyc}/products/atmos/wmo"
 declare -rx COMIN_ATMOS_GRIB_0p25="${ROTDIR}/${RUN}.${PDY}/${cyc}/products/atmos/grib2/0p25"
 
 if [[ ! -d "${COMOUT_ATMOS_WMO}" ]]; then
-    mkdir -m 775 -p "${COMOUT_ATMOS_WMO}"
+  mkdir -m 775 -p "${COMOUT_ATMOS_WMO}"
 fi
 
 export pgmout=OUTPUT.$$
@@ -42,7 +42,7 @@ export pgmout=OUTPUT.$$
 "${SCRglobal}/exgfs_atmos_awips_20km_1p0deg.sh" "${fcsthr}" && true
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Failed to generate AWIPS products at 20km resolution for forecast hour ${fcsthr}"
+  err_exit "Failed to generate AWIPS products at 20km resolution for forecast hour ${fcsthr}"
 fi
 ########################################################
 
@@ -50,7 +50,7 @@ fi
 # print exec I/O output
 ############################################
 if [[ -e "${pgmout}" ]]; then
-    cat "${pgmout}"
+  cat "${pgmout}"
 fi
 
 ###################################
@@ -58,5 +58,5 @@ fi
 ###################################
 cd "${DATAROOT}" || pass
 if [[ "${KEEPDATA}" != "YES" ]]; then
-    rm -rf "${DATA}"
+  rm -rf "${DATA}"
 fi

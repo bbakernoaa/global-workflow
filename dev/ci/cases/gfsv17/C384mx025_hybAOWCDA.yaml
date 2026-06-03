@@ -13,7 +13,7 @@ experiment:
   expdir: {{ 'RUNTESTS' | getenv }}/EXPDIR
   idate: 2021063018
   edate: 2021070306
-  icsdir: 
+  icsdir:
   yaml: {{ HOMEglobal }}/dev/ci/cases/gfsv17/marinehyb.yaml
 
 workflow:

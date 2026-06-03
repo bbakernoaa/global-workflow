@@ -53,22 +53,22 @@ mkdir -p "${COMOUT_ATMOS_ANALYSIS}"
 
 export ATMGES_ENSMEAN="${COMIN_ATMOS_HISTORY_PREV}/${GPREFIX}${GSUFFIX}atm.f006.nc"
 if [[ ! -f ${ATMGES_ENSMEAN} ]]; then
-    export err=1
-    err_exit "FILE MISSING: ATMGES_ENSMEAN == ${ATMGES_ENSMEAN}"
+  export err=1
+  err_exit "FILE MISSING: ATMGES_ENSMEAN == ${ATMGES_ENSMEAN}"
 fi
 
 export GENDIAG="${GENDIAG:-YES}"
 
 # Create a DATAROOT directory variable for the gsidiags if GENDIAG is YES
 if [[ "${GENDIAG}" == "YES" ]]; then
-    pCOMOUT_ATMOS_ANALYSIS="$(dataroot_com_path "${COMOUT_ATMOS_ANALYSIS}")"
-    export pCOMOUT_ATMOS_ANALYSIS
+  pCOMOUT_ATMOS_ANALYSIS="$(dataroot_com_path "${COMOUT_ATMOS_ANALYSIS}")"
+  export pCOMOUT_ATMOS_ANALYSIS
 fi
 
 LEVS=$(${NCLEN} "${ATMGES_ENSMEAN}" pfull) && true
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Failed to determine the number of vertical levels in the input Guess file '${ATMGES_ENSMEAN}'"
+  err_exit "Failed to determine the number of vertical levels in the input Guess file '${ATMGES_ENSMEAN}'"
 fi
 
 export LEVS
@@ -76,38 +76,38 @@ export LEVS
 # Link observational data
 export PREPQC="${COMIN_OBS}/${OPREFIX}prepbufr"
 if [[ ! -f ${PREPQC} ]]; then
-    echo "WARNING: Global PREPBUFR FILE ${PREPQC} MISSING"
+  echo "WARNING: Global PREPBUFR FILE ${PREPQC} MISSING"
 fi
 export TCVITL="${COMIN_OBS}/${APREFIX_DET}syndata.tcvitals.tm00"
 if [[ ${DONST} == "YES" ]]; then
-    export NSSTBF="${COMIN_OBS}/${OPREFIX}nsstbufr"
+  export NSSTBF="${COMIN_OBS}/${OPREFIX}nsstbufr"
 fi
 export PREPQCPF="${COMIN_OBS}/${OPREFIX}prepbufr.acft_profiles"
 
 if [[ ${DOENKFONLY_ATM:-"NO"} == "YES" ]]; then
-    # Deterministic analysis and increment files
-    export SFCANL="${COMOUT_ATMOS_ANALYSIS_DET}/${APREFIX_DET}analysis.sfc.a006.nc"
-    export DTFINC="${COMOUT_ATMOS_ANALYSIS_DET}/${APREFIX_DET}increment.dtf.i006.nc"
-    export ATMANL="${COMOUT_ATMOS_ANALYSIS_DET}/${APREFIX_DET}analysis.atm.a006.nc"
-    export ATMINC="${COMOUT_ATMOS_ANALYSIS_DET}/${APREFIX_DET}increment.atm.i006.nc"
+  # Deterministic analysis and increment files
+  export SFCANL="${COMOUT_ATMOS_ANALYSIS_DET}/${APREFIX_DET}analysis.sfc.a006.nc"
+  export DTFINC="${COMOUT_ATMOS_ANALYSIS_DET}/${APREFIX_DET}increment.dtf.i006.nc"
+  export ATMANL="${COMOUT_ATMOS_ANALYSIS_DET}/${APREFIX_DET}analysis.atm.a006.nc"
+  export ATMINC="${COMOUT_ATMOS_ANALYSIS_DET}/${APREFIX_DET}increment.atm.i006.nc"
 
-    # Guess Bias correction coefficients related to ensemble
-    export GBIAS="${COMIN_ATMOS_ANALYSIS_PREV}/${GPREFIX}abias.txt"
-    export GBIASPC="${COMIN_ATMOS_ANALYSIS_PREV}/${GPREFIX}abias_pc.txt"
-    export GBIASAIR="${COMIN_ATMOS_ANALYSIS_PREV}/${GPREFIX}abias_air.txt"
-    export GRADSTAT="${COMIN_ATMOS_ANALYSIS_PREV}/${GPREFIX}radstat.tar"
+  # Guess Bias correction coefficients related to ensemble
+  export GBIAS="${COMIN_ATMOS_ANALYSIS_PREV}/${GPREFIX}abias.txt"
+  export GBIASPC="${COMIN_ATMOS_ANALYSIS_PREV}/${GPREFIX}abias_pc.txt"
+  export GBIASAIR="${COMIN_ATMOS_ANALYSIS_PREV}/${GPREFIX}abias_air.txt"
+  export GRADSTAT="${COMIN_ATMOS_ANALYSIS_PREV}/${GPREFIX}radstat.tar"
 else
-    # Deterministic analysis and increment files
-    export SFCANL="${COMOUT_ATMOS_ANALYSIS_DET}/${APREFIX_DET}analysis.sfc.a006.nc"
-    export DTFANL="${COMOUT_ATMOS_ANALYSIS_DET}/${APREFIX_DET}increment.dtf.i006.nc"
-    export ATMANL="${COMOUT_ATMOS_ANALYSIS_DET}/${APREFIX_DET}analysis.atm.a006.nc"
-    export ATMINC="${COMOUT_ATMOS_ANALYSIS_DET}/${APREFIX_DET}increment.atm.i006.nc"
+  # Deterministic analysis and increment files
+  export SFCANL="${COMOUT_ATMOS_ANALYSIS_DET}/${APREFIX_DET}analysis.sfc.a006.nc"
+  export DTFANL="${COMOUT_ATMOS_ANALYSIS_DET}/${APREFIX_DET}increment.dtf.i006.nc"
+  export ATMANL="${COMOUT_ATMOS_ANALYSIS_DET}/${APREFIX_DET}analysis.atm.a006.nc"
+  export ATMINC="${COMOUT_ATMOS_ANALYSIS_DET}/${APREFIX_DET}increment.atm.i006.nc"
 
-    # Guess Bias correction coefficients related to control
-    export GBIAS="${COMIN_ATMOS_ANALYSIS_DET_PREV}/${GPREFIX_DET}abias.txt"
-    export GBIASPC="${COMIN_ATMOS_ANALYSIS_DET_PREV}/${GPREFIX_DET}abias_pc.txt"
-    export GBIASAIR="${COMIN_ATMOS_ANALYSIS_DET_PREV}/${GPREFIX_DET}abias_air.txt"
-    export GRADSTAT="${COMIN_ATMOS_ANALYSIS_DET_PREV}/${GPREFIX_DET}radstat.tar"
+  # Guess Bias correction coefficients related to control
+  export GBIAS="${COMIN_ATMOS_ANALYSIS_DET_PREV}/${GPREFIX_DET}abias.txt"
+  export GBIASPC="${COMIN_ATMOS_ANALYSIS_DET_PREV}/${GPREFIX_DET}abias_pc.txt"
+  export GBIASAIR="${COMIN_ATMOS_ANALYSIS_DET_PREV}/${GPREFIX_DET}abias_air.txt"
+  export GRADSTAT="${COMIN_ATMOS_ANALYSIS_DET_PREV}/${GPREFIX_DET}radstat.tar"
 fi
 
 # Bias correction coefficients related to ensemble mean
@@ -134,9 +134,9 @@ export SETUP_INVOBS="passive_bc=.false.,${SETUP_INVOBS}"
 
 # Ensure clean stat tarballs for ensemble mean
 for fstat in ${CNVSTAT} ${OZNSTAT} ${RADSTAT}; do
-    if [[ -f "${fstat}" ]]; then
-        rm -f "${fstat}"
-    fi
+  if [[ -f "${fstat}" ]]; then
+    rm -f "${fstat}"
+  fi
 done
 
 ###############################################################
@@ -145,14 +145,14 @@ done
 ${INVOBSSH:-${SCRglobal}/exglobal_enkf_select_obs.sh} && true
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Failed to run the observer for the GSI ensemble mean analysis"
+  err_exit "Failed to run the observer for the GSI ensemble mean analysis"
 fi
 
 ##############################################
 # Send Alerts
 ##############################################
 if [[ "${SENDDBN}" == "YES" ]]; then
-    "${DBNROOT}/bin/dbn_alert" MODEL ENKF1_MSC_gsistat "${job}" "${GSISTAT}"
+  "${DBNROOT}/bin/dbn_alert" MODEL ENKF1_MSC_gsistat "${job}" "${GSISTAT}"
 fi
 
 ##############################################
@@ -163,7 +163,7 @@ fi
 # Final processing
 ##############################################
 if [[ -e "${pgmout}" ]]; then
-    cat "${pgmout}"
+  cat "${pgmout}"
 fi
 
 ##########################################
@@ -171,7 +171,7 @@ fi
 ##########################################
 cd "${DATAROOT}" || true
 if [[ "${KEEPDATA}" == "NO" ]]; then
-    rm -rf "${DATA}"
+  rm -rf "${DATA}"
 fi
 
 exit 0

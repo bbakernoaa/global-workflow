@@ -1,0 +1,55 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+  # --- Python: Ruff (linting + formatting) ---
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.1
+    hooks:
+      - id: ruff
+        name: ruff lint
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+        name: ruff format
+
+  # --- Shell: shfmt (Google Shell Style Guide) ---
+  # Built from source via pre-commit's golang language support
+  - repo: local
+    hooks:
+      - id: shfmt
+        name: shfmt (google style)
+        language: golang
+        additional_dependencies: ['mvdan.cc/sh/v3/cmd/shfmt@v3.13.1']
+        entry: shfmt
+        # -w   : write result to file
+        # -i 2 : indent with 2 spaces
+        # -ci  : indent switch cases
+        # -bn  : binary ops may start a line
+        # -sr  : redirect operators followed by a space
+        args: [-w, -i, '2', -ci, -bn, -sr]
+        types: [shell]
+
+  # --- Shell: shellcheck (static analysis) ---
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.10.0.1
+    hooks:
+      - id: shellcheck
+        name: shellcheck
+        types: [shell]
+
+  # --- General file hygiene ---
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude_types: [markdown]
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+        exclude: |
+          (?x)^(
+            dev/ci/cases/.*|
+            dev/ctests/cases/.*|
+            dev/parm/config/.*/yaml/.*|
+            parm/post/.*
+          )$
+      - id: check-added-large-files

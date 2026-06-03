@@ -59,19 +59,13 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--config",
         required=True,
-        help=(
-            "Path to the Workflow_Configuration YAML file "
-            "(e.g. dev/parm/workflow/gfs_cycled.yaml)."
-        ),
+        help=("Path to the Workflow_Configuration YAML file (e.g. dev/parm/workflow/gfs_cycled.yaml)."),
     )
 
     parser.add_argument(
         "--platform",
         required=True,
-        help=(
-            "Target HPC platform. "
-            f"Must be one of: {', '.join(_PLATFORM_CHOICES)}."
-        ),
+        help=(f"Target HPC platform. Must be one of: {', '.join(_PLATFORM_CHOICES)}."),
     )
 
     parser.add_argument(
@@ -83,19 +77,13 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--version",
         required=True,
-        help=(
-            "Semantic version string for the Snapshot_ID "
-            "(e.g. 'v17.0.0')."
-        ),
+        help=("Semantic version string for the Snapshot_ID (e.g. 'v17.0.0')."),
     )
 
     parser.add_argument(
         "--allowlist",
         default=None,
-        help=(
-            "Comma-separated list of dev/ paths to include that are "
-            "normally excluded (e.g. 'dev/ctests/,dev/ci/')."
-        ),
+        help=("Comma-separated list of dev/ paths to include that are normally excluded (e.g. 'dev/ctests/,dev/ci/')."),
     )
 
     parser.add_argument(
@@ -147,8 +135,7 @@ def _validate_platform(platform: str) -> str:
     normalized = platform.upper()
     if normalized not in SUPPORTED_PLATFORMS:
         logger.error(
-            "FATAL ERROR [cli]: Unsupported platform '%s'. "
-            "Supported platforms: %s",
+            "FATAL ERROR [cli]: Unsupported platform '%s'. Supported platforms: %s",
             platform,
             ", ".join(_PLATFORM_CHOICES),
         )

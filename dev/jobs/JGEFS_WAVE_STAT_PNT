@@ -23,7 +23,7 @@ err_chk
 ###########################################
 cd "${DATAROOT}" || true
 if [[ "${KEEPDATA}" != "YES" ]]; then
-    rm -rf "${DATA}"
+  rm -rf "${DATA}"
 fi
 
 exit 0

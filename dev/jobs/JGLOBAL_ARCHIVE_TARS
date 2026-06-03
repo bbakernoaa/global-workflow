@@ -14,8 +14,8 @@ source "${USHglobal}/jjob_shell_setup.sh"
 # and exit on error in a pipeline (e.g. if a command in "cmd | cmd2" fails)
 source "${USHglobal}/set_strict.sh"
 if [[ "${DO_WAVE}" == "YES" ]]; then
-    source "${EXPDIR}/config.wave"
-    source "${USHglobal}/wave_domain_grid.sh"
+  source "${EXPDIR}/config.wave"
+  source "${USHglobal}/wave_domain_grid.sh"
 fi
 
 ##############################################
@@ -28,12 +28,12 @@ export PYTHONPATH
 # Construct COM paths
 # shellcheck disable=SC2309
 if [[ 10#${ENSMEM:--1} -ge 0 ]]; then
-    memdir=$(printf "mem%03d" $((10#${ENSMEM})))
-    COMIN="${ROTDIR}/${RUN}.${PDY}/${cyc}/${memdir}"
-    COMOUT="${ROTDIR}/${RUN}.${PDY}/${cyc}/${memdir}"
+  memdir=$(printf "mem%03d" $((10#${ENSMEM})))
+  COMIN="${ROTDIR}/${RUN}.${PDY}/${cyc}/${memdir}"
+  COMOUT="${ROTDIR}/${RUN}.${PDY}/${cyc}/${memdir}"
 else
-    COMIN="${ROTDIR}/${RUN}.${PDY}/${cyc}"
-    COMOUT="${ROTDIR}/${RUN}.${PDY}/${cyc}"
+  COMIN="${ROTDIR}/${RUN}.${PDY}/${cyc}"
+  COMOUT="${ROTDIR}/${RUN}.${PDY}/${cyc}"
 fi
 
 declare -rx COMIN_ATMOS_ANALYSIS="${COMIN}/analysis/atmos"
@@ -80,24 +80,24 @@ declare -rx COMOUT_ATMOS_TRACK="${COMOUT}/products/atmos/cyclone/tracks"
 mkdir -p "${COMOUT_CONF}"
 
 for grid in "0p25" "0p50" "1p00"; do
-    declare -rx "COMIN_ATMOS_GRIB_${grid}"="${COMIN}/products/atmos/grib2/${grid}"
+  declare -rx "COMIN_ATMOS_GRIB_${grid}"="${COMIN}/products/atmos/grib2/${grid}"
 done
 
 ###############################################################
 # Create an array of output wave grids to process
 if [[ "${DO_WAVE}" == "YES" ]]; then
-    # Create a variable for output wave grids to process
-    if [[ -n "${wavepostGRD}" || -n "${waveinterpGRD}" ]]; then
-        for grdID in ${wavepostGRD} ${waveinterpGRD}; do
-            process_grdID "${grdID}"
-            declare -rx "COMIN_WAVE_GRID_${GRDREGION}_${GRDRES}"="${COMIN}/products/wave/gridded/${grdNAME}"
-            grids_arr+=("${GRDREGION}.${GRDRES}")
-        done
-        export WAVE_OUT_GRIDS="${grids_arr[*]}"
-    else
-        echo "Both wavepostGRD and waveinterpGRD are empty. No grids to process."
-        export WAVE_OUT_GRIDS=""
-    fi
+  # Create a variable for output wave grids to process
+  if [[ -n "${wavepostGRD}" || -n "${waveinterpGRD}" ]]; then
+    for grdID in ${wavepostGRD} ${waveinterpGRD}; do
+      process_grdID "${grdID}"
+      declare -rx "COMIN_WAVE_GRID_${GRDREGION}_${GRDRES}"="${COMIN}/products/wave/gridded/${grdNAME}"
+      grids_arr+=("${GRDREGION}.${GRDRES}")
+    done
+    export WAVE_OUT_GRIDS="${grids_arr[*]}"
+  else
+    echo "Both wavepostGRD and waveinterpGRD are empty. No grids to process."
+    export WAVE_OUT_GRIDS=""
+  fi
 fi
 ###############################################################
 # Run archive script
@@ -110,7 +110,7 @@ ${GLOBALARCHIVESH:-${SCRglobal}/exglobal_archive_tars.py}
 export err=$?
 source "${USHglobal}/set_strict.sh"
 if [[ ${err} -ne 0 ]]; then
-    err_exit "failed to archive the COM structure"
+  err_exit "failed to archive the COM structure"
 fi
 
 ##############################################
@@ -121,7 +121,7 @@ fi
 # Final processing
 ##############################################
 if [[ -e "${pgmout}" ]]; then
-    cat "${pgmout}"
+  cat "${pgmout}"
 fi
 
 ##########################################
@@ -129,7 +129,7 @@ fi
 ##########################################
 cd "${DATAROOT}" || true
 if [[ "${KEEPDATA}" == "NO" ]]; then
-    rm -rf "${DATA}"
+  rm -rf "${DATA}"
 fi
 
 exit 0

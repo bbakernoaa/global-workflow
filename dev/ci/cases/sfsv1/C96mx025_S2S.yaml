@@ -7,7 +7,7 @@ experiment:
   app: S2S
   resdetatmos: 96
   resensatmos: 96
-  resdetocean: 0.25 
+  resdetocean: 0.25
   start: 'cold'
   nens: 2
   comroot: {{ 'RUNTESTS' | getenv }}/COMROOT

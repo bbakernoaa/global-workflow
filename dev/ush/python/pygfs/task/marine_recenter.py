@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
 
-from logging import getLogger
 import os
+from logging import getLogger
 from typing import Dict
+
 from pygfs.jedi import Jedi
 from pygfs.task.analysis import Analysis
-from wxflow import (AttrDict, FileHandler,
-                    add_to_datetime, to_timedelta, to_fv3time, to_isotime,
-                    parse_j2yaml, parse_j2tmpl,
-                    logit)
+from wxflow import AttrDict, FileHandler, logit, parse_j2tmpl, parse_j2yaml, to_fv3time
 
-logger = getLogger(__name__.split('.')[-1])
+logger = getLogger(__name__.split(".")[-1])
 
 
 class MarineRecenter(Analysis):
@@ -48,19 +46,21 @@ class MarineRecenter(Analysis):
             _cice_rst_date = to_fv3time(self.task_config.current_cycle)
 
         # Create a local dictionary that is repeatedly used across this class
-        self.task_config.update(AttrDict(
-            {
-                'PARMmarine': os.path.join(self.task_config.PARMglobal, 'gdas', 'marine'),
-                'ENSPERT_RELPATH': _enspert_relpath,
-                'cice_rst_date': _cice_rst_date,
-            }
-        ))
+        self.task_config.update(
+            AttrDict(
+                {
+                    "PARMmarine": os.path.join(self.task_config.PARMglobal, "gdas", "marine"),
+                    "ENSPERT_RELPATH": _enspert_relpath,
+                    "cice_rst_date": _cice_rst_date,
+                }
+            )
+        )
 
         # Extend task_config with content of config yaml for this task
         self.task_config.update(parse_j2yaml(self.task_config.TASK_CONFIG_YAML, self.task_config))
 
         # Construct dictionary of JEDI objects, one for each JEDI application need for the analysis
-        expected_keys = ['gridgen', 'ens_handler']
+        expected_keys = ["gridgen", "ens_handler"]
         self.jedi_dict = Jedi.get_jedi_dict(self.task_config.jedi_config, self.task_config, expected_keys)
 
     @logit(logger)
@@ -82,18 +82,16 @@ class MarineRecenter(Analysis):
         """
 
         # stage files from COM
-        logger.info(f"Staging files from COM and creating input/output directories")
+        logger.info("Staging files from COM and creating input/output directories")
         FileHandler(self.task_config.data_in).sync()
 
         # prepare the MOM6 input.nml
-        parse_j2tmpl(os.path.join(self.task_config.PARMmarine, 'mom_input.nml.j2'),
-                     self.task_config,
-                     output_file="mom_input.nml")
+        parse_j2tmpl(os.path.join(self.task_config.PARMmarine, "mom_input.nml.j2"), self.task_config, output_file="mom_input.nml")
 
         # initialize JEDI applications
-        logger.info(f"Initializing JEDI applications")
-        self.jedi_dict['gridgen'].initialize()
-        self.jedi_dict['ens_handler'].initialize()
+        logger.info("Initializing JEDI applications")
+        self.jedi_dict["gridgen"].initialize()
+        self.jedi_dict["ens_handler"].initialize()
 
     @logit(logger)
     def execute(self, jedi_dict_key: str) -> None:
@@ -128,5 +126,5 @@ class MarineRecenter(Analysis):
         """
 
         # save files from COM
-        logger.info(f"Saving files to COM")
+        logger.info("Saving files to COM")
         FileHandler(self.task_config.data_out).sync()

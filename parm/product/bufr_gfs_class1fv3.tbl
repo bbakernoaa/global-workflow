@@ -50,7 +50,7 @@
 |----------|-------------------------------------------------------------------|
 |          |                                                                   |
 | GFSCLS1  | HEADR {PROFILE} CLS1 D10M                                         |
-| HEADR    | FTIM STNM RPID CLAT CLON GELV 
+| HEADR    | FTIM STNM RPID CLAT CLON GELV
 | PROFILE  | PRES TMDB UWND VWND SPFH VVEL
 | CLS1     | PMSL PRSS TMSK STC1 EVAP TP03 C03M SWEM LCLD MCLD HCLD            !
 ! D10M     | U10M V10M T2MS Q2MS WXTS WXTP WXTZ WXTR                           !

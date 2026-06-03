@@ -16,14 +16,12 @@ import os
 import sys
 import tempfile
 
-import hypothesis
-from hypothesis import given, settings, HealthCheck
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from deployment.workflow_config import DAG, Edge, MeterDef, TaskNode, parse, pretty_print
-
 
 # ---------------------------------------------------------------------------
 # Hypothesis Strategies for generating valid DAG objects directly
@@ -220,6 +218,7 @@ def _dag_edges_equal(dag1: DAG, dag2: DAG) -> bool:
 
     Compares edges as sets of (source, target, kind) tuples.
     """
+
     def edge_key(e: Edge) -> tuple:
         return (e.source, e.target, e.kind)
 
@@ -279,9 +278,7 @@ def test_printer_roundtrip_property(dag: DAG):
         parsed_dag = parse(tmp.name)
 
         # Step 4: Assert structural equality
-        assert dag.suite_name == parsed_dag.suite_name, (
-            f"Suite names differ: {dag.suite_name!r} vs {parsed_dag.suite_name!r}"
-        )
+        assert dag.suite_name == parsed_dag.suite_name, f"Suite names differ: {dag.suite_name!r} vs {parsed_dag.suite_name!r}"
         assert set(dag.nodes.keys()) == set(parsed_dag.nodes.keys()), (
             f"Node sets differ:\n"
             f"  Only in original: {set(dag.nodes.keys()) - set(parsed_dag.nodes.keys())}\n"

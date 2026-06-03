@@ -18,7 +18,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "workflow
 
 from deployment.validators.namelist import NamelistValidator
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -71,7 +70,7 @@ def _render_ww3(jinja_env, context):
     template_text = (TEMPLATE_DIR / TEMPLATE_NAME).read_text()
 
     # Protect shell variables from Jinja2 resolution
-    shell_var_pattern = re.compile(r'\$\{[A-Z_][A-Z0-9_]*\}')
+    shell_var_pattern = re.compile(r"\$\{[A-Z_][A-Z0-9_]*\}")
     replacements = {}
     counter = 0
 
@@ -182,9 +181,7 @@ class TestShellVariablePreservation:
 class TestNamelistFormatValidity:
     """Tests that rendered ww3_shel.nml passes NamelistValidator."""
 
-    def test_namelist_validator_passes_cpl_mode(
-        self, jinja_env, valid_wave_context, validator
-    ):
+    def test_namelist_validator_passes_cpl_mode(self, jinja_env, valid_wave_context, validator):
         """Rendered output with CPL mode should pass NamelistValidator."""
         valid_wave_context["model"]["wave"]["ice_input"] = "CPL"
         valid_wave_context["model"]["wave"]["current_input"] = "CPL"
@@ -192,9 +189,7 @@ class TestNamelistFormatValidity:
         errors = validator.validate(rendered, "ww3_shel.nml")
         assert errors == [], f"Validation errors: {errors}"
 
-    def test_namelist_validator_passes_yes_mode(
-        self, jinja_env, valid_wave_context, validator
-    ):
+    def test_namelist_validator_passes_yes_mode(self, jinja_env, valid_wave_context, validator):
         """Rendered output with YES mode should pass NamelistValidator."""
         valid_wave_context["model"]["wave"]["ice_input"] = "YES"
         valid_wave_context["model"]["wave"]["current_input"] = "YES"
@@ -202,9 +197,7 @@ class TestNamelistFormatValidity:
         errors = validator.validate(rendered, "ww3_shel.nml")
         assert errors == [], f"Validation errors: {errors}"
 
-    def test_namelist_validator_passes_mixed_mode(
-        self, jinja_env, valid_wave_context, validator
-    ):
+    def test_namelist_validator_passes_mixed_mode(self, jinja_env, valid_wave_context, validator):
         """Rendered output with mixed CPL/YES modes should pass NamelistValidator."""
         valid_wave_context["model"]["wave"]["ice_input"] = "CPL"
         valid_wave_context["model"]["wave"]["current_input"] = "YES"

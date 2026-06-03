@@ -41,11 +41,11 @@ mkdir -p "lock.${fhr3}"
 cd "lock.${fhr3}" || exit 1
 
 for table in g2varswmo2.tbl g2vcrdwmo2.tbl g2varsncep1.tbl g2vcrdncep1.tbl; do
-    source_table="${HOMEglobal}/gempak/fix/${table}"
-    if [[ ! -f "${source_table}" ]]; then
-        err_exit "FATAL ERROR: ${table} is missing"
-    fi
-    cpreq "${source_table}" "${table}"
+  source_table="${HOMEglobal}/gempak/fix/${table}"
+  if [[ ! -f "${source_table}" ]]; then
+    err_exit "FATAL ERROR: ${table} is missing"
+  fi
+  cpreq "${source_table}" "${table}"
 done
 
 GEMGRD="${RUN}_${grid}_${PDY}${cyc}f${fhr3}"
@@ -63,9 +63,9 @@ export opt27=":(APCP|ACPCP|PRATE|CPRAT|DZDT):"
 export opt28=' -new_grid_interpolation budget -fi '
 
 case ${grid} in
-    # TODO: Why aren't we interpolating from the 0p25 grids for 35-km and 40-km?
-    '0p50' | '0p25') grid_in=${grid} ;;
-    *) grid_in="1p00" ;;
+  # TODO: Why aren't we interpolating from the 0p25 grids for 35-km and 40-km?
+  '0p50' | '0p25') grid_in=${grid} ;;
+  *) grid_in="1p00" ;;
 esac
 
 source_var="COMIN_ATMOS_GRIB_${grid_in}"
@@ -73,23 +73,23 @@ export GRIBIN="${!source_var}/${RUN}.${cycle}.pres_a.${grid_in}.f${fhr3}.grib2"
 GRIBIN_chk="${!source_var}/${RUN}.${cycle}.pres_a.${grid_in}.f${fhr3}.grib2.idx"
 
 if ! wait_for_file "${GRIBIN_chk}" "${sleep_interval}" "${max_tries}"; then
-    export err=7
-    err_exit "After 1 hour of waiting for ${GRIBIN_chk} file at F${fhr3} to end."
+  export err=7
+  err_exit "After 1 hour of waiting for ${GRIBIN_chk} file at F${fhr3} to end."
 fi
 
 case "${grid}" in
-    35km_pac) grid_spec='latlon 130.0:416:0.312 75.125:186:-0.312' ;;
-    35km_atl) grid_spec='latlon 230.0:480:0.312 75.125:242:-0.312' ;;
-    40km) grid_spec='lambert:265.0:25.0:25.0 226.541:185:40635.0 12.19:129:40635.0' ;;
-    *) grid_spec='' ;;
+  35km_pac) grid_spec='latlon 130.0:416:0.312 75.125:186:-0.312' ;;
+  35km_atl) grid_spec='latlon 230.0:480:0.312 75.125:242:-0.312' ;;
+  40km) grid_spec='lambert:265.0:25.0:25.0 226.541:185:40635.0 12.19:129:40635.0' ;;
+  *) grid_spec='' ;;
 esac
 
 if [[ "${grid_spec}" != "" ]]; then
-    # shellcheck disable=SC2086,SC2248
-    "${WGRIB2}" "${GRIBIN}" ${opt1uv} ${opt21} ${opt22} ${opt23} ${opt24} ${opt25} ${opt26} ${opt27} ${opt28} -new_grid ${grid_spec} "grib${fhr3}"
-    trim_rh "grib${fhr3}"
+  # shellcheck disable=SC2086,SC2248
+  "${WGRIB2}" "${GRIBIN}" ${opt1uv} ${opt21} ${opt22} ${opt23} ${opt24} ${opt25} ${opt26} ${opt27} ${opt28} -new_grid ${grid_spec} "grib${fhr3}"
+  trim_rh "grib${fhr3}"
 else
-    cpreq "${GRIBIN}" "grib${fhr3}"
+  cpreq "${GRIBIN}" "grib${fhr3}"
 fi
 
 export pgm="nagrib2_nc F${fhr3}"
@@ -115,14 +115,14 @@ EOF
 
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Failed to convert ${grid} grid from GRIB to GEMPAK for forecast hour ${fhr3}"
+  err_exit "Failed to convert ${grid} grid from GRIB to GEMPAK for forecast hour ${fhr3}"
 fi
 
 cpfs "${GEMGRD}" "${destination}/${GEMGRD}"
 
 if [[ ${SENDDBN} == "YES" ]]; then
-    "${DBNROOT}/bin/dbn_alert" MODEL "${DBN_ALERT_TYPE}" "${job}" \
-        "${destination}/${GEMGRD}"
+  "${DBNROOT}/bin/dbn_alert" MODEL "${DBN_ALERT_TYPE}" "${job}" \
+    "${destination}/${GEMGRD}"
 fi
 cd "${DATA_RUN}" || exit 1
 

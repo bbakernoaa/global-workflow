@@ -76,24 +76,24 @@ cd "${DATA}" || exit 2
 echo "Tropical Cyclone tcvitals QC processing has begun"
 
 if [[ "$#" -ne '1' ]]; then
-    echo "**NON-FATAL ERROR PROGRAM  SYNDAT_QCTROPCY  run date not in \
+  echo "**NON-FATAL ERROR PROGRAM  SYNDAT_QCTROPCY  run date not in \
 positional parameter 1"
-    echo "**NO TROPICAL CYCLONE tcvitals processed --> non-fatal"
+  echo "**NO TROPICAL CYCLONE tcvitals processed --> non-fatal"
 
-    # Copy null files into "${COMOUT_OBS}/${RUN}.${cycle}.syndata.tcvitals.$tmmark" and
-    #  "${COMOUT_OBS}/${RUN}.${cycle}.jtwc-fnoc.tcvitals.$tmmark" so later ftp attempts will find and
-    #  copy the zero-length file and avoid wasting time with multiple attempts
-    #  to remote machine(s)
-    #  (Note: Only do so if files don't already exist)
+  # Copy null files into "${COMOUT_OBS}/${RUN}.${cycle}.syndata.tcvitals.$tmmark" and
+  #  "${COMOUT_OBS}/${RUN}.${cycle}.jtwc-fnoc.tcvitals.$tmmark" so later ftp attempts will find and
+  #  copy the zero-length file and avoid wasting time with multiple attempts
+  #  to remote machine(s)
+  #  (Note: Only do so if files don't already exist)
 
-    if [[ ! -s "${COMOUT_OBS}/${RUN}.${cycle}.syndata.tcvitals.${tmmark}" ]]; then
-        touch "${COMOUT_OBS}/${RUN}.${cycle}.syndata.tcvitals.${tmmark}"
-    fi
-    if [[ ! -s "${COMOUT_OBS}/${RUN}.${cycle}.jtwc-fnoc.tcvitals.${tmmark}" ]]; then
-        touch "${COMOUT_OBS}/${RUN}.${cycle}.jtwc-fnoc.tcvitals.${tmmark}"
-    fi
+  if [[ ! -s "${COMOUT_OBS}/${RUN}.${cycle}.syndata.tcvitals.${tmmark}" ]]; then
+    touch "${COMOUT_OBS}/${RUN}.${cycle}.syndata.tcvitals.${tmmark}"
+  fi
+  if [[ ! -s "${COMOUT_OBS}/${RUN}.${cycle}.jtwc-fnoc.tcvitals.${tmmark}" ]]; then
+    touch "${COMOUT_OBS}/${RUN}.${cycle}.jtwc-fnoc.tcvitals.${tmmark}"
+  fi
 
-    exit
+  exit
 fi
 
 run_date=$1
@@ -118,8 +118,8 @@ touch dateck
 dateck_size=$(find ./ -name dateck -printf "%s")
 
 if [[ ${dateck_size} -lt 10 ]]; then
-    echo 1900010100 > dateck
-    echo "WARNING: Archive run date check file not available or shorter than expected. Using dummy date 1900010100 to allow code to continue"
+  echo 1900010100 > dateck
+  echo "WARNING: Archive run date check file not available or shorter than expected. Using dummy date 1900010100 to allow code to continue"
 fi
 
 #  Generate the correct RUNID and FILES value based on $NET, $RUN and $cyc
@@ -132,21 +132,21 @@ fi
 net="${NET}"
 files=F,
 if [[ "${RUN}" == 'ndas' ]]; then
-    net=ndas
+  net=ndas
 elif [[ "${RUN}" == 'gdas' ]]; then
-    files=T,
+  files=T,
 fi
 
 if [[ -n "${files_override}" ]]; then # for testing, typically want FILES=F
-    files_override=${files_override^^}
-    files_override=${files_override//./}
-    files_override=${files_override:0:1}
-    if [[ "${files_override}" == 'T' || "${files_override}" == 'F' ]]; then
-        echo "WARNING: Variable files setting will be overriden from ${files} to ${files_override}. Override expected if testing."
-        files=${files_override}
-    else
-        echo "WARNING: Invalid attempt to override files setting. Will stay with default for this job"
-    fi
+  files_override=${files_override^^}
+  files_override=${files_override//./}
+  files_override=${files_override:0:1}
+  if [[ "${files_override}" == 'T' || "${files_override}" == 'F' ]]; then
+    echo "WARNING: Variable files setting will be overriden from ${files} to ${files_override}. Override expected if testing."
+    files=${files_override}
+  else
+    echo "WARNING: Invalid attempt to override files setting. Will stay with default for this job"
+  fi
 fi
 
 echo " &INPUT  RUNID = '${net}_${tmmark}_${cyc}', FILES = ${files} " > vitchk.inp
@@ -166,16 +166,16 @@ rm -f nhc fnoc lthistry
 #  ------------------------------------------------------------------
 
 if [[ -s "${HOMENHC}/tcvitals" ]]; then
-    echo "tcvitals found"
-    cpreq "${HOMENHC}/tcvitals" nhc
+  echo "tcvitals found"
+  cpreq "${HOMENHC}/tcvitals" nhc
 else
-    echo "WARNING: tcvitals not found, create empty tcvitals"
+  echo "WARNING: tcvitals not found, create empty tcvitals"
 fi
 
 # NHC ... copy into working directory as nhc; copy to archive
 touch nhc
 if [[ "${copy_back}" == 'YES' ]]; then
-    cat nhc >> "${ARCHSYND}/syndat_tcvitals.${year}"
+  cat nhc >> "${ARCHSYND}/syndat_tcvitals.${year}"
 fi
 
 mv -f nhc nhc1
@@ -187,14 +187,14 @@ cpreq -p nhc nhc.ORIG
 "${USHglobal}/syndat_getjtbul.sh" "${run_date}"
 touch fnoc
 if [[ "${copy_back}" == 'YES' ]]; then
-    cat fnoc >> "${ARCHSYND}/syndat_tcvitals.${year}"
+  cat fnoc >> "${ARCHSYND}/syndat_tcvitals.${year}"
 fi
 
 mv -f fnoc fnoc1
 "${USHglobal}/parse-storm-type.pl" fnoc1 > fnoc
 
 if [[ "${SENDDBN}" == "YES" ]]; then
-    "${DBNROOT}/bin/dbn_alert" MODEL SYNDAT_TCVITALS "${job}" "${ARCHSYND}/syndat_tcvitals.${year}"
+  "${DBNROOT}/bin/dbn_alert" MODEL SYNDAT_TCVITALS "${job}" "${ARCHSYND}/syndat_tcvitals.${year}"
 fi
 
 #########################################################################
@@ -206,13 +206,13 @@ cpreq "${slmask}" slmask.126
 pgm=$(basename "${EXECglobal}/syndat_qctropcy.x")
 export pgm
 if [[ -s prep_step ]]; then
-    source "${USHglobal}/unset_strict.sh"
-    source prep_step
-    source "${USHglobal}/set_strict.sh"
+  source "${USHglobal}/unset_strict.sh"
+  source prep_step
+  source "${USHglobal}/set_strict.sh"
 else
-    rm -f errfile
-    # shellcheck disable=SC2046
-    unset FORT00 $(env | grep "^FORT[0-9]\{1,\}=" | awk -F= '{print $1}')
+  rm -f errfile
+  # shellcheck disable=SC2046
+  unset FORT00 $(env | grep "^FORT[0-9]\{1,\}=" | awk -F= '{print $1}')
 fi
 
 echo "${run_date}" > run_date.dat
@@ -222,23 +222,23 @@ export FORT12=run_date.dat
 errqct=$?
 echo "The foreground exit status for SYNDAT_QCTROPCY is ${errqct}"
 if [[ "${errqct}" -gt '0' ]]; then
-    echo "**NON-FATAL ERROR PROGRAM  SYNDAT_QCTROPCY  RETURN CODE ${errqct}"
-    echo "**NO TROPICAL CYCLONE tcvitals processed --> non-fatal"
+  echo "**NON-FATAL ERROR PROGRAM  SYNDAT_QCTROPCY  RETURN CODE ${errqct}"
+  echo "**NO TROPICAL CYCLONE tcvitals processed --> non-fatal"
 
-    # In the event of a ERROR in PROGRAM SYNDAT_QCTROPCY, copy null files into
-    #  "${COMOUT_OBS}/${RUN}.${cycle}.syndata.tcvitals.$tmmark" and "${COMOUT_OBS}/${RUN}.${cycle}.jtwc-fnoc.tcvitals.$tmmark"
-    #  so later ftp attempts will find and copy the zero-length file and avoid
-    #  wasting time with multiple attempts to remote machine(s)
-    #  (Note: Only do so if files don't already exist)
+  # In the event of a ERROR in PROGRAM SYNDAT_QCTROPCY, copy null files into
+  #  "${COMOUT_OBS}/${RUN}.${cycle}.syndata.tcvitals.$tmmark" and "${COMOUT_OBS}/${RUN}.${cycle}.jtwc-fnoc.tcvitals.$tmmark"
+  #  so later ftp attempts will find and copy the zero-length file and avoid
+  #  wasting time with multiple attempts to remote machine(s)
+  #  (Note: Only do so if files don't already exist)
 
-    if [[ ! -s "${COMOUT_OBS}/${RUN}.${cycle}.syndata.tcvitals.${tmmark}" ]]; then
-        touch "${COMOUT_OBS}/${RUN}.${cycle}.syndata.tcvitals.${tmmark}"
-    fi
-    if [[ ! -s ${COMOUT_OBS}/${RUN}.${cycle}.jtwc-fnoc.tcvitals.${tmmark} ]]; then
-        touch "${COMOUT_OBS}/${RUN}.${cycle}.jtwc-fnoc.tcvitals.${tmmark}"
-    fi
+  if [[ ! -s "${COMOUT_OBS}/${RUN}.${cycle}.syndata.tcvitals.${tmmark}" ]]; then
+    touch "${COMOUT_OBS}/${RUN}.${cycle}.syndata.tcvitals.${tmmark}"
+  fi
+  if [[ ! -s ${COMOUT_OBS}/${RUN}.${cycle}.jtwc-fnoc.tcvitals.${tmmark} ]]; then
+    touch "${COMOUT_OBS}/${RUN}.${cycle}.jtwc-fnoc.tcvitals.${tmmark}"
+  fi
 
-    exit
+  exit
 fi
 cat << EOF
 ----------------------------------------------------------
@@ -247,13 +247,13 @@ cat << EOF
 EOF
 
 if [[ "${copy_back}" == 'YES' ]]; then
-    cat lthistry >> "${ARCHSYND}/syndat_lthistry.${year}"
-    cpfs akavit "${ARCHSYND}/syndat_akavit"
-    cpfs dateck "${ARCHSYND}/syndat_dateck"
-    cpfs stmcat.scr "${ARCHSYND}/syndat_stmcat.scr"
-    cpfs stmcat "${ARCHSYND}/syndat_stmcat"
-    cpfs sthisto "${ARCHSYND}/syndat_sthisto"
-    cpfs sthista "${ARCHSYND}/syndat_sthista"
+  cat lthistry >> "${ARCHSYND}/syndat_lthistry.${year}"
+  cpfs akavit "${ARCHSYND}/syndat_akavit"
+  cpfs dateck "${ARCHSYND}/syndat_dateck"
+  cpfs stmcat.scr "${ARCHSYND}/syndat_stmcat.scr"
+  cpfs stmcat "${ARCHSYND}/syndat_stmcat"
+  cpfs sthisto "${ARCHSYND}/syndat_sthisto"
+  cpfs sthista "${ARCHSYND}/syndat_sthista"
 fi
 
 diff nhc nhc.ORIG > /dev/null
@@ -265,24 +265,24 @@ errdiff=$?
 
 if [[ "${errdiff}" -ne 0 ]]; then
 
-    if [[ "${copy_back}" == 'YES' && ${envir} == 'prod' ]]; then
-        if [[ -s "${HOMENHC}/tcvitals" ]]; then
-            cpfs nhc "${HOMENHC}/tcvitals"
-        fi
-
-        err=$?
-
-        if [[ "${err}" -ne 0 ]]; then
-            echo "###ERROR: Previous NHC Synthetic Data Record File ${HOMENHC}/tcvitals not updated by syndat_qctropcy"
-        else
-            echo "Previous NHC Synthetic Data Record File ${HOMENHC}/tcvitals successfully updated by syndat_qctropcy"
-        fi
-
+  if [[ "${copy_back}" == 'YES' && ${envir} == 'prod' ]]; then
+    if [[ -s "${HOMENHC}/tcvitals" ]]; then
+      cpfs nhc "${HOMENHC}/tcvitals"
     fi
+
+    err=$?
+
+    if [[ "${err}" -ne 0 ]]; then
+      echo "###ERROR: Previous NHC Synthetic Data Record File ${HOMENHC}/tcvitals not updated by syndat_qctropcy"
+    else
+      echo "Previous NHC Synthetic Data Record File ${HOMENHC}/tcvitals successfully updated by syndat_qctropcy"
+    fi
+
+  fi
 
 else
 
-    echo "Previous NHC Synthetic Data Record File ${HOMENHC}/tcvitals not changed by syndat_qctropcy"
+  echo "Previous NHC Synthetic Data Record File ${HOMENHC}/tcvitals not changed by syndat_qctropcy"
 
 fi
 
@@ -293,7 +293,7 @@ cpfs current "${COMOUT_OBS}/${RUN}.${cycle}.syndata.tcvitals.${tmmark}"
 
 #  Create the DBNet alert
 if [[ "${SENDDBN}" == "YES" ]]; then
-    "${DBNROOT}/bin/dbn_alert" "MODEL" "GDAS_TCVITALS" "${job}" "${COMOUT_OBS}/${RUN}.${cycle}.syndata.tcvitals.${tmmark}"
+  "${DBNROOT}/bin/dbn_alert" "MODEL" "GDAS_TCVITALS" "${job}" "${COMOUT_OBS}/${RUN}.${cycle}.syndata.tcvitals.${tmmark}"
 fi
 
 #  Write JTWC/FNOC Tcvitals to /com path since not saved anywhere else

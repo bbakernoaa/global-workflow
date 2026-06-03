@@ -9,9 +9,6 @@ from __future__ import annotations
 import os
 import stat
 import sys
-import tempfile
-from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 import yaml
@@ -19,15 +16,14 @@ import yaml
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from deployment.pipeline import (
-    PipelineError,
     SUPPORTED_PLATFORMS,
+    PipelineError,
     _compute_sha256,
     _find_dev_root,
     _stage_build_context,
     _stage_validate,
     run,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -89,9 +85,7 @@ def minimal_dev_tree(tmp_path):
 ${EXPDIR}/ush/universal_wrapper.sh {{ task.jjob }}
 %include <tail.h>
 """
-    (dev_root / "workflow" / "ecflow" / "templates" / "task.ecf.j2").write_text(
-        template
-    )
+    (dev_root / "workflow" / "ecflow" / "templates" / "task.ecf.j2").write_text(template)
 
     # Create a .git directory to mark repo root
     (tmp_path / ".git").mkdir()
@@ -164,9 +158,7 @@ class TestStageValidate:
         expdir = tmp_path / "expdir"
         expdir.mkdir()
         manifest = expdir / "manifest.yaml"
-        manifest.write_text(
-            yaml.dump({"snapshot_id": "v1.0.0+abc123def456"})
-        )
+        manifest.write_text(yaml.dump({"snapshot_id": "v1.0.0+abc123def456"}))
 
         with pytest.raises(PipelineError, match="already published"):
             _stage_validate(
@@ -231,10 +223,14 @@ class TestStageBuildContext:
     def test_context_contains_platform(self, tmp_path):
         """Context includes the platform name."""
         config = tmp_path / "config.yaml"
-        config.write_text(yaml.dump({
-            "suite": {"name": "test"},
-            "defaults": {"ECF_TRIES": 2},
-        }))
+        config.write_text(
+            yaml.dump(
+                {
+                    "suite": {"name": "test"},
+                    "defaults": {"ECF_TRIES": 2},
+                }
+            )
+        )
 
         dev_root = tmp_path / "dev"
         dev_root.mkdir()
@@ -254,10 +250,14 @@ class TestStageBuildContext:
     def test_context_merges_defaults(self, tmp_path):
         """Context includes defaults from the config YAML."""
         config = tmp_path / "config.yaml"
-        config.write_text(yaml.dump({
-            "suite": {"name": "test"},
-            "defaults": {"ECF_TRIES": 3, "MY_VAR": "hello"},
-        }))
+        config.write_text(
+            yaml.dump(
+                {
+                    "suite": {"name": "test"},
+                    "defaults": {"ECF_TRIES": 3, "MY_VAR": "hello"},
+                }
+            )
+        )
 
         dev_root = tmp_path / "dev"
         dev_root.mkdir()
@@ -405,12 +405,10 @@ class TestHelpers:
         test_file = tmp_path / "test.txt"
         test_file.write_text("hello world\n")
 
-        expected = (
-            "a948904f2f0f479b8f8564e9d7d0346638"
-            "34d7cf273b7657ba9ae3c8f4a7e5b"
-        )
+        expected = "a948904f2f0f479b8f8564e9d7d034663834d7cf273b7657ba9ae3c8f4a7e5b"
         # Correct expected hash for "hello world\n"
         import hashlib
+
         expected = hashlib.sha256(b"hello world\n").hexdigest()
 
         assert _compute_sha256(test_file) == expected
@@ -433,8 +431,16 @@ class TestHelpers:
     def test_supported_platforms_complete(self):
         """All expected platforms are in the supported set."""
         expected = {
-            "WCOSS2", "HERA", "HERCULES", "ORION", "GAEAC6",
-            "DERECHO", "URSA", "AWSPW", "AZUREPW", "GOOGLEPW",
+            "WCOSS2",
+            "HERA",
+            "HERCULES",
+            "ORION",
+            "GAEAC6",
+            "DERECHO",
+            "URSA",
+            "AWSPW",
+            "AZUREPW",
+            "GOOGLEPW",
             "CONTAINER",
         }
-        assert SUPPORTED_PLATFORMS == expected
+        assert expected == SUPPORTED_PLATFORMS

@@ -9,7 +9,6 @@ Traces to: Requirements 11.6
 
 import os
 import sys
-import tempfile
 
 import pytest
 
@@ -20,15 +19,14 @@ from pathlib import Path
 from deployment.ee2_scanner import (
     ScanResult,
     Violation,
-    check_error_handling,
     check_environment_variables,
+    check_error_handling,
     check_file_naming,
     check_shebang_compliance,
     run_compliance_scan,
-    scan_file,
     scan_expdir,
+    scan_file,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -465,9 +463,7 @@ err_chk
         result = scan_file(filepath)
 
         # Should check env vars (J-Job without jjob_header.sh)
-        env_violations = [
-            v for v in result.violations if v.category == "environment_variables"
-        ]
+        env_violations = [v for v in result.violations if v.category == "environment_variables"]
         assert len(env_violations) > 0
 
     def test_scan_file_specific_category(self, tmp_path):
@@ -513,9 +509,7 @@ class TestScanExpdir:
 
         result = scan_expdir(tmp_path)
 
-        naming_violations = [
-            v for v in result.violations if v.category == "file_naming"
-        ]
+        naming_violations = [v for v in result.violations if v.category == "file_naming"]
         assert len(naming_violations) >= 1
 
     def test_scan_expdir_nonexistent_raises(self):
@@ -680,9 +674,7 @@ class TestScanExpdirStructure:
 
         result = scan_expdir(tmp_path)
         # Hidden file should be skipped, only JGFS_GOOD checked
-        hidden_violations = [
-            v for v in result.violations if ".hidden" in v.file
-        ]
+        hidden_violations = [v for v in result.violations if ".hidden" in v.file]
         assert len(hidden_violations) == 0
 
     def test_skips_binary_files(self, tmp_path):

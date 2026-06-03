@@ -1,1 +1,1 @@
-from .jedi import Jedi
+from .jedi import Jedi as Jedi

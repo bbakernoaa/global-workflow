@@ -23,18 +23,17 @@ import sys
 import tempfile
 from pathlib import Path
 
-from hypothesis import given, settings, HealthCheck, assume
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+from deployment.config_conditioner import ConditionerResult, ConfigConditioner
 from deployment.dag_filter import (
+    _UNCONDITIONAL_CONFIGS,
     DAGFilter,
     DAGReachabilitySet,
-    _UNCONDITIONAL_CONFIGS,
 )
-from deployment.config_conditioner import ConfigConditioner, ConditionerResult
-
 
 # ---------------------------------------------------------------------------
 # Hypothesis Strategies
@@ -42,9 +41,21 @@ from deployment.config_conditioner import ConfigConditioner, ConditionerResult
 
 # Deploy-time variable names from the registry (Req 11.3)
 _DEPLOY_TIME_VAR_NAMES = [
-    "RUN", "NET", "CASE", "CASE_ENS", "MACHINE", "CDUMP",
-    "NMEM_ENS", "APP", "CCPP_SUITE", "DO_COUPLED", "DO_WAVE",
-    "DO_OCN", "DO_ICE", "DO_AERO", "REPLAY_ICS",
+    "RUN",
+    "NET",
+    "CASE",
+    "CASE_ENS",
+    "MACHINE",
+    "CDUMP",
+    "NMEM_ENS",
+    "APP",
+    "CCPP_SUITE",
+    "DO_COUPLED",
+    "DO_WAVE",
+    "DO_OCN",
+    "DO_ICE",
+    "DO_AERO",
+    "REPLAY_ICS",
 ]
 
 # Values that deploy-time variables might take
@@ -67,9 +78,14 @@ def _deploy_time_vars(draw):
         "CDUMP": draw(st.sampled_from(_RUN_VALUES)),
         "NMEM_ENS": draw(st.sampled_from(["0", "20", "30", "80"])),
         "APP": draw(st.sampled_from(["ATM", "ATMA", "S2S", "S2SW", "S2SWA"])),
-        "CCPP_SUITE": draw(st.sampled_from([
-            "FV3_GFS_v17_p8", "FV3_GFS_v17_p8_ugwpv1",
-        ])),
+        "CCPP_SUITE": draw(
+            st.sampled_from(
+                [
+                    "FV3_GFS_v17_p8",
+                    "FV3_GFS_v17_p8_ugwpv1",
+                ]
+            )
+        ),
         "DO_COUPLED": draw(st.sampled_from(_BOOL_VALUES)),
         "DO_WAVE": draw(st.sampled_from(_BOOL_VALUES)),
         "DO_OCN": draw(st.sampled_from(_BOOL_VALUES)),
@@ -110,9 +126,7 @@ def _workflow_yaml_with_jjobs(draw, jjob_names):
 
     for idx, jjob in enumerate(jjob_list):
         family_idx = idx % num_families
-        families[family_idx]["tasks"].append(
-            {"name": f"task_{idx}", "jjob": jjob}
-        )
+        families[family_idx]["tasks"].append({"name": f"task_{idx}", "jjob": jjob})
 
     return {"families": families}
 
@@ -129,10 +143,20 @@ def _config_content_with_deploy_conditionals(draw, deploy_vars):
     # Add some unconditional variable assignments
     num_assignments = draw(st.integers(min_value=1, max_value=4))
     for i in range(num_assignments):
-        varname = draw(st.sampled_from([
-            "FHOUT", "FHMAX", "FHOUT_HF", "FHMAX_HF", "DELTIM",
-            "layout_x", "layout_y", "WRTTASK_PER_GROUP",
-        ]))
+        varname = draw(
+            st.sampled_from(
+                [
+                    "FHOUT",
+                    "FHMAX",
+                    "FHOUT_HF",
+                    "FHMAX_HF",
+                    "DELTIM",
+                    "layout_x",
+                    "layout_y",
+                    "WRTTASK_PER_GROUP",
+                ]
+            )
+        )
         value = draw(st.sampled_from(["3", "6", "12", "24", "120", "384", "450"]))
         lines.append(f"export {varname}={value}")
 
@@ -142,36 +166,36 @@ def _config_content_with_deploy_conditionals(draw, deploy_vars):
         actual_value = deploy_vars.get(var, "gfs")
         other_values = [v for v in _RUN_VALUES if v != actual_value][:2]
 
-        lines.append(f'case ${{{var}}} in')
+        lines.append(f"case ${{{var}}} in")
         # Matching branch
-        lines.append(f'  {actual_value})')
-        lines.append(f'    export MATCHED_BRANCH="yes"')
-        lines.append(f'    ;;')
+        lines.append(f"  {actual_value})")
+        lines.append('    export MATCHED_BRANCH="yes"')
+        lines.append("    ;;")
         # Non-matching branch(es)
         for ov in other_values:
-            lines.append(f'  {ov})')
-            lines.append(f'    export MATCHED_BRANCH="no"')
-            lines.append(f'    ;;')
-        lines.append(f'  *)')
-        lines.append(f'    export MATCHED_BRANCH="default"')
-        lines.append(f'    ;;')
-        lines.append('esac')
+            lines.append(f"  {ov})")
+            lines.append('    export MATCHED_BRANCH="no"')
+            lines.append("    ;;")
+        lines.append("  *)")
+        lines.append('    export MATCHED_BRANCH="default"')
+        lines.append("    ;;")
+        lines.append("esac")
 
     # Add an if block on a deploy-time variable
     if draw(st.booleans()):
         var = draw(st.sampled_from(["DO_WAVE", "DO_OCN", "DO_ICE", "DO_AERO"]))
         actual_value = deploy_vars.get(var, "NO")
         lines.append(f'if [[ "${{{var}}}" == "YES" ]]; then')
-        lines.append(f'  export {var}_ACTIVE=1')
-        lines.append('else')
-        lines.append(f'  export {var}_ACTIVE=0')
-        lines.append('fi')
+        lines.append(f"  export {var}_ACTIVE=1")
+        lines.append("else")
+        lines.append(f"  export {var}_ACTIVE=0")
+        lines.append("fi")
 
     # Add a runtime conditional (should be preserved unchanged)
     if draw(st.booleans()):
         lines.append('if [[ "${PDY}" != "" ]]; then')
         lines.append('  export RUNTIME_SET="yes"')
-        lines.append('fi')
+        lines.append("fi")
 
     lines.append("")  # trailing newline
     return "\n".join(lines)
@@ -247,33 +271,19 @@ def test_dag_filter_determinism(data):
         result2 = dag2.compute_reachability()
 
     # Property: results MUST be identical between runs
-    assert result1.jjobs == result2.jjobs, (
-        f"DAG Filter jjobs differ between runs.\n"
-        f"Run 1: {result1.jjobs}\n"
-        f"Run 2: {result2.jjobs}"
-    )
+    assert result1.jjobs == result2.jjobs, f"DAG Filter jjobs differ between runs.\nRun 1: {result1.jjobs}\nRun 2: {result2.jjobs}"
     assert result1.ex_scripts == result2.ex_scripts, (
-        f"DAG Filter ex_scripts differ between runs.\n"
-        f"Run 1: {result1.ex_scripts}\n"
-        f"Run 2: {result2.ex_scripts}"
+        f"DAG Filter ex_scripts differ between runs.\nRun 1: {result1.ex_scripts}\nRun 2: {result2.ex_scripts}"
     )
     assert result1.ush_scripts == result2.ush_scripts, (
-        f"DAG Filter ush_scripts differ between runs.\n"
-        f"Run 1: {result1.ush_scripts}\n"
-        f"Run 2: {result2.ush_scripts}"
+        f"DAG Filter ush_scripts differ between runs.\nRun 1: {result1.ush_scripts}\nRun 2: {result2.ush_scripts}"
     )
     assert result1.config_files == result2.config_files, (
-        f"DAG Filter config_files differ between runs.\n"
-        f"Run 1: {result1.config_files}\n"
-        f"Run 2: {result2.config_files}"
+        f"DAG Filter config_files differ between runs.\nRun 1: {result1.config_files}\nRun 2: {result2.config_files}"
     )
 
     # Stronger check: warnings must be in the same order
-    assert result1.warnings == result2.warnings, (
-        f"DAG Filter warnings differ between runs.\n"
-        f"Run 1: {result1.warnings}\n"
-        f"Run 2: {result2.warnings}"
-    )
+    assert result1.warnings == result2.warnings, f"DAG Filter warnings differ between runs.\nRun 1: {result1.warnings}\nRun 2: {result2.warnings}"
 
     # Statistics fields must also match
     assert result1.total_available_jjobs == result2.total_available_jjobs
@@ -325,12 +335,10 @@ def test_config_conditioner_determinism(data):
 
     # Statistics must also match
     assert result1.eliminated_branches == result2.eliminated_branches, (
-        f"Eliminated branches differ: {result1.eliminated_branches} vs "
-        f"{result2.eliminated_branches}"
+        f"Eliminated branches differ: {result1.eliminated_branches} vs {result2.eliminated_branches}"
     )
     assert result1.preserved_conditionals == result2.preserved_conditionals, (
-        f"Preserved conditionals differ: {result1.preserved_conditionals} vs "
-        f"{result2.preserved_conditionals}"
+        f"Preserved conditionals differ: {result1.preserved_conditionals} vs {result2.preserved_conditionals}"
     )
 
 
@@ -375,21 +383,11 @@ def test_combined_determinism_n_repetitions(data):
 
     # All DAG results must be identical to the first
     for i in range(1, N):
-        assert dag_results[0].jjobs == dag_results[i].jjobs, (
-            f"DAG jjobs differ on iteration {i+1}/{N}"
-        )
-        assert dag_results[0].ex_scripts == dag_results[i].ex_scripts, (
-            f"DAG ex_scripts differ on iteration {i+1}/{N}"
-        )
-        assert dag_results[0].ush_scripts == dag_results[i].ush_scripts, (
-            f"DAG ush_scripts differ on iteration {i+1}/{N}"
-        )
-        assert dag_results[0].config_files == dag_results[i].config_files, (
-            f"DAG config_files differ on iteration {i+1}/{N}"
-        )
-        assert dag_results[0].warnings == dag_results[i].warnings, (
-            f"DAG warnings differ on iteration {i+1}/{N}"
-        )
+        assert dag_results[0].jjobs == dag_results[i].jjobs, f"DAG jjobs differ on iteration {i + 1}/{N}"
+        assert dag_results[0].ex_scripts == dag_results[i].ex_scripts, f"DAG ex_scripts differ on iteration {i + 1}/{N}"
+        assert dag_results[0].ush_scripts == dag_results[i].ush_scripts, f"DAG ush_scripts differ on iteration {i + 1}/{N}"
+        assert dag_results[0].config_files == dag_results[i].config_files, f"DAG config_files differ on iteration {i + 1}/{N}"
+        assert dag_results[0].warnings == dag_results[i].warnings, f"DAG warnings differ on iteration {i + 1}/{N}"
 
     # --- Run ConfigConditioner N times ---
     cond_results: list[ConditionerResult] = []
@@ -400,9 +398,9 @@ def test_combined_determinism_n_repetitions(data):
     # All conditioner results must be byte-identical to the first
     for i in range(1, N):
         assert cond_results[0].output == cond_results[i].output, (
-            f"Config Conditioner output differs on iteration {i+1}/{N}.\n"
+            f"Config Conditioner output differs on iteration {i + 1}/{N}.\n"
             f"First output:\n{cond_results[0].output}\n\n"
-            f"Iteration {i+1} output:\n{cond_results[i].output}"
+            f"Iteration {i + 1} output:\n{cond_results[i].output}"
         )
         assert cond_results[0].eliminated_branches == cond_results[i].eliminated_branches
         assert cond_results[0].preserved_conditionals == cond_results[i].preserved_conditionals

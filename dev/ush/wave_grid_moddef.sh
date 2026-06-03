@@ -35,8 +35,8 @@ rm -f "ww3_grid.inp"
 ${NLN} "../ww3_grid.inp.${grdID}" "ww3_grid.inp"
 
 if [[ -f "../${grdID}.msh" ]]; then
-    rm -f "${grdID}.msh"
-    ${NLN} "../${grdID}.msh" "${grdID}.msh"
+  rm -f "${grdID}.msh"
+  ${NLN} "../${grdID}.msh" "${grdID}.msh"
 fi
 
 export pgm="ww3_grid_${NET,,}.x"
@@ -47,16 +47,16 @@ echo "INFO: Executing ${EXECglobal}/ww3_grid_${NET,,}.x"
 export err=$?
 
 if [[ "${err}" != '0' ]]; then
-    echo "FATAL ERROR: Error in ${pgm}"
-    exit "${err}"
+  echo "FATAL ERROR: Error in ${pgm}"
+  exit "${err}"
 fi
 
 if [[ -f mod_def.ww3 ]]; then
-    cpfs "mod_def.ww3" "${COMOUT_WAVE_PREP}/${RUN}.t${cyc}z.mod_def.${grdID}.bin"
-    mv "mod_def.ww3" "../mod_def.${grdID}"
+  cpfs "mod_def.ww3" "${COMOUT_WAVE_PREP}/${RUN}.t${cyc}z.mod_def.${grdID}.bin"
+  mv "mod_def.ww3" "../mod_def.${grdID}"
 else
-    echo "FATAL ERROR: Mod def file not created for ${grdID}"
-    exit 4
+  echo "FATAL ERROR: Mod def file not created for ${grdID}"
+  exit 4
 fi
 
 # --------------------------------------------------------------------------- #

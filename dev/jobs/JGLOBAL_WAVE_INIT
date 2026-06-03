@@ -19,11 +19,11 @@ export MP_PULSE=0
 # Set COM Paths
 # shellcheck disable=SC2309
 if [[ 10#${ENSMEM:--1} -ge 0 ]]; then
-    # Turn ensmem into 3-digit format with leading zeros
-    memdir=$(printf "mem%03i" $((10#${ENSMEM})))
-    declare -rx COMOUT="${ROTDIR}/${RUN}.${PDY}/${cyc}/${memdir}"
+  # Turn ensmem into 3-digit format with leading zeros
+  memdir=$(printf "mem%03i" $((10#${ENSMEM})))
+  declare -rx COMOUT="${ROTDIR}/${RUN}.${PDY}/${cyc}/${memdir}"
 else
-    declare -rx COMOUT="${ROTDIR}/${RUN}.${PDY}/${cyc}"
+  declare -rx COMOUT="${ROTDIR}/${RUN}.${PDY}/${cyc}"
 fi
 declare -rx COMOUT_WAVE_PREP="${COMOUT}/model/wave/prep"
 
@@ -37,7 +37,7 @@ export wave_mpmd=${wave_mpmd:-"cfp"}
 "${SCRglobal}/exgfs_wave_init.sh" && true
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Failed to generate wave grids for model initialization."
+  err_exit "Failed to generate wave grids for model initialization."
 fi
 
 ##########################################
@@ -45,7 +45,7 @@ fi
 ##########################################
 cd "${DATAROOT}" || true
 if [[ "${KEEPDATA}" != "YES" ]]; then
-    rm -rf "${DATA}"
+  rm -rf "${DATA}"
 fi
 
 exit 0

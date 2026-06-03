@@ -266,14 +266,14 @@ err_chk
 # FOR THIS CASE HERE.
 #####################################################
 if [[ "${err}" -ne 0 ]] || [[ ! -s "${metaname}" ]] &> /dev/null; then
-    echo "FATAL ERROR: Failed to create gempak meta file ${metaname}"
-    exit $((err + 100))
+  echo "FATAL ERROR: Failed to create gempak meta file ${metaname}"
+  exit $((err + 100))
 fi
 
 cpfs "${metaname}" "${COMOUT_ATMOS_GEMPAK_META}/${mdl}_${PDY}_${cyc}_mar_pac"
 if [[ "${SENDDBN}" == "YES" ]]; then
-    "${DBNROOT}/bin/dbn_alert" MODEL "${DBN_ALERT_TYPE}" "${job}" \
-        "${COMOUT_ATMOS_GEMPAK_META}/${mdl}_${PDY}_${cyc}_mar_pac"
+  "${DBNROOT}/bin/dbn_alert" MODEL "${DBN_ALERT_TYPE}" "${job}" \
+    "${COMOUT_ATMOS_GEMPAK_META}/${mdl}_${PDY}_${cyc}_mar_pac"
 fi
 
 exit

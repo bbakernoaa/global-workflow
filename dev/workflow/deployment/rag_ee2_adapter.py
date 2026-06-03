@@ -35,9 +35,10 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterable, Optional, Protocol, runtime_checkable
+from typing import Optional, Protocol, runtime_checkable
 
 # ---------------------------------------------------------------------------
 # Category sets (Design Component 8)
@@ -74,10 +75,7 @@ SCANNER_CATEGORIES = [
 BASELINE_SCHEMA_VERSION = "1.0"
 
 #: Provenance string recorded in every baseline (the authoritative source).
-BASELINE_AUTHORITY = (
-    "agentcore MCP RAG EE2 v11 (Phase 2 SME-corrected patterns: "
-    "err_chk/err_exit/cpreq/cpfs correct; set -e / set -eu not required)"
-)
+BASELINE_AUTHORITY = "agentcore MCP RAG EE2 v11 (Phase 2 SME-corrected patterns: err_chk/err_exit/cpreq/cpfs correct; set -e / set -eu not required)"
 
 
 # ---------------------------------------------------------------------------
@@ -144,11 +142,7 @@ def derive_changed_files(
     candidates.update(_run_git(diff_cmd, repo_root))
 
     if include_untracked:
-        candidates.update(
-            _run_git(
-                ["git", "ls-files", "--others", "--exclude-standard"], repo_root
-            )
-        )
+        candidates.update(_run_git(["git", "ls-files", "--others", "--exclude-standard"], repo_root))
 
     relevant: set[str] = set()
     for rel in candidates:
@@ -197,15 +191,11 @@ class RagEE2Client(Protocol):
     ``files`` is a list of ``{"name": str, "content": str, "path": str}`` dicts.
     """
 
-    def scan_repository_compliance(
-        self, files: list[dict], categories: list[str]
-    ) -> dict:
+    def scan_repository_compliance(self, files: list[dict], categories: list[str]) -> dict:
         """Return the parsed ``scan_repository_compliance`` JSON payload."""
         ...
 
-    def extract_code_for_analysis(
-        self, files: list[dict], categories: list[str]
-    ) -> dict:
+    def extract_code_for_analysis(self, files: list[dict], categories: list[str]) -> dict:
         """Return the parsed ``extract_code_for_analysis`` findings payload."""
         ...
 
@@ -232,9 +222,7 @@ class RagEE2Result:
     @property
     def passed(self) -> bool:
         """True iff the scan found no issues and no unresolved extract finding."""
-        return self.files_with_issues == 0 and not any(
-            self.extract_findings.values()
-        )
+        return self.files_with_issues == 0 and not any(self.extract_findings.values())
 
     def per_file_verdict(self) -> dict[str, dict]:
         """Build a ``file -> {scan: {...}, extract: {...}}`` verdict map.
@@ -261,18 +249,10 @@ class RagEE2Result:
         for rel in self.scanned_files:
             base = rel.replace("\\", "/").rsplit("/", 1)[-1]
             scan_flags = flagged_scan.get(rel, set()) | flagged_scan.get(base, set())
-            extract_flags = (
-                flagged_extract.get(rel, set()) | flagged_extract.get(base, set())
-            )
+            extract_flags = flagged_extract.get(rel, set()) | flagged_extract.get(base, set())
             verdict[rel] = {
-                "scan": {
-                    cat: ("issue" if cat in scan_flags else "clean")
-                    for cat in SCAN_CATEGORIES
-                },
-                "extract": {
-                    cat: ("issue" if cat in extract_flags else "clean")
-                    for cat in EXTRACT_CATEGORIES
-                },
+                "scan": {cat: ("issue" if cat in scan_flags else "clean") for cat in SCAN_CATEGORIES},
+                "extract": {cat: ("issue" if cat in extract_flags else "clean") for cat in EXTRACT_CATEGORIES},
             }
         return verdict
 
@@ -328,11 +308,7 @@ def run_rag_ee2_scan(
     """
     root = Path(repo_root) if repo_root is not None else _default_repo_root()
     scats = list(scan_categories) if scan_categories is not None else list(SCAN_CATEGORIES)
-    ecats = (
-        list(extract_categories)
-        if extract_categories is not None
-        else list(EXTRACT_CATEGORIES)
-    )
+    ecats = list(extract_categories) if extract_categories is not None else list(EXTRACT_CATEGORIES)
 
     rels: list[str] = []
     payloads: list[dict] = []
@@ -346,10 +322,7 @@ def run_rag_ee2_scan(
 
     stats = scan_resp.get("statistics", {}) or {}
     files_with_issues = int(stats.get("files_with_issues", 0) or 0)
-    issues_by_category = {
-        str(k): list(v or [])
-        for k, v in (scan_resp.get("issues_by_category", {}) or {}).items()
-    }
+    issues_by_category = {str(k): list(v or []) for k, v in (scan_resp.get("issues_by_category", {}) or {}).items()}
 
     extract_findings = _parse_extract_findings(extract_resp, ecats)
 
@@ -361,9 +334,7 @@ def run_rag_ee2_scan(
     )
 
 
-def _parse_extract_findings(
-    extract_resp: dict, categories: list[str]
-) -> dict[str, list[dict]]:
+def _parse_extract_findings(extract_resp: dict, categories: list[str]) -> dict[str, list[dict]]:
     """Normalize an extract response into ``category -> [finding dict, ...]``.
 
     Accepts either an explicit ``findings`` / ``extract_findings`` mapping or a
@@ -371,12 +342,7 @@ def _parse_extract_findings(
     (empty list when there is no finding), so :attr:`RagEE2Result.passed` is
     well-defined.
     """
-    findings_map = (
-        extract_resp.get("extract_findings")
-        or extract_resp.get("findings")
-        or extract_resp.get("issues_by_category")
-        or {}
-    )
+    findings_map = extract_resp.get("extract_findings") or extract_resp.get("findings") or extract_resp.get("issues_by_category") or {}
     result: dict[str, list[dict]] = {}
     for cat in categories:
         value = findings_map.get(cat, []) if isinstance(findings_map, dict) else []

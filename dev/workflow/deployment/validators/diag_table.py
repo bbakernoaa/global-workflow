@@ -24,16 +24,13 @@ class DiagTableValidator:
         lines = content.splitlines()
         for lineno, line in enumerate(lines, 1):
             stripped = line.strip()
-            if not stripped or stripped.startswith('#'):
+            if not stripped or stripped.startswith("#"):
                 continue
             # File entries: "name", freq, "units", format, "time_units", "long_name"
             # Field entries: "module", "field", "output", "file", "time", avg, "opts", pack
-            parts = [p.strip() for p in stripped.split(',')]
+            parts = [p.strip() for p in stripped.split(",")]
             # Heuristic: field entries start with a quoted module name
             if stripped.startswith('"') and len(parts) >= 6:
                 if len(parts) not in (6, 7, 8, 9, 10):
-                    errors.append(
-                        f"{filepath}:{lineno}: Expected 6-10 columns, "
-                        f"got {len(parts)}"
-                    )
+                    errors.append(f"{filepath}:{lineno}: Expected 6-10 columns, got {len(parts)}")
         return errors

@@ -15,38 +15,29 @@ Traces to: Requirements 10.1, 10.2, 10.3, 10.6
 """
 
 import os
+import sys
 import tempfile
 
 import pytest
 
-import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from deployment.workflow_config import (
-    DAG,
-    Edge,
-    MeterDef,
     ParseError,
-    TaskNode,
     parse,
     pretty_print,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
 
-SAMPLE_DIR = os.path.join(
-    os.path.dirname(__file__), "..", "..", "parm", "workflow"
-)
+SAMPLE_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "parm", "workflow")
 
 
 def _write_yaml(content: str) -> str:
     """Write content to a temp YAML file and return its path."""
-    f = tempfile.NamedTemporaryFile(
-        mode="w", suffix=".yaml", delete=False
-    )
+    f = tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False)
     f.write(content)
     f.close()
     return f.name
@@ -245,9 +236,7 @@ class TestEdgeConstruction:
         try:
             dag = parse(path)
             # analcalc trigger is "anal == complete" (relative)
-            analcalc_edges = [
-                e for e in dag.edges if e.target == "app/analysis/analcalc"
-            ]
+            analcalc_edges = [e for e in dag.edges if e.target == "app/analysis/analcalc"]
             assert len(analcalc_edges) == 1
             # Should resolve to app/analysis/anal
             assert analcalc_edges[0].source == "app/analysis/anal"
@@ -272,9 +261,7 @@ class TestEdgeConstruction:
         try:
             dag = parse(path)
             # post tasks depend on fcst meter
-            post_edges = [
-                e for e in dag.edges if e.target == "gfs/post/post_f006"
-            ]
+            post_edges = [e for e in dag.edges if e.target == "gfs/post/post_f006"]
             assert len(post_edges) == 1
             assert post_edges[0].source == "gfs/forecast/fcst"
             assert post_edges[0].kind == "meter"
@@ -381,9 +368,7 @@ class TestParseErrors:
             os.unlink(path)
 
     def test_family_missing_path(self):
-        path = _write_yaml(
-            "suite:\n  name: t\nfamilies:\n  - tasks:\n      - name: x\n        jjob: J\n"
-        )
+        path = _write_yaml("suite:\n  name: t\nfamilies:\n  - tasks:\n      - name: x\n        jjob: J\n")
         try:
             with pytest.raises(ParseError) as exc_info:
                 parse(path)
@@ -401,9 +386,7 @@ class TestParseErrors:
             os.unlink(path)
 
     def test_task_missing_name(self):
-        path = _write_yaml(
-            "suite:\n  name: t\nfamilies:\n  - path: foo\n    tasks:\n      - jjob: J\n"
-        )
+        path = _write_yaml("suite:\n  name: t\nfamilies:\n  - path: foo\n    tasks:\n      - jjob: J\n")
         try:
             with pytest.raises(ParseError) as exc_info:
                 parse(path)
@@ -412,9 +395,7 @@ class TestParseErrors:
             os.unlink(path)
 
     def test_task_missing_jjob(self):
-        path = _write_yaml(
-            "suite:\n  name: t\nfamilies:\n  - path: foo\n    tasks:\n      - name: bar\n"
-        )
+        path = _write_yaml("suite:\n  name: t\nfamilies:\n  - path: foo\n    tasks:\n      - name: bar\n")
         try:
             with pytest.raises(ParseError) as exc_info:
                 parse(path)
@@ -552,6 +533,7 @@ class TestPrettyPrint:
             dag = parse(path)
             output = pretty_print(dag)
             import yaml
+
             loaded = yaml.safe_load(output)
             assert isinstance(loaded, dict)
             assert "suite" in loaded
@@ -590,6 +572,7 @@ class TestPrettyPrint:
             assert "forecast_hour" in output
             # Meter min/max should be present
             import yaml
+
             loaded = yaml.safe_load(output)
             fcst_family = None
             for fam in loaded["families"]:
@@ -612,6 +595,7 @@ class TestPrettyPrint:
         dag = parse(path)
         output = pretty_print(dag)
         import yaml
+
         loaded = yaml.safe_load(output)
         # Find the forecast family
         fcst_family = None
@@ -631,6 +615,7 @@ class TestPrettyPrint:
             dag = parse(path)
             output = pretty_print(dag)
             import yaml
+
             loaded = yaml.safe_load(output)
             post_family = None
             for fam in loaded["families"]:

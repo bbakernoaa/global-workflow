@@ -15,8 +15,7 @@ import re
 import sys
 from pathlib import Path
 
-import pytest
-from hypothesis import given, settings, HealthCheck
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 # Add the workflow module to the path
@@ -49,20 +48,35 @@ def valid_ice_model_context(draw: st.DrawFn) -> dict:
     """
     warm_start = draw(st.booleans())
     nprocs = draw(st.integers(min_value=1, max_value=512))
-    decomposition = draw(st.sampled_from([
-        "slenderX2", "slenderX1", "cartesian", "roundrobin",
-    ]))
+    decomposition = draw(
+        st.sampled_from(
+            [
+                "slenderX2",
+                "slenderX1",
+                "cartesian",
+                "roundrobin",
+            ]
+        )
+    )
     dt_ice = draw(st.sampled_from([450, 600, 900, 1800, 3600]))
-    grid = draw(st.sampled_from([
-        "grid_cice_NEMS_mx025.nc",
-        "grid_cice_NEMS_mx050.nc",
-        "grid_cice_NEMS_mx100.nc",
-    ]))
-    mask = draw(st.sampled_from([
-        "kmtu_cice_NEMS_mx025.nc",
-        "kmtu_cice_NEMS_mx050.nc",
-        "kmtu_cice_NEMS_mx100.nc",
-    ]))
+    grid = draw(
+        st.sampled_from(
+            [
+                "grid_cice_NEMS_mx025.nc",
+                "grid_cice_NEMS_mx050.nc",
+                "grid_cice_NEMS_mx100.nc",
+            ]
+        )
+    )
+    mask = draw(
+        st.sampled_from(
+            [
+                "kmtu_cice_NEMS_mx025.nc",
+                "kmtu_cice_NEMS_mx050.nc",
+                "kmtu_cice_NEMS_mx100.nc",
+            ]
+        )
+    )
     nx_glb = draw(st.sampled_from([72, 360, 720, 1440]))
     ny_glb = draw(st.sampled_from([35, 320, 576, 1080]))
     histfreq_n = draw(st.integers(min_value=1, max_value=30))
@@ -152,36 +166,22 @@ class TestWarmStartConditionalRendering:
 
         # Extract runtype value from rendered output
         runtype_match = re.search(r"runtype\s*=\s*'(\w+)'", rendered)
-        assert runtype_match is not None, (
-            "Could not find 'runtype' assignment in rendered ice_in"
-        )
+        assert runtype_match is not None, "Could not find 'runtype' assignment in rendered ice_in"
         runtype_value = runtype_match.group(1)
 
         # Extract use_restart_time value from rendered output
-        use_restart_time_match = re.search(
-            r"use_restart_time\s*=\s*(\.\w+\.)", rendered
-        )
-        assert use_restart_time_match is not None, (
-            "Could not find 'use_restart_time' assignment in rendered ice_in"
-        )
+        use_restart_time_match = re.search(r"use_restart_time\s*=\s*(\.\w+\.)", rendered)
+        assert use_restart_time_match is not None, "Could not find 'use_restart_time' assignment in rendered ice_in"
         use_restart_time_value = use_restart_time_match.group(1)
 
         # Assert the warm start conditional logic
         if ice_context["warm_start"]:
-            assert runtype_value == "continue", (
-                f"warm_start=True should produce runtype='continue', "
-                f"got runtype='{runtype_value}'"
-            )
+            assert runtype_value == "continue", f"warm_start=True should produce runtype='continue', got runtype='{runtype_value}'"
             assert use_restart_time_value == ".true.", (
-                f"warm_start=True should produce use_restart_time=.true., "
-                f"got use_restart_time={use_restart_time_value}"
+                f"warm_start=True should produce use_restart_time=.true., got use_restart_time={use_restart_time_value}"
             )
         else:
-            assert runtype_value == "initial", (
-                f"warm_start=False should produce runtype='initial', "
-                f"got runtype='{runtype_value}'"
-            )
+            assert runtype_value == "initial", f"warm_start=False should produce runtype='initial', got runtype='{runtype_value}'"
             assert use_restart_time_value == ".false.", (
-                f"warm_start=False should produce use_restart_time=.false., "
-                f"got use_restart_time={use_restart_time_value}"
+                f"warm_start=False should produce use_restart_time=.false., got use_restart_time={use_restart_time_value}"
             )

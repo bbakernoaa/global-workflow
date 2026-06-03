@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 
 from logging import getLogger
-from pygfs.task.analysis import Analysis
-from pygfs.jedi import Jedi
-from typing import Dict, Any
-from wxflow import AttrDict, FileHandler, parse_j2yaml, logit
+from typing import Any, Dict
 
-logger = getLogger(__name__.split('.')[-1])
+from pygfs.jedi import Jedi
+from pygfs.task.analysis import Analysis
+from wxflow import AttrDict, FileHandler, logit, parse_j2yaml
+
+logger = getLogger(__name__.split(".")[-1])
 
 
 class AtmEnsAnalysis(Analysis):
     """
     Class for JEDI-based global atmens analysis tasks
     """
+
     def __init__(self, config: Dict[str, Any]):
         """Constructor global atmens analysis task
 
@@ -35,21 +37,23 @@ class AtmEnsAnalysis(Analysis):
         _res = int(self.task_config.CASE_ENS[1:])
 
         # Create a local dictionary that is repeatedly used across this class
-        self.task_config.update(AttrDict(
-            {
-                'npx_ges': _res + 1,
-                'npy_ges': _res + 1,
-                'npz_ges': self.task_config.LEVS - 1,
-                'npz': self.task_config.LEVS - 1,
-                'BKG_TSTEP': "PT1H",  # Placeholder for 4D applications
-            })
+        self.task_config.update(
+            AttrDict(
+                {
+                    "npx_ges": _res + 1,
+                    "npy_ges": _res + 1,
+                    "npz_ges": self.task_config.LEVS - 1,
+                    "npz": self.task_config.LEVS - 1,
+                    "BKG_TSTEP": "PT1H",  # Placeholder for 4D applications
+                }
+            )
         )
 
         # Extend task_config with content of config yaml for this task
         self.task_config.update(parse_j2yaml(self.task_config.TASK_CONFIG_YAML, self.task_config))
 
         # Create dictionary of JEDI objects
-        expected_keys = ['atmensanlobs', 'atmensanlsol', 'atmensanlfv3inc', 'atmensanlletkf']
+        expected_keys = ["atmensanlobs", "atmensanlsol", "atmensanlfv3inc", "atmensanlletkf"]
         self.jedi_dict = Jedi.get_jedi_dict(self.task_config.jedi_config, self.task_config, expected_keys)
 
     @logit(logger)
@@ -73,21 +77,21 @@ class AtmEnsAnalysis(Analysis):
         """
 
         # Stage files from COM
-        logger.info(f"Staging files from COM")
+        logger.info("Staging files from COM")
         FileHandler(self.task_config.data_in).sync()
 
         # Stage observation files
-        logger.info(f"Staging observation files")
-        self.jedi_dict['atmensanlobs'].stage_obsdatain(f"{self.task_config.COMIN_OBS}/atmos")
+        logger.info("Staging observation files")
+        self.jedi_dict["atmensanlobs"].stage_obsdatain(f"{self.task_config.COMIN_OBS}/atmos")
 
         # Stage bias correction files
-        logger.info(f"Staging bias correction files")
-        self.jedi_dict['atmensanlobs'].stage_obsbiasin(self.task_config.COMIN_ATMOS_ANALYSIS_PREV)
+        logger.info("Staging bias correction files")
+        self.jedi_dict["atmensanlobs"].stage_obsbiasin(self.task_config.COMIN_ATMOS_ANALYSIS_PREV)
 
         # initialize JEDI applications
-        logger.info(f"Initializing JEDI LETKF observer application")
-        self.jedi_dict['atmensanlobs'].initialize(clean_empty_obsspaces=True)
-        self.jedi_dict['atmensanlfv3inc'].initialize()
+        logger.info("Initializing JEDI LETKF observer application")
+        self.jedi_dict["atmensanlobs"].initialize(clean_empty_obsspaces=True)
+        self.jedi_dict["atmensanlfv3inc"].initialize()
 
     @logit(logger)
     def initialize_letkf(self) -> None:
@@ -105,7 +109,7 @@ class AtmEnsAnalysis(Analysis):
         None
         """
 
-        self.jedi_dict['atmensanlletkf'].initialize(self.task_config)
+        self.jedi_dict["atmensanlletkf"].initialize(self.task_config)
 
     @logit(logger)
     def execute(self, jedi_dict_key: str) -> None:
@@ -123,8 +127,8 @@ class AtmEnsAnalysis(Analysis):
 
         # Initialize solver immediately before execution so that obs space files are
         # available for cleaning after running the observer
-        if jedi_dict_key == 'atmensanlsol':
-            self.jedi_dict['atmensanlsol'].initialize(clean_empty_obsspaces=True)
+        if jedi_dict_key == "atmensanlsol":
+            self.jedi_dict["atmensanlsol"].initialize(clean_empty_obsspaces=True)
 
         self.jedi_dict[jedi_dict_key].execute()
 
@@ -147,10 +151,11 @@ class AtmEnsAnalysis(Analysis):
         """
 
         # Archive, compress, and save diag files in COM directory
-        logger.info(f"Saving observation diag files to COM")
-        self.jedi_dict['atmensanlobs'].save_obsdataout(self.task_config.COMOUT_ATMOS_ANALYSIS_ENS,
-                                                       f"{self.task_config.APREFIX_ENS}atmos_analysis.ens_mean.ioda_hofx")
+        logger.info("Saving observation diag files to COM")
+        self.jedi_dict["atmensanlobs"].save_obsdataout(
+            self.task_config.COMOUT_ATMOS_ANALYSIS_ENS, f"{self.task_config.APREFIX_ENS}atmos_analysis.ens_mean.ioda_hofx"
+        )
 
         # Save files from COM
-        logger.info(f"Saving files to COM")
+        logger.info("Saving files to COM")
         FileHandler(self.task_config.data_out).sync()

@@ -29,11 +29,11 @@ export PYTHONPATH
 # Construct COM variables
 # shellcheck disable=SC2309
 if [[ 10#${ENSMEM:--1} -ge 0 ]]; then
-    # Turn ensmem into 3-digit format with leading zeros
-    memdir=$(printf "mem%03i" $((10#${ENSMEM})))
-    declare -rx COMOUT="${ROTDIR}/${RUN}.${PDY}/${cyc}/${memdir}"
+  # Turn ensmem into 3-digit format with leading zeros
+  memdir=$(printf "mem%03i" $((10#${ENSMEM})))
+  declare -rx COMOUT="${ROTDIR}/${RUN}.${PDY}/${cyc}/${memdir}"
 else
-    declare -rx COMOUT="${ROTDIR}/${RUN}.${PDY}/${cyc}"
+  declare -rx COMOUT="${ROTDIR}/${RUN}.${PDY}/${cyc}"
 fi
 
 declare -rx COMOUT_CHEM_INPUT="${COMOUT}/model/chem/input"
@@ -47,7 +47,7 @@ EXSCRIPT=${PREP_EMISSIONS_PY:-${SCRglobal}/exglobal_prep_emissions.py}
 ${EXSCRIPT} && true
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Error executing ${EXSCRIPT}, ABORT!"
+  err_exit "Error executing ${EXSCRIPT}, ABORT!"
 fi
 
 ##############################################
@@ -58,7 +58,7 @@ fi
 # Final processing
 ##############################################
 if [[ -e "${pgmout}" ]]; then
-    cat "${pgmout}"
+  cat "${pgmout}"
 fi
 
 exit 0

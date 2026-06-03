@@ -1,13 +1,14 @@
 import os
-import pytest
 import tempfile
 from shutil import rmtree
 
-from wxflow import Executable, Configuration, ProcessError, find_upward
+import pytest
 
-HOMEglobal = find_upward('.github')
+from wxflow import Configuration, Executable, ProcessError, find_upward
+
+HOMEglobal = find_upward(".github")
 current_dir = os.path.dirname(os.path.abspath(__file__))
-RUNDIR = os.path.join(current_dir, 'testdata/RUNTESTS')
+RUNDIR = os.path.join(current_dir, "testdata/RUNTESTS")
 pslot = "C48_ATM"
 # Note: account is now set within each test function as needed
 
@@ -15,8 +16,8 @@ pslot = "C48_ATM"
 def test_setup_expt():
     # Set the HPC_ACCOUNT environment variable for this test
     test_account = "test_account_123"
-    original_hpc_account = os.environ.get('HPC_ACCOUNT')
-    os.environ['HPC_ACCOUNT'] = test_account
+    original_hpc_account = os.environ.get("HPC_ACCOUNT")
+    os.environ["HPC_ACCOUNT"] = test_account
 
     # Create a temporary .gwrc file with the Jinja2 template
     gwrc_content = """user:
@@ -24,27 +25,41 @@ def test_setup_expt():
 """
 
     # Create a temporary file for the .gwrc
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.gwrc', delete=False) as temp_gwrc:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".gwrc", delete=False) as temp_gwrc:
         temp_gwrc.write(gwrc_content)
         temp_gwrc_path = temp_gwrc.name
 
     try:
         arguments = [
-            "gfs", "forecast-only",
-            "--pslot", pslot, "--app", "ATM", "--resdetatmos", "48",
-            "--comroot", RUNDIR, "--expdir", RUNDIR,
-            "--idate", "2021032312", "--edate", "2021032312", "--overwrite",
-            "--gwrc", temp_gwrc_path
+            "gfs",
+            "forecast-only",
+            "--pslot",
+            pslot,
+            "--app",
+            "ATM",
+            "--resdetatmos",
+            "48",
+            "--comroot",
+            RUNDIR,
+            "--expdir",
+            RUNDIR,
+            "--idate",
+            "2021032312",
+            "--edate",
+            "2021032312",
+            "--overwrite",
+            "--gwrc",
+            temp_gwrc_path,
         ]
         setup_expt_script = Executable(os.path.join(HOMEglobal, "dev/workflow/setup_expt.py"))
         setup_expt_script.add_default_arg(arguments)
         setup_expt_script()
-        assert (setup_expt_script.returncode == 0)
+        assert setup_expt_script.returncode == 0
 
         cfg = Configuration(f"{RUNDIR}/{pslot}")
-        base = cfg.parse_config('config.base')
+        base = cfg.parse_config("config.base")
         # Assert that the account matches our test value
-        assert base.ACCOUNT == test_account
+        assert test_account == base.ACCOUNT
         assert "UNKNOWN" not in base.values()
 
     finally:
@@ -52,18 +67,17 @@ def test_setup_expt():
         os.unlink(temp_gwrc_path)
         # Restore the original HPC_ACCOUNT environment variable
         if original_hpc_account is not None:
-            os.environ['HPC_ACCOUNT'] = original_hpc_account
+            os.environ["HPC_ACCOUNT"] = original_hpc_account
         else:
             # Remove the environment variable if it wasn't set originally
-            os.environ.pop('HPC_ACCOUNT', None)
+            os.environ.pop("HPC_ACCOUNT", None)
 
 
 def test_setup_workflow():
-
     setup_workflow_script = Executable(os.path.join(HOMEglobal, "dev/workflow/setup_workflow.py"))
     cmd_args = [f"{RUNDIR}/{pslot}", "ecflow"]
     setup_workflow_script(*cmd_args)
-    assert (setup_workflow_script.returncode == 0)
+    assert setup_workflow_script.returncode == 0
 
     # Verify ecFlow definition file was created
     def_file = f"{RUNDIR}/{pslot}/ecf/defs/{pslot}.def"
@@ -73,20 +87,17 @@ def test_setup_workflow():
 
 
 def test_setup_workflow_fail_config_env_cornercase(tmp_path):
-
     setup_workflow_script = Executable(os.path.join(HOMEglobal, "dev/workflow/setup_workflow.py"))
     cmd_args = [f"{RUNDIR}/{pslot}", "ecflow"]
     env = os.environ.copy()
-    env['HOMEglobal'] = 'foobar'  # Intentionally incorrect to trigger failure
+    env["HOMEglobal"] = "foobar"  # Intentionally incorrect to trigger failure
 
     try:
         setup_workflow_script(*cmd_args, env=env)
-        assert (setup_workflow_script.returncode == 0)
+        assert setup_workflow_script.returncode == 0
 
         cfg = Configuration(f"{RUNDIR}/{pslot}")
-        base = cfg.parse_config('config.base')
-        # Get the account value from the config
-        account_value = base.ACCOUNT
+        base = cfg.parse_config("config.base")
 
         assert "UNKNOWN" not in base.values()
 
@@ -94,7 +105,7 @@ def test_setup_workflow_fail_config_env_cornercase(tmp_path):
         def_file = f"{RUNDIR}/{pslot}/ecf/defs/{pslot}.def"
         assert os.path.exists(def_file), f"ecFlow definition file not found at {def_file}"
 
-    except ProcessError as e:
+    except ProcessError:
         # We expect this fail because ACCOUNT=fv3-cpu in config.base and environment
         pass
 

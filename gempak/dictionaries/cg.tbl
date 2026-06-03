@@ -1,9 +1,9 @@
 !       This table contains locations and elevations for Coast Guard
-!       stations.  The entries must be sorted in increasing order based 
+!       stations.  The entries must be sorted in increasing order based
 !       on the ASCII station identifier.
 !!
 ! Log:
-! C. Caruso Magee/NCEP  04/2000 New table for Coast Guard data.      
+! C. Caruso Magee/NCEP  04/2000 New table for Coast Guard data.
 !
 K0B9            GOAT ISLAND                      ME US 04333 -07040 00012 00E1
 K0L3            ZUMA BEACH                       CA US 03402 -11882 00006 00E1
@@ -44,7 +44,7 @@ K24G            TOLEDO                           OH US 04170 -08345 00180 00E1
 K25B            PORTSMOUTH HARBOR                NH US 04307 -07072 00001 00E1
 K25G            ERIE                             PA US 04212 -08008 00175 00E1
 K26B            ISLE OF SHOALS                   NH US 04297 -07062 00001 00E1
-K26G            ROCHESTER                        NY US 04325 -07760 00082 00E1 
+K26G            ROCHESTER                        NY US 04325 -07760 00082 00E1
 K27B            CAPE NEDDICK                     ME US 04317 -07060 00012 00E1
 K27G            LORAIN                           OH US 04147 -08218 00176 00E1
 K27Y            GRAND MARAIS                     MI US 04667 -08598 00183 00E1

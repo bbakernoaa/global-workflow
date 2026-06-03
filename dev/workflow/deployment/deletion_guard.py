@@ -32,9 +32,10 @@ Traces to parent: Req 4.6, Req 8, Property 14.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Optional
 
 # ---------------------------------------------------------------------------
 # Scan scoping (mirrors token_scan.RUNTIME_SCAN_DIRS)
@@ -113,10 +114,7 @@ class DeletionResult:
             lines.append(f"SKIPPED (absent): {path}")
         for path, referencers in self.retained:
             joined = ", ".join(referencers)
-            lines.append(
-                f"VERIFICATION ERROR: retained '{path}' — still referenced by: "
-                f"{joined} (deletion blocked until the reference is removed)"
-            )
+            lines.append(f"VERIFICATION ERROR: retained '{path}' — still referenced by: {joined} (deletion blocked until the reference is removed)")
         return "\n".join(lines)
 
 
@@ -124,7 +122,7 @@ def _read_text_safe(path: Path) -> Optional[str]:
     """Read a file as UTF-8 text, returning None for binary/unreadable files."""
     try:
         raw = path.read_bytes()
-    except (OSError, IOError):
+    except OSError:
         return None
     if b"\x00" in raw:
         return None
@@ -250,8 +248,7 @@ def delete_guarded(
         if referencers:
             result.retained.append((target_rel, referencers))
             result.errors.append(
-                f"VERIFICATION ERROR: cannot delete '{target_rel}' — still "
-                f"referenced by retained script(s): {', '.join(referencers)}"
+                f"VERIFICATION ERROR: cannot delete '{target_rel}' — still referenced by retained script(s): {', '.join(referencers)}"
             )
             continue
         if not dry_run:

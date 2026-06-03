@@ -33,34 +33,34 @@ areas="SAM NAM"
 
 # GENERATING THE METAFILES.
 for area in ${areas}; do
-    if [[ "${area}" == "NAM" ]]; then
-        garea="5.1;-124.6;49.6;-11.9"
-        proj="STR/90.0;-95.0;0.0"
-        latlon="0"
-        run="run"
-    else
-        garea="-33.7;-150.5;8.0;-35.0"
-        proj="str/-85;-70;0"
-        latlon="1/10/1/2/10;10"
-        run=" "
-    fi
+  if [[ "${area}" == "NAM" ]]; then
+    garea="5.1;-124.6;49.6;-11.9"
+    proj="STR/90.0;-95.0;0.0"
+    latlon="0"
+    run="run"
+  else
+    garea="-33.7;-150.5;8.0;-35.0"
+    proj="str/-85;-70;0"
+    latlon="1/10/1/2/10;10"
+    run=" "
+  fi
 
-    fhrs=$(seq -s ' ' 12 12 72)
-    fhrs="${fhrs} $(seq -s ' ' 96 24 144)"
-    for fhr in ${fhrs}; do
-        stime=$(date --utc +%y%m%d -d "${PDY} ${cyc} - ${fhr} hours")
-        dgdattim=$(printf "f%03d" "${fhr}")
-        sdatenum=${stime:0:6}
-        cyclenum=${stime:6}
+  fhrs=$(seq -s ' ' 12 12 72)
+  fhrs="${fhrs} $(seq -s ' ' 96 24 144)"
+  for fhr in ${fhrs}; do
+    stime=$(date --utc +%y%m%d -d "${PDY} ${cyc} - ${fhr} hours")
+    dgdattim=$(printf "f%03d" "${fhr}")
+    sdatenum=${stime:0:6}
+    cyclenum=${stime:6}
 
-        rm -f "ukmet.20${sdatenum}"
-        # TODO: remove live links and refer https://github.com/NOAA-EMC/global-workflow/issues/4406
-        ${NLN} "${COMINukmet}/ukmet.20${sdatenum}/gempak" "ukmet.20${sdatenum}"
-        gdfile="ukmet.20${sdatenum}/ukmet_20${sdatenum}${cyclenum}${dgdattim}"
+    rm -f "ukmet.20${sdatenum}"
+    # TODO: remove live links and refer https://github.com/NOAA-EMC/global-workflow/issues/4406
+    ${NLN} "${COMINukmet}/ukmet.20${sdatenum}/gempak" "ukmet.20${sdatenum}"
+    gdfile="ukmet.20${sdatenum}/ukmet_20${sdatenum}${cyclenum}${dgdattim}"
 
-        # 500 MB HEIGHT METAFILE
+    # 500 MB HEIGHT METAFILE
 
-        "${GEMEXE}/gdplot2_nc" << EOFplt
+    "${GEMEXE}/gdplot2_nc" << EOFplt
 \$MAPFIL = mepowo.gsf
 PROJ     = ${proj}
 GAREA    = ${garea}
@@ -140,7 +140,7 @@ ${run}
 
 ex
 EOFplt
-    done
+  done
 done
 
 export err=$?
@@ -151,20 +151,20 @@ export err=$?
 # FOR THIS CASE HERE.
 #####################################################
 if [[ "${err}" -ne 0 ]] || [[ ! -s ukmetver_12.meta ]]; then
-    echo "FATAL ERROR: Failed to create ukmet meta file"
-    exit "${err}"
+  echo "FATAL ERROR: Failed to create ukmet meta file"
+  exit "${err}"
 fi
 
 cpfs ukmetver_12.meta "${COMOUT_ATMOS_GEMPAK_META}/ukmetver_${PDY}_12"
 export err=$?
 if [[ "${err}" -ne 0 ]]; then
-    echo "FATAL ERROR: Failed to move meta file to ${COMOUT_ATMOS_GEMPAK_META}/ukmetver_${PDY}_12"
-    exit "${err}"
+  echo "FATAL ERROR: Failed to move meta file to ${COMOUT_ATMOS_GEMPAK_META}/ukmetver_${PDY}_12"
+  exit "${err}"
 fi
 
 if [[ "${SENDDBN}" == "YES" ]]; then
-    "${DBNROOT}/bin/dbn_alert" MODEL UKMETVER_HPCMETAFILE "${job}" \
-        "${COMOUT_ATMOS_GEMPAK_META}/ukmetver_${PDY}_12"
+  "${DBNROOT}/bin/dbn_alert" MODEL UKMETVER_HPCMETAFILE "${job}" \
+    "${COMOUT_ATMOS_GEMPAK_META}/ukmetver_${PDY}_12"
 fi
 
 exit

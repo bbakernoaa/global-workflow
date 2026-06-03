@@ -20,7 +20,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from deployment.dag_filter import DAGFilter
 from deployment.pipeline import PipelineError
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -124,9 +123,7 @@ class TestDAGFilterInit:
 class TestExtractJjobsFromYaml:
     """Tests for DAGFilter.extract_jjobs_from_yaml()."""
 
-    def test_extracts_all_referenced_jjobs(
-        self, tmp_dev_root: Path, simple_workflow_yaml: dict
-    ):
+    def test_extracts_all_referenced_jjobs(self, tmp_dev_root: Path, simple_workflow_yaml: dict):
         """Extracts all jjob values from families[].tasks[].jjob."""
         dag = DAGFilter(tmp_dev_root, simple_workflow_yaml, "hera")
         result = dag.extract_jjobs_from_yaml()
@@ -138,17 +135,13 @@ class TestExtractJjobsFromYaml:
         result = dag.extract_jjobs_from_yaml()
         assert isinstance(result, set)
 
-    def test_empty_workflow_returns_empty_set(
-        self, tmp_dev_root: Path, empty_workflow_yaml: dict
-    ):
+    def test_empty_workflow_returns_empty_set(self, tmp_dev_root: Path, empty_workflow_yaml: dict):
         """Empty workflow YAML (no families) returns empty set."""
         dag = DAGFilter(tmp_dev_root, empty_workflow_yaml, "hera")
         result = dag.extract_jjobs_from_yaml()
         assert result == set()
 
-    def test_tasks_without_jjob_skipped(
-        self, tmp_dev_root: Path, workflow_yaml_no_jjob: dict
-    ):
+    def test_tasks_without_jjob_skipped(self, tmp_dev_root: Path, workflow_yaml_no_jjob: dict):
         """Tasks with no jjob field or jjob=None are skipped."""
         dag = DAGFilter(tmp_dev_root, workflow_yaml_no_jjob, "hera")
         result = dag.extract_jjobs_from_yaml()
@@ -188,7 +181,7 @@ class TestExtractJjobsFromYaml:
         with pytest.raises(PipelineError) as exc_info:
             dag.extract_jjobs_from_yaml()
         assert "JNONEXISTENT_JOB" in str(exc_info.value)
-        assert "dag_filter" == exc_info.value.stage
+        assert exc_info.value.stage == "dag_filter"
 
     def test_error_message_includes_path(self, tmp_dev_root: Path):
         """PipelineError message includes the expected file path."""
@@ -248,7 +241,7 @@ class TestExtractJjobsFromYaml:
 # Tests for extract_config_files (Layer 4)
 # ---------------------------------------------------------------------------
 
-from deployment.dag_filter import _JJOB_HEADER_PATTERN, _UNCONDITIONAL_CONFIGS
+from deployment.dag_filter import _JJOB_HEADER_PATTERN, _UNCONDITIONAL_CONFIGS  # noqa: E402
 
 
 @pytest.fixture
@@ -259,28 +252,19 @@ def config_dev_root(tmp_path: Path) -> Path:
     jobs_dir.mkdir()
 
     # Create a J-Job with jjob_header.sh -c pattern
-    (jobs_dir / "JGLOBAL_FORECAST").write_text(
-        '#!/bin/bash\n'
-        'source "${HOMEglobal}/ush/jjob_header.sh" -e "fcst" -c "base fcst"\n'
-    )
-    (jobs_dir / "JGLOBAL_ATMOS_UPP").write_text(
-        '#!/bin/bash\n'
-        'source "${HOMEglobal}/ush/jjob_header.sh" -e "upp" -c "base upp"\n'
-    )
+    (jobs_dir / "JGLOBAL_FORECAST").write_text('#!/bin/bash\nsource "${HOMEglobal}/ush/jjob_header.sh" -e "fcst" -c "base fcst"\n')
+    (jobs_dir / "JGLOBAL_ATMOS_UPP").write_text('#!/bin/bash\nsource "${HOMEglobal}/ush/jjob_header.sh" -e "upp" -c "base upp"\n')
     # J-Job with multiple jjob_header invocations (conditional)
     (jobs_dir / "JGLOBAL_FORECAST_ENS").write_text(
-        '#!/bin/bash\n'
-        'if [[ 10#${ENSMEM:--1} -ge 0 ]]; then\n'
+        "#!/bin/bash\n"
+        "if [[ 10#${ENSMEM:--1} -ge 0 ]]; then\n"
         '    source "${HOMEglobal}/ush/jjob_header.sh" -e "efcs" -c "base fcst efcs"\n'
-        'else\n'
+        "else\n"
         '    source "${HOMEglobal}/ush/jjob_header.sh" -e "fcst" -c "base fcst"\n'
-        'fi\n'
+        "fi\n"
     )
     # J-Job with no -c flag
-    (jobs_dir / "JGLOBAL_CLEANUP").write_text(
-        '#!/bin/bash\n'
-        'echo "no jjob_header here"\n'
-    )
+    (jobs_dir / "JGLOBAL_CLEANUP").write_text('#!/bin/bash\necho "no jjob_header here"\n')
 
     # Create config directory structure (gfs app)
     config_dir = tmp_path / "parm" / "config" / "gfs"
@@ -317,9 +301,7 @@ def gfs_workflow_yaml() -> dict:
 class TestExtractConfigFiles:
     """Tests for DAGFilter.extract_config_files() — Layer 4."""
 
-    def test_unconditional_configs_always_included(
-        self, config_dev_root: Path, gfs_workflow_yaml: dict
-    ):
+    def test_unconditional_configs_always_included(self, config_dev_root: Path, gfs_workflow_yaml: dict):
         """config.base.j2, config.base, and config.com are always included."""
         dag = DAGFilter(config_dev_root, gfs_workflow_yaml, "hera")
         result = dag.extract_config_files(set())  # empty jjobs
@@ -327,9 +309,7 @@ class TestExtractConfigFiles:
         assert "config.base" in result
         assert "config.com" in result
 
-    def test_extracts_configs_from_jjob_header_c_flag(
-        self, config_dev_root: Path, gfs_workflow_yaml: dict
-    ):
+    def test_extracts_configs_from_jjob_header_c_flag(self, config_dev_root: Path, gfs_workflow_yaml: dict):
         """Extracts config basenames from jjob_header.sh -c flag."""
         dag = DAGFilter(config_dev_root, gfs_workflow_yaml, "hera")
         result = dag.extract_config_files({"JGLOBAL_FORECAST"})
@@ -337,27 +317,21 @@ class TestExtractConfigFiles:
         assert "config.base.j2" in result
         assert "config.fcst.j2" in result
 
-    def test_prefers_j2_variant(
-        self, config_dev_root: Path, gfs_workflow_yaml: dict
-    ):
+    def test_prefers_j2_variant(self, config_dev_root: Path, gfs_workflow_yaml: dict):
         """When both config.X.j2 and config.X exist, prefers .j2."""
         dag = DAGFilter(config_dev_root, gfs_workflow_yaml, "hera")
         result = dag.extract_config_files({"JGLOBAL_FORECAST"})
         # "base" maps to config.base.j2 (not config.base) because .j2 is checked first
         assert "config.base.j2" in result
 
-    def test_falls_back_to_plain_config(
-        self, config_dev_root: Path, gfs_workflow_yaml: dict
-    ):
+    def test_falls_back_to_plain_config(self, config_dev_root: Path, gfs_workflow_yaml: dict):
         """Falls back to config.X when config.X.j2 doesn't exist."""
         dag = DAGFilter(config_dev_root, gfs_workflow_yaml, "hera")
         result = dag.extract_config_files({"JGLOBAL_ATMOS_UPP"})
         # "upp" → config.upp (no .j2 variant exists)
         assert "config.upp" in result
 
-    def test_multiple_jjob_header_invocations(
-        self, config_dev_root: Path, gfs_workflow_yaml: dict
-    ):
+    def test_multiple_jjob_header_invocations(self, config_dev_root: Path, gfs_workflow_yaml: dict):
         """Handles J-Jobs with multiple jjob_header.sh invocations."""
         dag = DAGFilter(config_dev_root, gfs_workflow_yaml, "hera")
         result = dag.extract_config_files({"JGLOBAL_FORECAST_ENS"})
@@ -365,9 +339,7 @@ class TestExtractConfigFiles:
         assert "config.fcst.j2" in result
         assert "config.efcs" in result
 
-    def test_jjob_without_c_flag_contributes_nothing(
-        self, config_dev_root: Path, gfs_workflow_yaml: dict
-    ):
+    def test_jjob_without_c_flag_contributes_nothing(self, config_dev_root: Path, gfs_workflow_yaml: dict):
         """J-Jobs without jjob_header -c flag don't add extra configs."""
         dag = DAGFilter(config_dev_root, gfs_workflow_yaml, "hera")
         result = dag.extract_config_files({"JGLOBAL_CLEANUP"})
@@ -378,27 +350,21 @@ class TestExtractConfigFiles:
         extra = result - expected_minimum - {"config.resources.HERA"}
         assert extra == set()
 
-    def test_platform_specific_resource_included(
-        self, config_dev_root: Path, gfs_workflow_yaml: dict
-    ):
+    def test_platform_specific_resource_included(self, config_dev_root: Path, gfs_workflow_yaml: dict):
         """Platform-specific resource file is included when it exists."""
         dag = DAGFilter(config_dev_root, gfs_workflow_yaml, "hera")
         result = dag.extract_config_files({"JGLOBAL_FORECAST"})
         assert "config.resources.HERA" in result
         assert "config.resources" in result
 
-    def test_platform_resource_case_insensitive_input(
-        self, config_dev_root: Path, gfs_workflow_yaml: dict
-    ):
+    def test_platform_resource_case_insensitive_input(self, config_dev_root: Path, gfs_workflow_yaml: dict):
         """Platform is uppercased for resource file lookup."""
         dag = DAGFilter(config_dev_root, gfs_workflow_yaml, "hera")
         result = dag.extract_config_files({"JGLOBAL_FORECAST"})
         # Platform "hera" → uppercased to "HERA" → config.resources.HERA
         assert "config.resources.HERA" in result
 
-    def test_missing_platform_resource_not_included(
-        self, config_dev_root: Path, gfs_workflow_yaml: dict
-    ):
+    def test_missing_platform_resource_not_included(self, config_dev_root: Path, gfs_workflow_yaml: dict):
         """Platform resource file not included if it doesn't exist."""
         dag = DAGFilter(config_dev_root, gfs_workflow_yaml, "DERECHO")
         # config.resources.DERECHO doesn't exist in fixture
@@ -409,16 +375,11 @@ class TestExtractConfigFiles:
         # Base resources always included
         assert "config.resources" in result
 
-    def test_nonexistent_config_basename_skipped(
-        self, config_dev_root: Path, gfs_workflow_yaml: dict
-    ):
+    def test_nonexistent_config_basename_skipped(self, config_dev_root: Path, gfs_workflow_yaml: dict):
         """Config basenames that don't map to existing files are skipped."""
         # Create a J-Job referencing a config that doesn't exist
         jobs_dir = config_dev_root / "jobs"
-        (jobs_dir / "JGLOBAL_SPECIAL").write_text(
-            '#!/bin/bash\n'
-            'source "${HOMEglobal}/ush/jjob_header.sh" -e "special" -c "base nonexistent"\n'
-        )
+        (jobs_dir / "JGLOBAL_SPECIAL").write_text('#!/bin/bash\nsource "${HOMEglobal}/ush/jjob_header.sh" -e "special" -c "base nonexistent"\n')
         dag = DAGFilter(config_dev_root, gfs_workflow_yaml, "hera")
         result = dag.extract_config_files({"JGLOBAL_SPECIAL"})
         # "nonexistent" has no config.nonexistent.j2 or config.nonexistent
@@ -499,7 +460,7 @@ class TestJjobHeaderPattern:
 # Tests for extract_ex_scripts (Layer 2)
 # ---------------------------------------------------------------------------
 
-from deployment.dag_filter import _EX_SCRIPT_PATTERNS
+from deployment.dag_filter import _EX_SCRIPT_PATTERNS  # noqa: E402
 
 
 @pytest.fixture
@@ -511,32 +472,15 @@ def ex_script_dev_root(tmp_path: Path) -> Path:
     scripts_dir.mkdir()
 
     # J-Job using the FORECASTSH:= assignment pattern
-    (jobs_dir / "JGLOBAL_FORECAST").write_text(
-        '#!/bin/bash\n'
-        ': "${FORECASTSH:=${SCRglobal}/exglobal_forecast.sh}"\n'
-        '"${FORECASTSH}" && true\n'
-    )
+    (jobs_dir / "JGLOBAL_FORECAST").write_text('#!/bin/bash\n: "${FORECASTSH:=${SCRglobal}/exglobal_forecast.sh}"\n"${FORECASTSH}" && true\n')
     # J-Job using direct ${SCRglobal}/ex... invocation
-    (jobs_dir / "JGFS_ATMOS_POST").write_text(
-        '#!/bin/bash\n'
-        '${SCRglobal}/exgfs_atmos_post.sh\n'
-    )
+    (jobs_dir / "JGFS_ATMOS_POST").write_text("#!/bin/bash\n${SCRglobal}/exgfs_atmos_post.sh\n")
     # J-Job using export pattern
-    (jobs_dir / "JGFS_WAVE_INIT").write_text(
-        '#!/bin/bash\n'
-        'export WAVESH="${SCRglobal}/exgfs_wave_init.sh"\n'
-    )
+    (jobs_dir / "JGFS_WAVE_INIT").write_text('#!/bin/bash\nexport WAVESH="${SCRglobal}/exgfs_wave_init.sh"\n')
     # J-Job with no ex-script reference
-    (jobs_dir / "JGLOBAL_CLEANUP").write_text(
-        '#!/bin/bash\n'
-        'echo "cleanup only"\n'
-    )
+    (jobs_dir / "JGLOBAL_CLEANUP").write_text('#!/bin/bash\necho "cleanup only"\n')
     # J-Job with multiple ex-script references (conditional)
-    (jobs_dir / "JGLOBAL_MULTI").write_text(
-        '#!/bin/bash\n'
-        ': "${MAINSH:=${SCRglobal}/exglobal_main.sh}"\n'
-        '${SCRglobal}/exglobal_helper.sh\n'
-    )
+    (jobs_dir / "JGLOBAL_MULTI").write_text('#!/bin/bash\n: "${MAINSH:=${SCRglobal}/exglobal_main.sh}"\n${SCRglobal}/exglobal_helper.sh\n')
 
     # Create corresponding ex-scripts
     (scripts_dir / "exglobal_forecast.sh").write_text("#!/bin/bash\n")
@@ -553,7 +497,7 @@ class TestExScriptPatterns:
 
     def test_matches_scr_global_pattern(self):
         """Matches ${SCRglobal}/exaaaaa.sh pattern."""
-        line = '${SCRglobal}/exglobal_forecast.sh'
+        line = "${SCRglobal}/exglobal_forecast.sh"
         matches = []
         for pattern in _EX_SCRIPT_PATTERNS:
             for m in pattern.finditer(line):
@@ -580,7 +524,7 @@ class TestExScriptPatterns:
 
     def test_matches_scr_model_variant(self):
         """Matches ${SCRgfs}/exgfs_something.sh pattern."""
-        line = '${SCRgfs}/exgfs_atmos_post.sh'
+        line = "${SCRgfs}/exgfs_atmos_post.sh"
         matches = []
         for pattern in _EX_SCRIPT_PATTERNS:
             for m in pattern.finditer(line):
@@ -589,7 +533,7 @@ class TestExScriptPatterns:
 
     def test_matches_python_ex_script(self):
         """Matches ex-scripts with .py extension."""
-        line = '${SCRglobal}/exglobal_archive.py'
+        line = "${SCRglobal}/exglobal_archive.py"
         matches = []
         for pattern in _EX_SCRIPT_PATTERNS:
             for m in pattern.finditer(line):
@@ -598,7 +542,7 @@ class TestExScriptPatterns:
 
     def test_no_match_for_non_ex_script(self):
         """Does not match scripts that don't start with 'ex'."""
-        line = '${SCRglobal}/forecast_predet.sh'
+        line = "${SCRglobal}/forecast_predet.sh"
         matches = []
         for pattern in _EX_SCRIPT_PATTERNS:
             for m in pattern.finditer(line):
@@ -608,7 +552,7 @@ class TestExScriptPatterns:
     def test_no_match_for_comment_line(self):
         """Regex still matches in comments (filtering is done at parse level)."""
         # Note: The regex itself matches; comment filtering is done by the caller
-        line = '# ${SCRglobal}/exglobal_forecast.sh'
+        line = "# ${SCRglobal}/exglobal_forecast.sh"
         matches = []
         for pattern in _EX_SCRIPT_PATTERNS:
             for m in pattern.finditer(line):
@@ -668,10 +612,7 @@ class TestExtractExScripts:
         """Same ex-script referenced by multiple J-Jobs appears once."""
         # Create two J-Jobs referencing the same ex-script
         jobs_dir = ex_script_dev_root / "jobs"
-        (jobs_dir / "JGLOBAL_FORECAST_V2").write_text(
-            '#!/bin/bash\n'
-            '${SCRglobal}/exglobal_forecast.sh\n'
-        )
+        (jobs_dir / "JGLOBAL_FORECAST_V2").write_text("#!/bin/bash\n${SCRglobal}/exglobal_forecast.sh\n")
         yaml_data = {"families": []}
         dag = DAGFilter(ex_script_dev_root, yaml_data, "hera")
         result = dag.extract_ex_scripts({"JGLOBAL_FORECAST", "JGLOBAL_FORECAST_V2"})
@@ -699,16 +640,13 @@ class TestExtractExScripts:
         scripts_dir = tmp_path / "scripts"
         scripts_dir.mkdir()
         # J-Job references an ex-script that doesn't exist
-        (jobs_dir / "JBAD_REF").write_text(
-            '#!/bin/bash\n'
-            '${SCRglobal}/exnonexistent_script.sh\n'
-        )
+        (jobs_dir / "JBAD_REF").write_text("#!/bin/bash\n${SCRglobal}/exnonexistent_script.sh\n")
         yaml_data = {"families": []}
         dag = DAGFilter(tmp_path, yaml_data, "hera")
         with pytest.raises(PipelineError) as exc_info:
             dag.extract_ex_scripts({"JBAD_REF"})
         assert "exnonexistent_script.sh" in str(exc_info.value)
-        assert "dag_filter" == exc_info.value.stage
+        assert exc_info.value.stage == "dag_filter"
 
     def test_error_message_includes_path(self, tmp_path: Path):
         """PipelineError message includes the expected file path."""
@@ -716,10 +654,7 @@ class TestExtractExScripts:
         jobs_dir.mkdir()
         scripts_dir = tmp_path / "scripts"
         scripts_dir.mkdir()
-        (jobs_dir / "JBAD_REF").write_text(
-            '#!/bin/bash\n'
-            '${SCRglobal}/exmissing.sh\n'
-        )
+        (jobs_dir / "JBAD_REF").write_text("#!/bin/bash\n${SCRglobal}/exmissing.sh\n")
         yaml_data = {"families": []}
         dag = DAGFilter(tmp_path, yaml_data, "hera")
         with pytest.raises(PipelineError) as exc_info:
@@ -740,47 +675,32 @@ def integration_dev_root(tmp_path: Path) -> Path:
     jobs_dir = tmp_path / "jobs"
     jobs_dir.mkdir()
     (jobs_dir / "JGLOBAL_FORECAST").write_text(
-        '#!/bin/bash\n'
+        "#!/bin/bash\n"
         'source "${HOMEglobal}/ush/jjob_header.sh" -e "fcst" -c "base fcst"\n'
         ': "${FORECASTSH:=${SCRglobal}/exglobal_forecast.sh}"\n'
         '"${FORECASTSH}" && true\n'
     )
     (jobs_dir / "JGFS_ATMOS_POST").write_text(
-        '#!/bin/bash\n'
-        'source "${HOMEglobal}/ush/jjob_header.sh" -e "upp" -c "base upp"\n'
-        '${SCRglobal}/exgfs_atmos_post.sh\n'
+        '#!/bin/bash\nsource "${HOMEglobal}/ush/jjob_header.sh" -e "upp" -c "base upp"\n${SCRglobal}/exgfs_atmos_post.sh\n'
     )
     # Unreferenced J-Job
     (jobs_dir / "JGDAS_ATMOS_ANALYSIS").write_text(
-        '#!/bin/bash\n'
-        'source "${HOMEglobal}/ush/jjob_header.sh" -e "anal" -c "base anal"\n'
-        '${SCRglobal}/exgdas_atmos_analysis.sh\n'
+        '#!/bin/bash\nsource "${HOMEglobal}/ush/jjob_header.sh" -e "anal" -c "base anal"\n${SCRglobal}/exgdas_atmos_analysis.sh\n'
     )
 
     # Scripts
     scripts_dir = tmp_path / "scripts"
     scripts_dir.mkdir()
     (scripts_dir / "exglobal_forecast.sh").write_text(
-        '#!/bin/bash\n'
-        'source "${USHglobal}/forecast_predet.sh"\n'
-        'source "${USHglobal}/forecast_det.sh"\n'
+        '#!/bin/bash\nsource "${USHglobal}/forecast_predet.sh"\nsource "${USHglobal}/forecast_det.sh"\n'
     )
-    (scripts_dir / "exgfs_atmos_post.sh").write_text(
-        '#!/bin/bash\n'
-        'source "${USHglobal}/atmos_post.sh"\n'
-    )
-    (scripts_dir / "exgdas_atmos_analysis.sh").write_text(
-        '#!/bin/bash\n'
-        'source "${USHglobal}/analysis_helper.sh"\n'
-    )
+    (scripts_dir / "exgfs_atmos_post.sh").write_text('#!/bin/bash\nsource "${USHglobal}/atmos_post.sh"\n')
+    (scripts_dir / "exgdas_atmos_analysis.sh").write_text('#!/bin/bash\nsource "${USHglobal}/analysis_helper.sh"\n')
 
     # Ush scripts (with transitive deps)
     ush_dir = tmp_path / "ush"
     ush_dir.mkdir()
-    (ush_dir / "forecast_predet.sh").write_text(
-        '#!/bin/bash\n'
-        'source "${USHglobal}/common_utils.sh"\n'
-    )
+    (ush_dir / "forecast_predet.sh").write_text('#!/bin/bash\nsource "${USHglobal}/common_utils.sh"\n')
     (ush_dir / "forecast_det.sh").write_text("#!/bin/bash\n")
     (ush_dir / "common_utils.sh").write_text("#!/bin/bash\n")
     (ush_dir / "atmos_post.sh").write_text("#!/bin/bash\n")
@@ -812,9 +732,7 @@ class TestDAGFilterIntegration:
     Validates: Requirements 1.1–1.5, 2.1–2.4, 3.1–3.5, 4.1–4.5
     """
 
-    def test_full_reachability_includes_only_referenced_artifacts(
-        self, integration_dev_root: Path
-    ):
+    def test_full_reachability_includes_only_referenced_artifacts(self, integration_dev_root: Path):
         """Full pipeline includes only artifacts reachable from workflow YAML."""
         yaml_data = {
             "suite": {"name": "gfs_v17"},
@@ -891,9 +809,7 @@ class TestDAGFilterIntegration:
         assert "atmos_post.sh" in result2.ush_scripts
         assert "config.upp" in result2.config_files
 
-    def test_config_base_always_present_regardless_of_tasks(
-        self, integration_dev_root: Path
-    ):
+    def test_config_base_always_present_regardless_of_tasks(self, integration_dev_root: Path):
         """config.base.j2 and config.com are always in the reachability set."""
         # Even with an empty workflow (no tasks)
         yaml_data = {"suite": {"name": "gfs_v17"}, "families": []}
@@ -902,9 +818,7 @@ class TestDAGFilterIntegration:
         assert "config.base.j2" in result.config_files
         assert "config.com" in result.config_files
 
-    def test_fatal_error_on_missing_jjob_in_full_pipeline(
-        self, integration_dev_root: Path
-    ):
+    def test_fatal_error_on_missing_jjob_in_full_pipeline(self, integration_dev_root: Path):
         """FATAL ERROR (PipelineError) when workflow references missing J-Job."""
         yaml_data = {
             "suite": {"name": "gfs_v17"},
@@ -920,16 +834,11 @@ class TestDAGFilterIntegration:
             dag.compute_reachability()
         assert "JNONEXISTENT_JOB" in str(exc_info.value)
 
-    def test_fatal_error_on_missing_ex_script_in_full_pipeline(
-        self, integration_dev_root: Path
-    ):
+    def test_fatal_error_on_missing_ex_script_in_full_pipeline(self, integration_dev_root: Path):
         """FATAL ERROR (PipelineError) when J-Job references missing ex-script."""
         # Create a J-Job that references a non-existent ex-script
         jobs_dir = integration_dev_root / "jobs"
-        (jobs_dir / "JBAD_SCRIPT").write_text(
-            '#!/bin/bash\n'
-            '${SCRglobal}/exnonexistent.sh\n'
-        )
+        (jobs_dir / "JBAD_SCRIPT").write_text("#!/bin/bash\n${SCRglobal}/exnonexistent.sh\n")
         yaml_data = {
             "suite": {"name": "gfs_v17"},
             "families": [
@@ -944,16 +853,12 @@ class TestDAGFilterIntegration:
             dag.compute_reachability()
         assert "exnonexistent.sh" in str(exc_info.value)
 
-    def test_warning_on_missing_ush_script_in_full_pipeline(
-        self, integration_dev_root: Path
-    ):
+    def test_warning_on_missing_ush_script_in_full_pipeline(self, integration_dev_root: Path):
         """WARNING (non-fatal) when ex-script references missing ush script."""
         # Modify an ex-script to reference a non-existent ush script
         scripts_dir = integration_dev_root / "scripts"
         (scripts_dir / "exglobal_forecast.sh").write_text(
-            '#!/bin/bash\n'
-            'source "${USHglobal}/forecast_predet.sh"\n'
-            'source "${USHglobal}/optional_missing.sh"\n'
+            '#!/bin/bash\nsource "${USHglobal}/forecast_predet.sh"\nsource "${USHglobal}/optional_missing.sh"\n'
         )
         yaml_data = {
             "suite": {"name": "gfs_v17"},

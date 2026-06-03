@@ -7,17 +7,17 @@ readonly HOMEglobal_=$(cd "$(dirname "$(readlink -f -n "${BASH_SOURCE[0]}")")" &
 OPTIND=1
 _opts="-f " # forces a clean build
 while getopts ":j:dv" option; do
-    case "${option}" in
-        d) _opts+="-c -DCMAKE_BUILD_TYPE=Debug " ;;
-        j) BUILD_JOBS=${OPTARG} ;;
-        v) _opts+="-v " ;;
-        :)
-            echo "[${BASH_SOURCE[0]}]: ${option} requires an argument"
-            ;;
-        *)
-            echo "[${BASH_SOURCE[0]}]: Unrecognized option: ${option}"
-            ;;
-    esac
+  case "${option}" in
+    d) _opts+="-c -DCMAKE_BUILD_TYPE=Debug " ;;
+    j) BUILD_JOBS=${OPTARG} ;;
+    v) _opts+="-v " ;;
+    :)
+      echo "[${BASH_SOURCE[0]}]: ${option} requires an argument"
+      ;;
+    *)
+      echo "[${BASH_SOURCE[0]}]: Unrecognized option: ${option}"
+      ;;
+  esac
 done
 shift $((OPTIND - 1))
 
@@ -26,8 +26,8 @@ source "${HOMEglobal_}/ush/detect_machine.sh"
 # double quoting opts will not work since it is a string of options
 # shellcheck disable=SC2086
 BUILD_JOBS="${BUILD_JOBS:-8}" \
-    WORKFLOW_BUILD="${WORKFLOW_BUILD:-"ON"}" \
-    WORKFLOW_TESTS="${WORKFLOW_TESTS:-"OFF"}" \
-    "${HOMEglobal_}/sorc/gdas.cd/build.sh" ${_opts} -w ${HOMEglobal_}
+  WORKFLOW_BUILD="${WORKFLOW_BUILD:-"ON"}" \
+  WORKFLOW_TESTS="${WORKFLOW_TESTS:-"OFF"}" \
+  "${HOMEglobal_}/sorc/gdas.cd/build.sh" ${_opts} -w ${HOMEglobal_}
 
 exit

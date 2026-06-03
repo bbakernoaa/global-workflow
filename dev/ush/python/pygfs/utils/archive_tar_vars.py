@@ -41,12 +41,15 @@ Logging
 -------
 All public operational functions are decorated with @logit (TODO) to log entry, exit, and return values.
 """
-import os
+
+from datetime import datetime
 from logging import getLogger
-from wxflow import AttrDict, to_YMD, to_YMDH, add_to_datetime, to_timedelta, to_fv3time
+
+from wxflow import AttrDict, add_to_datetime, to_fv3time, to_timedelta, to_YMD, to_YMDH
+
 # from wxflow import logit  # Uncomment when logit decorator is implemented
 
-logger = getLogger(__name__.split('.')[-1])
+logger = getLogger(__name__.split(".")[-1])
 
 
 class ArchiveTarVars:
@@ -109,32 +112,28 @@ class ArchiveTarVars:
         arch_dict.update(ArchiveTarVars._get_all_cyc_vars(config_dict))
 
         # Add tarball-specific variables if TARBALL_TYPE is defined
-        tarball_type = config_dict.get('TARBALL_TYPE', '')
+        tarball_type = config_dict.get("TARBALL_TYPE", "")
         if tarball_type:
             arch_dict.update(ArchiveTarVars.get_tarball_specific_vars(config_dict, tarball_type))
 
-        if config_dict.get('RUN') in ['enkfgfs', 'enkfgdas']:
+        if config_dict.get("RUN") in ["enkfgfs", "enkfgdas"]:
             # EnKF systems: Handle ensemble member-specific paths
-            ensgrp = config_dict.get('ENSGRP', 0)
+            ensgrp = config_dict.get("ENSGRP", 0)
             if ensgrp == 0:
                 # ENSGRP=0: Ensemble mean/spread (enkf.yaml.j2)
                 arch_dict.update(ArchiveTarVars.get_enkf_com_paths(config_dict))
             else:
                 # ENSGRP=!0: Individual member groups
-                arch_dict.update(ArchiveTarVars._create_enkf_mem_com_sets(
-                    config_dict,
-                    arch_dict['first_group_mem'],
-                    arch_dict['last_group_mem']
-                ))
-        elif config_dict.get('RUN') in ['gfs', 'gdas']:
+                arch_dict.update(ArchiveTarVars._create_enkf_mem_com_sets(config_dict, arch_dict["first_group_mem"], arch_dict["last_group_mem"]))
+        elif config_dict.get("RUN") in ["gfs", "gdas"]:
             # GFS/GDAS systems: COMIN variables already set in job scripts
             # For wave tarballs, collect all COMIN_WAVE_GRID_* paths from config_dict
-            if tarball_type in ['gfswave', 'gdaswave']:
-                arch_dict['WAVE_GRID_RES_COM_list'] = [v for k, v in config_dict.items() if k.startswith('COMIN_WAVE_GRID_')]
-        elif config_dict.get('RUN') == 'gcafs':
+            if tarball_type in ["gfswave", "gdaswave"]:
+                arch_dict["WAVE_GRID_RES_COM_list"] = [v for k, v in config_dict.items() if k.startswith("COMIN_WAVE_GRID_")]
+        elif config_dict.get("RUN") == "gcafs":
             # GCAFS system: COMIN variables already set in job scripts
             logger.info("GCAFS system: COMIN variables already set in job scripts")
-        elif config_dict.get('RUN') == 'gcdas':
+        elif config_dict.get("RUN") == "gcdas":
             logger.info("GCDAS system: COMIN variables already set in job scripts")
         else:
             logger.info(f"Unknown RUN type '{config_dict.get('RUN')}', no additional COM paths added")
@@ -146,7 +145,6 @@ class ArchiveTarVars:
 
     @staticmethod
     def add_config_vars(config_dict: AttrDict) -> AttrDict:
-
         """
         Collect configuration variables for archive tar operations.
 
@@ -189,61 +187,141 @@ class ArchiveTarVars:
         # Common configuration keys (present in both exglobal_enkf_earc_tars.py and exglobal_archive_tars.py)
         config_keys = [
             # Basic configuration
-            'ATARDIR', 'current_cycle', 'RUN', 'PDY', 'PSLOT', 'NET', 'MODE',
-            'PARMglobal', 'ROTDIR', 'SDATE',
+            "ATARDIR",
+            "current_cycle",
+            "RUN",
+            "PDY",
+            "PSLOT",
+            "NET",
+            "MODE",
+            "PARMglobal",
+            "ROTDIR",
+            "SDATE",
             # Archive control
-            'DO_ARCHCOM', 'ARCHCOM_TO', 'ARCDIR',
+            "DO_ARCHCOM",
+            "ARCHCOM_TO",
+            "ARCDIR",
             # Data assimilation
-            'DOHYBVAR', 'DOIAU', 'DO_CA', 'assim_freq', 'IAUFHRS',
-            'DO_JEDISNOWDA', 'DO_GSISOILDA', 'DO_LAND_IAU',
+            "DOHYBVAR",
+            "DOIAU",
+            "DO_CA",
+            "assim_freq",
+            "IAUFHRS",
+            "DO_JEDISNOWDA",
+            "DO_GSISOILDA",
+            "DO_LAND_IAU",
             # Ocean/Ice DA
-            'DOHYBVAR_OCN', 'DOLETKF_OCN', 'NMEM_ENS', 'ARCH_MARINE_ENS',
+            "DOHYBVAR_OCN",
+            "DOLETKF_OCN",
+            "NMEM_ENS",
+            "ARCH_MARINE_ENS",
             # Archive timing and control
-            'ARCH_CYC', 'ARCH_WARMICFREQ', 'ARCH_FCSTICFREQ',
+            "ARCH_CYC",
+            "ARCH_WARMICFREQ",
+            "ARCH_FCSTICFREQ",
         ]
 
         # Add system-specific keys based on RUN type
-        if 'enkf' in config_dict.get('RUN', ''):
+        if "enkf" in config_dict.get("RUN", ""):
             # EnKF-specific keys (only in exglobal_enkf_earc_tars.py)
-            config_keys.extend([
-                # Ensemble configuration
-                'ENSGRP', 'NMEM_EARCGRP', 'NMEM_ENS_GFS',
-                # EnKF-specific operations
-                'DO_CALC_INCREMENT_ENKF_GFS', 'DO_JEDIATMENS', 'DO_JEDIATMENS_SPLIT_OBSSOL', 'DO_CALC_INCREMENT',
-                'DOENKFONLY_ATM',
-                # EnKF forecast configuration
-                'FHMIN_ENKF', 'FHMAX_ENKF_GFS', 'FHOUT_ENKF_GFS', 'FHMAX_ENKF', 'FHOUT_ENKF',
-                # EnKF settings
-                'ENKF_SPREAD', 'DOIAU_ENKF', 'IAU_OFFSET', 'IAUFHRS_ENKF',
-                # EnKF restart intervals
-                'restart_interval_enkfgdas', 'restart_interval_enkfgfs',
-            ])
+            config_keys.extend(
+                [
+                    # Ensemble configuration
+                    "ENSGRP",
+                    "NMEM_EARCGRP",
+                    "NMEM_ENS_GFS",
+                    # EnKF-specific operations
+                    "DO_CALC_INCREMENT_ENKF_GFS",
+                    "DO_JEDIATMENS",
+                    "DO_JEDIATMENS_SPLIT_OBSSOL",
+                    "DO_CALC_INCREMENT",
+                    "DOENKFONLY_ATM",
+                    # EnKF forecast configuration
+                    "FHMIN_ENKF",
+                    "FHMAX_ENKF_GFS",
+                    "FHOUT_ENKF_GFS",
+                    "FHMAX_ENKF",
+                    "FHOUT_ENKF",
+                    # EnKF settings
+                    "ENKF_SPREAD",
+                    "DOIAU_ENKF",
+                    "IAU_OFFSET",
+                    "IAUFHRS_ENKF",
+                    # EnKF restart intervals
+                    "restart_interval_enkfgdas",
+                    "restart_interval_enkfgfs",
+                ]
+            )
         else:
             # Archive-specific keys (only in exglobal_archive_tars.py)
-            config_keys.extend([
-                # Forecast configuration
-                'FHMIN', 'FHMAX', 'FHOUT',
-                'FHMIN_GFS', 'FHMAX_GFS', 'FHOUT_GFS', 'FHOUT_HF_GFS', 'FHMAX_HF_GFS',
-                'FHOUT_OCN', 'FHOUT_ICE', 'FHOUT_OCN_GFS', 'FHOUT_ICE_GFS',
-                'FHOUT_WAV', 'FHOUT_WAV_GFS', 'FHOUT_HF_WAV', 'FHMAX_WAV', 'FHMAX_HF_WAV', 'FHMAX_WAV_GFS',
-                # Monitoring and verification
-                'DO_VERFRAD', 'DO_VMINMON', 'DO_VERFOZN', 'DO_FIT2OBS', 'FHMAX_FITS',
-                # Model components
-                'DO_OCN', 'DO_ICE', 'DO_WAVE', 'DO_PREP_OBS_AERO', 'WRITE_DOPOST',
-                # Data assimilation
-                'DO_JEDIATMVAR', 'DO_JEDIOCNVAR', 'DO_AERO_ANL', 'DO_AERO_FCST', 'ATMINC_GRID',
-                # Restart intervals
-                'restart_interval_gdas', 'restart_interval_gfs',
-                # Archive control
-                'ARCH_GAUSSIAN', 'ARCH_GAUSSIAN_FHMAX', 'ARCH_GAUSSIAN_FHINC',
-                'ARCH_EXPDIR', 'ARCH_EXPDIR_FREQ', 'ARCH_HASHES', 'ARCH_DIFFS',
-                # Grid and resolution
-                'OCNRES', 'ICERES', 'waveGRD', 'WAVE_OUT_GRIDS',
-                # Other
-                'DO_BUFRSND', 'NUM_SND_COLLECTIVES', 'DOBNDPNT_WAVE',
-                'OFFSET_START_HOUR', 'EXPDIR', 'EDATE', 'HOMEglobal',
-                'DO_GEMPAK', 'DATASETS_YAML', 'TARBALL_TYPE',
-            ])
+            config_keys.extend(
+                [
+                    # Forecast configuration
+                    "FHMIN",
+                    "FHMAX",
+                    "FHOUT",
+                    "FHMIN_GFS",
+                    "FHMAX_GFS",
+                    "FHOUT_GFS",
+                    "FHOUT_HF_GFS",
+                    "FHMAX_HF_GFS",
+                    "FHOUT_OCN",
+                    "FHOUT_ICE",
+                    "FHOUT_OCN_GFS",
+                    "FHOUT_ICE_GFS",
+                    "FHOUT_WAV",
+                    "FHOUT_WAV_GFS",
+                    "FHOUT_HF_WAV",
+                    "FHMAX_WAV",
+                    "FHMAX_HF_WAV",
+                    "FHMAX_WAV_GFS",
+                    # Monitoring and verification
+                    "DO_VERFRAD",
+                    "DO_VMINMON",
+                    "DO_VERFOZN",
+                    "DO_FIT2OBS",
+                    "FHMAX_FITS",
+                    # Model components
+                    "DO_OCN",
+                    "DO_ICE",
+                    "DO_WAVE",
+                    "DO_PREP_OBS_AERO",
+                    "WRITE_DOPOST",
+                    # Data assimilation
+                    "DO_JEDIATMVAR",
+                    "DO_JEDIOCNVAR",
+                    "DO_AERO_ANL",
+                    "DO_AERO_FCST",
+                    "ATMINC_GRID",
+                    # Restart intervals
+                    "restart_interval_gdas",
+                    "restart_interval_gfs",
+                    # Archive control
+                    "ARCH_GAUSSIAN",
+                    "ARCH_GAUSSIAN_FHMAX",
+                    "ARCH_GAUSSIAN_FHINC",
+                    "ARCH_EXPDIR",
+                    "ARCH_EXPDIR_FREQ",
+                    "ARCH_HASHES",
+                    "ARCH_DIFFS",
+                    # Grid and resolution
+                    "OCNRES",
+                    "ICERES",
+                    "waveGRD",
+                    "WAVE_OUT_GRIDS",
+                    # Other
+                    "DO_BUFRSND",
+                    "NUM_SND_COLLECTIVES",
+                    "DOBNDPNT_WAVE",
+                    "OFFSET_START_HOUR",
+                    "EXPDIR",
+                    "EDATE",
+                    "HOMEglobal",
+                    "DO_GEMPAK",
+                    "DATASETS_YAML",
+                    "TARBALL_TYPE",
+                ]
+            )
 
         # Extract keys if they exist in config_dict
         for key in config_keys:
@@ -285,28 +363,28 @@ class ArchiveTarVars:
             Plus system-specific variables if RUN is 'enkf*'
         """
         current_cycle = config_dict.current_cycle
-        assim_freq = config_dict.get('assim_freq', 6)
+        assim_freq = config_dict.get("assim_freq", 6)
 
         vars_out = AttrDict()
         # Basic cycle variables (common to all systems)
-        vars_out['cycle_HH'] = current_cycle.strftime("%H")
-        vars_out['cycle_YMDH'] = to_YMDH(current_cycle)
-        vars_out['cycle_YMD'] = to_YMD(current_cycle)
-        vars_out['cycle_fv3time'] = to_fv3time(current_cycle)
+        vars_out["cycle_HH"] = current_cycle.strftime("%H")
+        vars_out["cycle_YMDH"] = to_YMDH(current_cycle)
+        vars_out["cycle_YMD"] = to_YMD(current_cycle)
+        vars_out["cycle_fv3time"] = to_fv3time(current_cycle)
 
         # Assimilation frequency
-        vars_out['assim_freq'] = str(assim_freq)
+        vars_out["assim_freq"] = str(assim_freq)
 
         # Padded IAU forecast hours for templates
-        if 'IAUFHRS' in config_dict:
-            vars_out['iaufhrs_str'] = [f"{h:03d}" for h in config_dict['IAUFHRS']]
+        if "IAUFHRS" in config_dict:
+            vars_out["iaufhrs_str"] = [f"{h:03d}" for h in config_dict["IAUFHRS"]]
 
         # Add EnKF-specific variables if RUN contains 'enkf'
-        if 'enkf' in config_dict.get('RUN', ''):
+        if "enkf" in config_dict.get("RUN", ""):
             vars_out.update(ArchiveTarVars._get_enkf_specific_cyc_vars(config_dict, current_cycle))
 
         # Add GCDAS-specific variables if RUN is 'gcdas'
-        if config_dict.get('RUN', '') == 'gcdas':
+        if config_dict.get("RUN", "") == "gcdas":
             vars_out.update(ArchiveTarVars._get_gcdas_specific_cyc_vars(config_dict, current_cycle))
 
         logger.debug(f"Cycle variables: {list(vars_out.keys())}")
@@ -348,14 +426,14 @@ class ArchiveTarVars:
         enkf_vars = AttrDict()
 
         # EnKF-specific analysis and restart times (using DOIAU_ENKF)
-        doiau_enkf = config_dict.get('DOIAU_ENKF', False)
-        dohybvar_ocn = config_dict.get('DOHYBVAR_OCN', False)
+        doiau_enkf = config_dict.get("DOIAU_ENKF", False)
+        dohybvar_ocn = config_dict.get("DOHYBVAR_OCN", False)
 
         # Analysis time (for surface analysis restart files)
         anl_delta = to_timedelta("-3H") if doiau_enkf else to_timedelta("0H")
         anl_time = add_to_datetime(current_cycle, anl_delta)
-        enkf_vars['anl_YMD'] = to_YMD(anl_time)
-        enkf_vars['anl_HH'] = anl_time.strftime("%H")
+        enkf_vars["anl_YMD"] = to_YMD(anl_time)
+        enkf_vars["anl_HH"] = anl_time.strftime("%H")
 
         # Restart hour calculations (when DOHYBVAR_OCN is true)
         # Two different logic blocks for different templates:
@@ -365,60 +443,56 @@ class ArchiveTarVars:
             # For enkf_restarta_grp.yaml.j2 (conditional logic)
             rst_delta_a = to_timedelta("+3H") if doiau_enkf else to_timedelta("+6H")
             rst_time_a = add_to_datetime(current_cycle, rst_delta_a)
-            enkf_vars['rst_HH_restarta'] = rst_time_a.strftime("%H")
+            enkf_vars["rst_HH_restarta"] = rst_time_a.strftime("%H")
 
             # For enkf_restartb_grp.yaml.j2 (always +3H)
             rst_delta_b = to_timedelta("+3H")
             rst_time_b = add_to_datetime(current_cycle, rst_delta_b)
-            enkf_vars['rst_HH_restartb'] = rst_time_b.strftime("%H")
+            enkf_vars["rst_HH_restartb"] = rst_time_b.strftime("%H")
 
         # Forecast output frequency
-        enkf_vars['fhout'] = config_dict.get('FHOUT_ENKF', 3)
-        enkf_vars['fhmin'] = config_dict.get('FHMIN_ENKF', 0)
-        enkf_vars['fhmax'] = config_dict.get('FHMAX_ENKF', 0)
+        enkf_vars["fhout"] = config_dict.get("FHOUT_ENKF", 3)
+        enkf_vars["fhmin"] = config_dict.get("FHMIN_ENKF", 0)
+        enkf_vars["fhmax"] = config_dict.get("FHMAX_ENKF", 0)
         # System-specific configuration
-        if config_dict.get('RUN', '') == 'enkfgfs':
-            enkf_vars['do_calc_increment'] = config_dict.get('DO_CALC_INCREMENT_ENKF_GFS', False)
-            enkf_vars['nmem_ens'] = config_dict.get('NMEM_ENS_GFS', None)
-            enkf_vars['restart_interval'] = config_dict.get('restart_interval_enkfgfs', None)
-            enkf_vars['is_gdas'] = False
-            enkf_vars['is_gfs'] = True
-        elif config_dict.get('RUN', '') == 'enkfgdas':
-            enkf_vars['do_calc_increment'] = config_dict.get('DO_CALC_INCREMENT', False)
-            enkf_vars['nmem_ens'] = config_dict.get('NMEM_ENS')
-            enkf_vars['restart_interval'] = config_dict.get('restart_interval_enkfgdas', None)
-            enkf_vars['is_gdas'] = True
-            enkf_vars['is_gfs'] = False
+        if config_dict.get("RUN", "") == "enkfgfs":
+            enkf_vars["do_calc_increment"] = config_dict.get("DO_CALC_INCREMENT_ENKF_GFS", False)
+            enkf_vars["nmem_ens"] = config_dict.get("NMEM_ENS_GFS", None)
+            enkf_vars["restart_interval"] = config_dict.get("restart_interval_enkfgfs", None)
+            enkf_vars["is_gdas"] = False
+            enkf_vars["is_gfs"] = True
+        elif config_dict.get("RUN", "") == "enkfgdas":
+            enkf_vars["do_calc_increment"] = config_dict.get("DO_CALC_INCREMENT", False)
+            enkf_vars["nmem_ens"] = config_dict.get("NMEM_ENS")
+            enkf_vars["restart_interval"] = config_dict.get("restart_interval_enkfgdas", None)
+            enkf_vars["is_gdas"] = True
+            enkf_vars["is_gfs"] = False
         else:
-            logger.warning(
-                f"RUN='{config_dict.get('RUN', '')}' does not match a supported EnKF type ('enkfgfs' or 'enkfgdas'). "
-            )
+            logger.warning(f"RUN='{config_dict.get('RUN', '')}' does not match a supported EnKF type ('enkfgfs' or 'enkfgdas'). ")
 
         # ENSGRP-specific calculations
-        ensgrp = config_dict.get('ENSGRP', 0)
+        ensgrp = config_dict.get("ENSGRP", 0)
         if ensgrp == 0:
-            enkf_vars['enkf_epos_ngrps'] = len(range(enkf_vars['fhmin'], enkf_vars['fhmax'] + enkf_vars['fhout'], enkf_vars['fhout']))
+            enkf_vars["enkf_epos_ngrps"] = len(range(enkf_vars["fhmin"], enkf_vars["fhmax"] + enkf_vars["fhout"], enkf_vars["fhout"]))
         else:
-            nmem_earcgrp = config_dict.get('NMEM_EARCGRP')
-            if nmem_earcgrp and enkf_vars['nmem_ens']:
-                enkf_vars['first_group_mem'] = (ensgrp - 1) * nmem_earcgrp + 1
-                enkf_vars['last_group_mem'] = min(ensgrp * nmem_earcgrp, enkf_vars['nmem_ens'])
+            nmem_earcgrp = config_dict.get("NMEM_EARCGRP")
+            if nmem_earcgrp and enkf_vars["nmem_ens"]:
+                enkf_vars["first_group_mem"] = (ensgrp - 1) * nmem_earcgrp + 1
+                enkf_vars["last_group_mem"] = min(ensgrp * nmem_earcgrp, enkf_vars["nmem_ens"])
 
         # Pre-compute all restart time prefixes for YAML templates using helper method
-        if enkf_vars.get('is_gdas') and enkf_vars.get('restart_interval') and enkf_vars.get('fhmax'):
-            enkf_vars['restart_prefixes'] = ArchiveTarVars._calculate_restart_prefixes(
-                current_cycle,
-                enkf_vars['restart_interval'],
-                enkf_vars['fhmax']
+        if enkf_vars.get("is_gdas") and enkf_vars.get("restart_interval") and enkf_vars.get("fhmax"):
+            enkf_vars["restart_prefixes"] = ArchiveTarVars._calculate_restart_prefixes(
+                current_cycle, enkf_vars["restart_interval"], enkf_vars["fhmax"]
             )
         else:
-            enkf_vars['restart_prefixes'] = []
+            enkf_vars["restart_prefixes"] = []
 
         # Archive timing logic for EnKF systems (from master_enkf.yaml.j2)
         # Both archive groups require: is_gdas AND SDATE AND specific day/cycle conditions
-        sdate = config_dict.get('SDATE')
-        arch_warmicfreq = config_dict.get('ARCH_WARMICFREQ', 1)
-        arch_cyc_raw = config_dict.get('ARCH_CYC', 0)
+        sdate = config_dict.get("SDATE")
+        arch_warmicfreq = config_dict.get("ARCH_WARMICFREQ", 1)
+        arch_cyc_raw = config_dict.get("ARCH_CYC", 0)
         # Normalize ARCH_CYC to a list of valid cycle hours (0-23), with strict validation.
         # This behavior is intended to match the archive.py normalization: invalid
         # configurations raise ValueError rather than being silently corrected.
@@ -426,55 +500,45 @@ class ArchiveTarVars:
             if 0 <= arch_cyc_raw <= 23:
                 arch_cyc_list = [arch_cyc_raw]
             else:
-                raise ValueError(
-                    f"ARCH_CYC hour out of range (0-23): {arch_cyc_raw!r}"
-                )
+                raise ValueError(f"ARCH_CYC hour out of range (0-23): {arch_cyc_raw!r}")
         elif isinstance(arch_cyc_raw, (list, tuple)):
             arch_cyc_list = []
             for val in arch_cyc_raw:
                 try:
                     hour = int(val)
                 except (TypeError, ValueError):
-                    raise ValueError(
-                        f"Invalid ARCH_CYC entry {val!r}; must be integer hours in range 0-23"
-                    ) from None
+                    raise ValueError(f"Invalid ARCH_CYC entry {val!r}; must be integer hours in range 0-23") from None
                 if 0 <= hour <= 23:
                     arch_cyc_list.append(hour)
                 else:
-                    raise ValueError(
-                        f"ARCH_CYC hour out of range (0-23): {hour!r}"
-                    )
+                    raise ValueError(f"ARCH_CYC hour out of range (0-23): {hour!r}")
         else:
-            raise ValueError(
-                f"ARCH_CYC must be an int or a sequence of ints in range 0-23, got {type(arch_cyc_raw).__name__}"
-            )
-        assim_freq = config_dict.get('assim_freq', 6)
+            raise ValueError(f"ARCH_CYC must be an int or a sequence of ints in range 0-23, got {type(arch_cyc_raw).__name__}")
+        assim_freq = config_dict.get("assim_freq", 6)
 
         # Archive timing booleans - increments (group a)
         # Logic: (current_cycle - SDATE).days % ARCH_WARMICFREQ == 0 AND is_gdas AND ARCH_CYC == cycle_HH
-        enkf_vars['archive_increments'] = False
+        enkf_vars["archive_increments"] = False
         current_cycle_days = (current_cycle - sdate).days
         cycle_hour = int(current_cycle.strftime("%H"))
-        enkf_vars['archive_increments'] = (
-            (current_cycle_days % arch_warmicfreq == 0) and
-            enkf_vars.get('is_gdas', False) and
-            (cycle_hour in arch_cyc_list)
+        enkf_vars["archive_increments"] = (
+            (current_cycle_days % arch_warmicfreq == 0) and enkf_vars.get("is_gdas", False) and (cycle_hour in arch_cyc_list)
         )
 
         # Archive timing booleans - ICs (group b)
         # Logic: (ics_offset_cycle - SDATE).days % ARCH_WARMICFREQ == 0 AND is_gdas AND (ARCH_CYC - assim_freq) % 24 == cycle_HH
-        enkf_vars['archive_ics'] = False
+        enkf_vars["archive_ics"] = False
         ics_offset_cycle = add_to_datetime(current_cycle, to_timedelta(f"+{assim_freq}H"))
         ics_offset_days = (ics_offset_cycle - sdate).days
-        enkf_vars['archive_ics'] = (
-            (ics_offset_days % arch_warmicfreq == 0) and
-            enkf_vars.get('is_gdas', False) and
-            any((val - assim_freq) % 24 == cycle_hour for val in arch_cyc_list)
+        enkf_vars["archive_ics"] = (
+            (ics_offset_days % arch_warmicfreq == 0)
+            and enkf_vars.get("is_gdas", False)
+            and any((val - assim_freq) % 24 == cycle_hour for val in arch_cyc_list)
         )
 
         # Warm start flags (placeholders for future use)
-        enkf_vars['save_warm_start_forecast'] = False
-        enkf_vars['save_warm_start_cycled'] = False
+        enkf_vars["save_warm_start_forecast"] = False
+        enkf_vars["save_warm_start_cycled"] = False
 
         logger.debug(f"EnKF variables: {list(enkf_vars.keys())}")
 
@@ -504,14 +568,11 @@ class ArchiveTarVars:
         gcdas_vars = AttrDict()
 
         # GCDAS restart prefixes calculation
-        restart_interval = config_dict.get('restart_interval_gdas', 6)
-        fhmax = config_dict.get('FHMAX', 9)
-        gcdas_vars['restart_prefixes'] = ArchiveTarVars._calculate_restart_prefixes(
-            current_cycle, restart_interval, fhmax
-        )
+        restart_interval = config_dict.get("restart_interval_gdas", 6)
+        fhmax = config_dict.get("FHMAX", 9)
+        gcdas_vars["restart_prefixes"] = ArchiveTarVars._calculate_restart_prefixes(current_cycle, restart_interval, fhmax)
 
-        logger.info(f"Calculated {len(gcdas_vars['restart_prefixes'])} restart prefixes for GCDAS "
-                    f"(interval={restart_interval}H, FHMAX={fhmax}H)")
+        logger.info(f"Calculated {len(gcdas_vars['restart_prefixes'])} restart prefixes for GCDAS (interval={restart_interval}H, FHMAX={fhmax}H)")
 
         return gcdas_vars
 
@@ -553,13 +614,13 @@ class ArchiveTarVars:
         """
         com_paths = AttrDict()
         com_vars = [
-            'COMIN_ATMOS_HISTORY',
-            'COMIN_ATMOS_HISTORY_ENSSTAT',
-            'COMIN_ATMOS_ANALYSIS_ENSSTAT',
-            'COMIN_SNOW_ANALYSIS_ENSSTAT',
-            'COMIN_OCEAN_ANALYSIS_ENSSTAT',
-            'COMIN_ICE_ANALYSIS_ENSSTAT',
-            'COMIN_CONF',
+            "COMIN_ATMOS_HISTORY",
+            "COMIN_ATMOS_HISTORY_ENSSTAT",
+            "COMIN_ATMOS_ANALYSIS_ENSSTAT",
+            "COMIN_SNOW_ANALYSIS_ENSSTAT",
+            "COMIN_OCEAN_ANALYSIS_ENSSTAT",
+            "COMIN_ICE_ANALYSIS_ENSSTAT",
+            "COMIN_CONF",
         ]
         for var_name in com_vars:
             if var_name in config_dict:
@@ -624,22 +685,22 @@ class ArchiveTarVars:
         """
         # Create member-specific cycle dictionary
         cycle_dict = ArchiveTarVars._create_cycle_dicts(config_dict)
-        cycle_dict['${MEMDIR}'] = f"mem{member:03d}"
+        cycle_dict["${MEMDIR}"] = f"mem{member:03d}"
 
         # Define template mappings (singular key -> template key)
         template_mappings = [
-            ('COMIN_ATMOS_ANALYSIS_MEM', 'COM_ATMOS_ANALYSIS_TMPL'),
-            ('COMIN_ATMOS_HISTORY_MEM', 'COM_ATMOS_HISTORY_TMPL'),
-            ('COMIN_ATMOS_RESTART_MEM', 'COM_ATMOS_RESTART_TMPL'),
-            ('COMIN_OCEAN_ANALYSIS_MEM', 'COM_OCEAN_ANALYSIS_TMPL'),
-            ('COMIN_OCEAN_LETKF_MEM', 'COM_OCEAN_LETKF_TMPL'),
-            ('COMIN_OCEAN_HISTORY_MEM', 'COM_OCEAN_HISTORY_TMPL'),
-            ('COMIN_OCEAN_RESTART_MEM', 'COM_OCEAN_RESTART_TMPL'),
-            ('COMIN_ICE_ANALYSIS_MEM', 'COM_ICE_ANALYSIS_TMPL'),
-            ('COMIN_ICE_LETKF_MEM', 'COM_ICE_LETKF_TMPL'),
-            ('COMIN_ICE_HISTORY_MEM', 'COM_ICE_HISTORY_TMPL'),
-            ('COMIN_ICE_RESTART_MEM', 'COM_ICE_RESTART_TMPL'),
-            ('COMIN_MED_RESTART_MEM', 'COM_MED_RESTART_TMPL'),
+            ("COMIN_ATMOS_ANALYSIS_MEM", "COM_ATMOS_ANALYSIS_TMPL"),
+            ("COMIN_ATMOS_HISTORY_MEM", "COM_ATMOS_HISTORY_TMPL"),
+            ("COMIN_ATMOS_RESTART_MEM", "COM_ATMOS_RESTART_TMPL"),
+            ("COMIN_OCEAN_ANALYSIS_MEM", "COM_OCEAN_ANALYSIS_TMPL"),
+            ("COMIN_OCEAN_LETKF_MEM", "COM_OCEAN_LETKF_TMPL"),
+            ("COMIN_OCEAN_HISTORY_MEM", "COM_OCEAN_HISTORY_TMPL"),
+            ("COMIN_OCEAN_RESTART_MEM", "COM_OCEAN_RESTART_TMPL"),
+            ("COMIN_ICE_ANALYSIS_MEM", "COM_ICE_ANALYSIS_TMPL"),
+            ("COMIN_ICE_LETKF_MEM", "COM_ICE_LETKF_TMPL"),
+            ("COMIN_ICE_HISTORY_MEM", "COM_ICE_HISTORY_TMPL"),
+            ("COMIN_ICE_RESTART_MEM", "COM_ICE_RESTART_TMPL"),
+            ("COMIN_MED_RESTART_MEM", "COM_MED_RESTART_TMPL"),
         ]
 
         # Generate absolute COM paths for this member
@@ -697,10 +758,10 @@ class ArchiveTarVars:
             Dictionary containing current_cycle_dict and previous_cycle_dict
         """
         cycle_dict = {
-            '${ROTDIR}': config_dict['ROTDIR'],
-            '${RUN}': config_dict['RUN'],
-            '${YMD}': to_YMD(config_dict['current_cycle']),
-            '${HH}': config_dict['current_cycle'].strftime("%H"),
+            "${ROTDIR}": config_dict["ROTDIR"],
+            "${RUN}": config_dict["RUN"],
+            "${YMD}": to_YMD(config_dict["current_cycle"]),
+            "${HH}": config_dict["current_cycle"].strftime("%H"),
         }
 
         logger.debug(f"Created cycle dictionary for template substitution: {cycle_dict}")
@@ -758,36 +819,35 @@ class ArchiveTarVars:
         {'offset_dt': datetime(2025, 12, 18, 3)}
         """
         tarball_vars = AttrDict()
-        current_cycle = config_dict['current_cycle']
+        current_cycle = config_dict["current_cycle"]
 
-        if tarball_type in ['gdaswave_restart']:
+        if tarball_type in ["gdaswave_restart"]:
             # Wave restart offset time calculation
             # If IAU is enabled, use +3H offset (beginning of IAU window)
             # Otherwise, use +6H offset (standard forecast time)
-            doiau = config_dict.get('DOIAU', False)
+            doiau = config_dict.get("DOIAU", False)
             offset_hours = 3 if doiau else 6
 
             offset_dt = add_to_datetime(current_cycle, to_timedelta(f"+{offset_hours}H"))
             # Return formatted string for direct use in YAML
-            tarball_vars['offset_dt_fv3'] = to_fv3time(offset_dt)
+            tarball_vars["offset_dt_fv3"] = to_fv3time(offset_dt)
 
-            logger.info(f"Calculated offset_dt_fv3 for {tarball_type}: {to_fv3time(offset_dt)} "
-                        f"(DOIAU={doiau}, offset={offset_hours}H)")
+            logger.info(f"Calculated offset_dt_fv3 for {tarball_type}: {to_fv3time(offset_dt)} (DOIAU={doiau}, offset={offset_hours}H)")
 
-        elif tarball_type in ['gdaswave']:
+        elif tarball_type in ["gdaswave"]:
             # Wave data always uses +6H offset
             offset_dt = add_to_datetime(current_cycle, to_timedelta("+6H"))
             # Return formatted string for direct use in YAML
-            tarball_vars['offset_dt_fv3'] = to_fv3time(offset_dt)
+            tarball_vars["offset_dt_fv3"] = to_fv3time(offset_dt)
 
             logger.info(f"Calculated offset_dt_fv3 for {tarball_type}: {to_fv3time(offset_dt)} (+6H)")
 
-        elif tarball_type in ['gdas_restarta', 'gfs_restarta']:
+        elif tarball_type in ["gdas_restarta", "gfs_restarta"]:
             # Atmosphere restart analysis time calculation
             # If hybrid var with IAU: use -3H (beginning of IAU window)
             # Otherwise: use 0H (current cycle time)
-            dohybvar = config_dict.get('DOHYBVAR', False)
-            doiau = config_dict.get('DOIAU', False)
+            dohybvar = config_dict.get("DOHYBVAR", False)
+            doiau = config_dict.get("DOIAU", False)
 
             if dohybvar and doiau:
                 anl_offset = "-3H"
@@ -796,17 +856,19 @@ class ArchiveTarVars:
 
             anl_time = add_to_datetime(current_cycle, to_timedelta(anl_offset))
             # Return formatted strings for direct use in YAML
-            tarball_vars['anl_time_YMD'] = to_YMD(anl_time)
-            tarball_vars['anl_time_HH'] = anl_time.strftime("%H")
+            tarball_vars["anl_time_YMD"] = to_YMD(anl_time)
+            tarball_vars["anl_time_HH"] = anl_time.strftime("%H")
 
-            logger.info(f"Calculated anl_time for {tarball_type}: {to_YMD(anl_time)}.{anl_time.strftime('%H')}0000 "
-                        f"(DOHYBVAR={dohybvar}, DOIAU={doiau}, offset={anl_offset})")
+            logger.info(
+                f"Calculated anl_time for {tarball_type}: {to_YMD(anl_time)}.{anl_time.strftime('%H')}0000 "
+                f"(DOHYBVAR={dohybvar}, DOIAU={doiau}, offset={anl_offset})"
+            )
 
-        elif tarball_type in ['gdasocean_analysis', 'gfsocean_analysis']:
+        elif tarball_type in ["gdasocean_analysis", "gfsocean_analysis"]:
             # Ocean/ice analysis time calculation
             # If IAU: use -3H (beginning of IAU window)
             # Otherwise: use 0H (current cycle time)
-            doiau = config_dict.get('DOIAU', False)
+            doiau = config_dict.get("DOIAU", False)
 
             if doiau:
                 anl_offset = "-3H"
@@ -815,15 +877,16 @@ class ArchiveTarVars:
 
             anl_time = add_to_datetime(current_cycle, to_timedelta(anl_offset))
             # Return formatted strings for direct use in YAML
-            tarball_vars['anl_time_YMD'] = to_YMD(anl_time)
-            tarball_vars['anl_time_HH'] = anl_time.strftime("%H")
+            tarball_vars["anl_time_YMD"] = to_YMD(anl_time)
+            tarball_vars["anl_time_HH"] = anl_time.strftime("%H")
 
-            logger.info(f"Calculated anl_time for {tarball_type}: {to_YMD(anl_time)}.{anl_time.strftime('%H')}0000 "
-                        f"(DOIAU={doiau}, offset={anl_offset})")
+            logger.info(
+                f"Calculated anl_time for {tarball_type}: {to_YMD(anl_time)}.{anl_time.strftime('%H')}0000 (DOIAU={doiau}, offset={anl_offset})"
+            )
 
-        elif tarball_type == 'gdas_restartb':
+        elif tarball_type == "gdas_restartb":
             # Restart B has multiple time calculations
-            doiau = config_dict.get('DOIAU', False)
+            doiau = config_dict.get("DOIAU", False)
 
             # If IAU is on, calculate offset time (-3H) and its prefix
             if doiau:
@@ -832,27 +895,26 @@ class ArchiveTarVars:
                 offset_HH = offset_dt.strftime("%H")
                 offset_prefix = f"{offset_YMD}.{offset_HH}0000"
 
-                tarball_vars['offset_dt'] = offset_dt
-                tarball_vars['offset_YMD'] = offset_YMD
-                tarball_vars['offset_HH'] = offset_HH
-                tarball_vars['offset_prefix'] = offset_prefix
+                tarball_vars["offset_dt"] = offset_dt
+                tarball_vars["offset_YMD"] = offset_YMD
+                tarball_vars["offset_HH"] = offset_HH
+                tarball_vars["offset_prefix"] = offset_prefix
 
                 logger.debug(f"Calculated offset_prefix for gdas_restartb: {offset_prefix} (DOIAU=True)")
 
             # Always calculate center time prefix
             cycle_YMD = to_YMD(current_cycle)
             cycle_HH = current_cycle.strftime("%H")
-            tarball_vars['center_prefix'] = f"{cycle_YMD}.{cycle_HH}0000"
+            tarball_vars["center_prefix"] = f"{cycle_YMD}.{cycle_HH}0000"
 
             # Calculate restart interval prefixes using helper method
-            restart_interval = config_dict.get('restart_interval_gdas', 6)
-            fhmax = config_dict.get('FHMAX', 9)
-            tarball_vars['r_prefix_list'] = ArchiveTarVars._calculate_restart_prefixes(
-                current_cycle, restart_interval, fhmax
-            )
+            restart_interval = config_dict.get("restart_interval_gdas", 6)
+            fhmax = config_dict.get("FHMAX", 9)
+            tarball_vars["r_prefix_list"] = ArchiveTarVars._calculate_restart_prefixes(current_cycle, restart_interval, fhmax)
 
-            logger.info(f"Calculated {len(tarball_vars['r_prefix_list'])} restart prefixes for gdas_restartb "
-                        f"(interval={restart_interval}H, FHMAX={fhmax}H)")
+            logger.info(
+                f"Calculated {len(tarball_vars['r_prefix_list'])} restart prefixes for gdas_restartb (interval={restart_interval}H, FHMAX={fhmax}H)"
+            )
 
         else:
             logger.warning(f"Tarball type '{tarball_type}' does not have specific variable calculations")
@@ -862,7 +924,7 @@ class ArchiveTarVars:
         return tarball_vars
 
     @staticmethod
-    def _calculate_restart_prefixes(current_cycle: 'datetime', restart_interval: int, fhmax: int) -> list:
+    def _calculate_restart_prefixes(current_cycle: datetime, restart_interval: int, fhmax: int) -> list:
         """Calculate restart time prefixes for a given interval and forecast max.
 
         This is a reusable helper for calculating restart file prefixes that appear
@@ -895,7 +957,6 @@ class ArchiveTarVars:
             r_prefix = f"{to_YMD(r_dt)}.{r_dt.strftime('%H')}0000"
             restart_prefixes.append(r_prefix)
 
-        logger.debug(f"Calculated {len(restart_prefixes)} restart prefixes "
-                     f"(interval={restart_interval}H, FHMAX={fhmax}H)")
+        logger.debug(f"Calculated {len(restart_prefixes)} restart prefixes (interval={restart_interval}H, FHMAX={fhmax}H)")
         logger.debug(f"Restart prefixes: {restart_prefixes}")
         return restart_prefixes

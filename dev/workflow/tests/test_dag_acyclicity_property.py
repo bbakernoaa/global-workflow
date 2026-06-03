@@ -18,13 +18,12 @@ import os
 import sys
 
 import networkx as nx
-from hypothesis import given, settings, HealthCheck
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from deployment.workflow_config import CycleDetectedError, DAG, Edge, TaskNode
-
+from deployment.workflow_config import DAG, CycleDetectedError, Edge, TaskNode
 
 # ---------------------------------------------------------------------------
 # Hypothesis Strategies for generating random directed graphs
@@ -139,7 +138,4 @@ def test_dag_acyclicity_property(graph):
             assert len(e.cycle_path) >= 1, "cycle_path should have at least one node"
             # All nodes in the reported cycle should be from our graph
             for node in e.cycle_path:
-                assert node in node_names, (
-                    f"Cycle path contains unknown node '{node}'. "
-                    f"Known nodes: {node_names}"
-                )
+                assert node in node_names, f"Cycle path contains unknown node '{node}'. Known nodes: {node_names}"

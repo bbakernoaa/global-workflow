@@ -16,8 +16,7 @@ import os
 import sys
 from pathlib import Path
 
-import pytest
-from hypothesis import given, settings, HealthCheck
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 # Add the workflow module to the path
@@ -25,8 +24,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "workflow
 
 from deployment.template_renderer import TemplateRenderer
 from deployment.validators import (
-    MOM6ParameterValidator,
     ModelConfigureValidator,
+    MOM6ParameterValidator,
     NamelistValidator,
 )
 
@@ -66,15 +65,23 @@ def valid_ocean_context(draw: st.DrawFn) -> dict:
     oda_incupd_nhours = draw(st.integers(min_value=1, max_value=24))
     do_sppt = draw(st.booleans())
     river_runoff = draw(st.booleans())
-    diag_coord_def_z_file = draw(st.sampled_from([
-        "oceanda_zgrid_75L.nc",
-        "oceanda_zgrid_50L.nc",
-        "ocean_zgrid_100L.nc",
-    ]))
-    frunoff = draw(st.sampled_from([
-        "INPUT/runoff.daitren.clim.nc",
-        "INPUT/runoff.monthly.nc",
-    ]))
+    diag_coord_def_z_file = draw(
+        st.sampled_from(
+            [
+                "oceanda_zgrid_75L.nc",
+                "oceanda_zgrid_50L.nc",
+                "ocean_zgrid_100L.nc",
+            ]
+        )
+    )
+    frunoff = draw(
+        st.sampled_from(
+            [
+                "INPUT/runoff.daitren.clim.nc",
+                "INPUT/runoff.monthly.nc",
+            ]
+        )
+    )
 
     return {
         "resolution": resolution,
@@ -94,20 +101,35 @@ def valid_ocean_context(draw: st.DrawFn) -> dict:
 def valid_ice_context(draw: st.DrawFn) -> dict:
     """Generate a valid ice Model_Context dict with decomposition params."""
     nprocs = draw(st.integers(min_value=1, max_value=512))
-    decomposition = draw(st.sampled_from([
-        "slenderX2", "slenderX1", "cartesian", "roundrobin",
-    ]))
+    decomposition = draw(
+        st.sampled_from(
+            [
+                "slenderX2",
+                "slenderX1",
+                "cartesian",
+                "roundrobin",
+            ]
+        )
+    )
     dt_ice = draw(st.sampled_from([450, 600, 900, 1800, 3600]))
-    grid = draw(st.sampled_from([
-        "grid_cice_NEMS_mx025.nc",
-        "grid_cice_NEMS_mx050.nc",
-        "grid_cice_NEMS_mx100.nc",
-    ]))
-    mask = draw(st.sampled_from([
-        "kmtu_cice_NEMS_mx025.nc",
-        "kmtu_cice_NEMS_mx050.nc",
-        "kmtu_cice_NEMS_mx100.nc",
-    ]))
+    grid = draw(
+        st.sampled_from(
+            [
+                "grid_cice_NEMS_mx025.nc",
+                "grid_cice_NEMS_mx050.nc",
+                "grid_cice_NEMS_mx100.nc",
+            ]
+        )
+    )
+    mask = draw(
+        st.sampled_from(
+            [
+                "kmtu_cice_NEMS_mx025.nc",
+                "kmtu_cice_NEMS_mx050.nc",
+                "kmtu_cice_NEMS_mx100.nc",
+            ]
+        )
+    )
     nx_glb = draw(st.sampled_from([72, 360, 720, 1440]))
     ny_glb = draw(st.sampled_from([35, 320, 576, 1080]))
     warm_start = draw(st.booleans())
@@ -141,11 +163,15 @@ def valid_wave_context(draw: st.DrawFn) -> dict:
     """Generate a valid wave Model_Context dict with coupling modes."""
     ice_input = draw(st.sampled_from(["CPL", "YES"]))
     current_input = draw(st.sampled_from(["CPL", "YES"]))
-    output_params = draw(st.sampled_from([
-        "HS FP DP PHS PTP PDIR CHA",
-        "HS FP DP",
-        "HS LM T02 T01 DIR DP SPR",
-    ]))
+    output_params = draw(
+        st.sampled_from(
+            [
+                "HS FP DP PHS PTP PDIR CHA",
+                "HS FP DP",
+                "HS LM T02 T01 DIR DP SPR",
+            ]
+        )
+    )
     dt_field_output = draw(st.integers(min_value=1, max_value=86400))
     dt_point_output = draw(st.integers(min_value=1, max_value=86400))
     grid_output_dir = draw(st.sampled_from(["./", "./OUTPUT/"]))
@@ -231,9 +257,15 @@ def valid_full_model_context(draw: st.DrawFn) -> dict:
     fv3 = draw(valid_fv3_context())
 
     dt_atmos = draw(st.sampled_from([225, 450, 600, 900]))
-    output_grid = draw(st.sampled_from([
-        "gaussian_grid", "regional_latlon", "cubed_sphere_grid",
-    ]))
+    output_grid = draw(
+        st.sampled_from(
+            [
+                "gaussian_grid",
+                "regional_latlon",
+                "cubed_sphere_grid",
+            ]
+        )
+    )
 
     return {
         "model": {
@@ -310,29 +342,20 @@ class TestFormatValidityAllRenderedConfigs:
         renderer = _create_renderer(context)
 
         # --- MOM_input → MOM6ParameterValidator ---
-        mom_input_rendered = renderer.render_string(
-            MOM_INPUT_TEMPLATE.read_text(encoding="utf-8")
-        )
+        mom_input_rendered = renderer.render_string(MOM_INPUT_TEMPLATE.read_text(encoding="utf-8"))
         mom_errors = mom6_validator.validate(mom_input_rendered, "MOM_input")
         assert mom_errors == [], (
-            f"MOM_input failed MOM6ParameterValidator with context "
-            f"resolution={context['model']['ocean']['resolution']}: {mom_errors}"
+            f"MOM_input failed MOM6ParameterValidator with context resolution={context['model']['ocean']['resolution']}: {mom_errors}"
         )
 
         # --- MOM6_data_table: no format-specific validator (simple text) ---
         # Render to ensure no template errors, but no validator needed
-        mom6_data_table_rendered = renderer.render_string(
-            MOM6_DATA_TABLE_TEMPLATE.read_text(encoding="utf-8")
-        )
+        mom6_data_table_rendered = renderer.render_string(MOM6_DATA_TABLE_TEMPLATE.read_text(encoding="utf-8"))
         # MOM6_data_table is simple CSV-like text; just verify it renders
-        assert mom6_data_table_rendered.strip() != "", (
-            "MOM6_data_table rendered to empty content"
-        )
+        assert mom6_data_table_rendered.strip() != "", "MOM6_data_table rendered to empty content"
 
         # --- ice_in → NamelistValidator ---
-        ice_in_rendered = renderer.render_string(
-            ICE_IN_TEMPLATE.read_text(encoding="utf-8")
-        )
+        ice_in_rendered = renderer.render_string(ICE_IN_TEMPLATE.read_text(encoding="utf-8"))
         ice_errors = namelist_validator.validate(ice_in_rendered, "ice_in")
         assert ice_errors == [], (
             f"ice_in failed NamelistValidator with context "
@@ -342,9 +365,7 @@ class TestFormatValidityAllRenderedConfigs:
         )
 
         # --- ww3_shel.nml → NamelistValidator ---
-        ww3_rendered = renderer.render_string(
-            WW3_SHEL_TEMPLATE.read_text(encoding="utf-8")
-        )
+        ww3_rendered = renderer.render_string(WW3_SHEL_TEMPLATE.read_text(encoding="utf-8"))
         ww3_errors = namelist_validator.validate(ww3_rendered, "ww3_shel.nml")
         assert ww3_errors == [], (
             f"ww3_shel.nml failed NamelistValidator with context "
@@ -354,25 +375,15 @@ class TestFormatValidityAllRenderedConfigs:
         )
 
         # --- input_global_nest.nml → ModelConfigureValidator ---
-        nest_rendered = renderer.render_string(
-            INPUT_GLOBAL_NEST_TEMPLATE.read_text(encoding="utf-8")
-        )
-        nest_errors = model_configure_validator.validate(
-            nest_rendered, "input_global_nest.nml"
-        )
+        nest_rendered = renderer.render_string(INPUT_GLOBAL_NEST_TEMPLATE.read_text(encoding="utf-8"))
+        nest_errors = model_configure_validator.validate(nest_rendered, "input_global_nest.nml")
         assert nest_errors == [], (
-            f"input_global_nest.nml failed ModelConfigureValidator with context "
-            f"do_nest={context['model']['fv3']['do_nest']}: {nest_errors}"
+            f"input_global_nest.nml failed ModelConfigureValidator with context do_nest={context['model']['fv3']['do_nest']}: {nest_errors}"
         )
 
         # --- post_itag: rendered as namelist format (uses &group / /) ---
         # The post_itag.j2 template produces Fortran namelist syntax
         # but per the design doc, post_itag has no validator (simple text).
         # We still render it to ensure no template errors.
-        post_rendered = renderer.render_string(
-            POST_ITAG_TEMPLATE.read_text(encoding="utf-8")
-        )
-        assert post_rendered.strip() != "", (
-            f"post_itag rendered to empty content for system="
-            f"{context['model']['post']['system']}"
-        )
+        post_rendered = renderer.render_string(POST_ITAG_TEMPLATE.read_text(encoding="utf-8"))
+        assert post_rendered.strip() != "", f"post_itag rendered to empty content for system={context['model']['post']['system']}"

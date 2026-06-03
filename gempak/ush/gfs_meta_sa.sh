@@ -406,19 +406,19 @@ err_chk
 # FOR THIS CASE HERE.
 #####################################################
 if [[ "${err}" -ne 0 ]] || [[ ! -s "${metaname}" ]] &> /dev/null; then
-    echo "FATAL ERROR: Failed to create gempak meta file ${metaname}"
-    exit $((err + 100))
+  echo "FATAL ERROR: Failed to create gempak meta file ${metaname}"
+  exit $((err + 100))
 fi
 
 cpfs "${metaname}" "${COMOUT_ATMOS_GEMPAK_META}/${mdl}_${PDY}_${cyc}_${metatype}"
 if [[ "${SENDDBN}" == "YES" ]]; then
+  "${DBNROOT}/bin/dbn_alert" MODEL "${DBN_ALERT_TYPE}" "${job}" \
+    "${COMOUT_ATMOS_GEMPAK_META}/${mdl}_${PDY}_${cyc}_${metatype}"
+  if [[ ${DBN_ALERT_TYPE} == "GFS_METAFILE_LAST" ]]; then
+    DBN_ALERT_TYPE=GFS_METAFILE
     "${DBNROOT}/bin/dbn_alert" MODEL "${DBN_ALERT_TYPE}" "${job}" \
-        "${COMOUT_ATMOS_GEMPAK_META}/${mdl}_${PDY}_${cyc}_${metatype}"
-    if [[ ${DBN_ALERT_TYPE} == "GFS_METAFILE_LAST" ]]; then
-        DBN_ALERT_TYPE=GFS_METAFILE
-        "${DBNROOT}/bin/dbn_alert" MODEL "${DBN_ALERT_TYPE}" "${job}" \
-            "${COMOUT_ATMOS_GEMPAK_META}/${mdl}_${PDY}_${cyc}_${metatype}"
-    fi
+      "${COMOUT_ATMOS_GEMPAK_META}/${mdl}_${PDY}_${cyc}_${metatype}"
+  fi
 fi
 
 exit

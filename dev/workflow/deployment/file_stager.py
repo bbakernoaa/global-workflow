@@ -83,6 +83,7 @@ def _uwtools_available() -> bool:
     """Check if uwtools is importable."""
     try:
         import uwtools  # noqa: F401
+
         return True
     except ImportError:
         return False
@@ -108,9 +109,7 @@ def _copy_with_uwtools(src: Path, dst: Path) -> None:
     dst.parent.mkdir(parents=True, exist_ok=True)
     report = uwfs.copy(config={dst.name: str(src)}, target_dir=str(dst.parent))
     if str(dst) not in report.get("ready", []):
-        raise OSError(
-            f"uwtools fs.copy did not stage {src} -> {dst}; report={report}"
-        )
+        raise OSError(f"uwtools fs.copy did not stage {src} -> {dst}; report={report}")
 
 
 def _copy_with_shutil(src: Path, dst: Path) -> None:
@@ -233,15 +232,11 @@ class FileStager:
             target_dir = self.expdir / target_rel
 
             if not source_dir.exists():
-                logger.info(
-                    "Source directory %s does not exist, skipping.", source_dir
-                )
+                logger.info("Source directory %s does not exist, skipping.", source_dir)
                 continue
 
             if not source_dir.is_dir():
-                logger.warning(
-                    "Source path %s is not a directory, skipping.", source_dir
-                )
+                logger.warning("Source path %s is not a directory, skipping.", source_dir)
                 continue
 
             # Walk the source directory tree
@@ -260,9 +255,7 @@ class FileStager:
                 for filename in files:
                     src_file = root_path / filename
                     # Check file-level exclusion
-                    file_rel = str(
-                        src_file.relative_to(self.project_root)
-                    ).replace(os.sep, "/")
+                    file_rel = str(src_file.relative_to(self.project_root)).replace(os.sep, "/")
 
                     if self._is_excluded(file_rel):
                         result.skipped_excludes.append(file_rel)
@@ -288,7 +281,7 @@ class FileStager:
                         result.files_copied += 1
                         result.staged_paths.append(str(dst_file))
                         logger.debug("Staged: %s -> %s", src_file, dst_file)
-                    except (OSError, IOError) as e:
+                    except OSError as e:
                         raise StagingError(
                             f"Failed to copy {src_file} to {dst_file}: {e}",
                             source=str(src_file),
@@ -348,9 +341,7 @@ class FileStager:
 
             result.files_copied += 1
             result.staged_paths.append(str(dst))
-            logger.debug(
-                "Staged unconditional artifact: %s -> %s", src, dst
-            )
+            logger.debug("Staged unconditional artifact: %s -> %s", src, dst)
 
         logger.info(
             "Unconditional artifact staging complete: %d files copied.",
@@ -382,14 +373,11 @@ class FileStager:
         dst = self.expdir / target_rel
 
         if not src.exists():
-            raise StagingError(
-                f"Source file not found: {src}", source=str(src)
-            )
+            raise StagingError(f"Source file not found: {src}", source=str(src))
 
         if self._is_excluded(source_rel):
             raise StagingError(
-                f"Source file is excluded: {source_rel}. "
-                f"Add to allowlist to include.",
+                f"Source file is excluded: {source_rel}. Add to allowlist to include.",
                 source=source_rel,
             )
 
@@ -398,10 +386,8 @@ class FileStager:
 
         try:
             copy_fn(src, dst)
-        except (OSError, IOError) as e:
-            raise StagingError(
-                f"Failed to copy {src} to {dst}: {e}", source=str(src)
-            ) from e
+        except OSError as e:
+            raise StagingError(f"Failed to copy {src} to {dst}: {e}", source=str(src)) from e
 
         return dst
 
@@ -436,7 +422,6 @@ class FileStager:
 
         Traces to: Requirements 3.1, 3.2, 3.3, 3.4, 3.5
         """
-        from .name_resolver import ResolvedName  # noqa: F811
 
         result = StagingResult()
         copy_fn = self._get_copy_fn()
@@ -454,8 +439,7 @@ class FileStager:
 
             if not src_file.exists():
                 raise StagingError(
-                    f"Failed to copy {src_file} to {dst_file}: "
-                    f"source file not found",
+                    f"Failed to copy {src_file} to {dst_file}: source file not found",
                     source=str(src_file),
                 )
 
@@ -469,7 +453,7 @@ class FileStager:
                     application_name,
                     "passthrough" if resolved.is_passthrough else "renamed",
                 )
-            except (OSError, IOError) as e:
+            except OSError as e:
                 raise StagingError(
                     f"Failed to copy {src_file} to {dst_file}: {e}",
                     source=str(src_file),

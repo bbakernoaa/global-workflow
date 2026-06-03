@@ -34,7 +34,7 @@ from deployment.pipeline import (
 
 # Committed Submodule_Fixture tree (Req 6.2, 6.7). Resolved relative to this
 # test file so it works regardless of the current working directory.
-FIXTURE_ROOT = (Path(__file__).resolve().parent / "fixtures" / "submodules")
+FIXTURE_ROOT = Path(__file__).resolve().parent / "fixtures" / "submodules"
 
 # The four stand-in files the fixture provides, keyed by their EXPDIR-relative
 # destination (derived from SUBMODULE_COPY_MANIFEST).
@@ -93,9 +93,7 @@ def _make_minimal_dev_tree(base_path: Path) -> dict:
     (dev_root / "scripts").mkdir(exist_ok=True)
     (dev_root / "ush").mkdir(exist_ok=True)
     (dev_root / "parm" / "workflow").mkdir(parents=True, exist_ok=True)
-    (dev_root / "workflow" / "ecflow" / "templates").mkdir(
-        parents=True, exist_ok=True
-    )
+    (dev_root / "workflow" / "ecflow" / "templates").mkdir(parents=True, exist_ok=True)
 
     config = {
         "suite": {
@@ -124,9 +122,7 @@ def _make_minimal_dev_tree(base_path: Path) -> dict:
         "${EXPDIR}/ush/universal_wrapper.sh {{ task.jjob }}\n"
         "%include <tail.h>\n"
     )
-    (dev_root / "workflow" / "ecflow" / "templates" / "task.ecf.j2").write_text(
-        template
-    )
+    (dev_root / "workflow" / "ecflow" / "templates" / "task.ecf.j2").write_text(template)
 
     # Mark the repo root for git metadata discovery.
     (base_path / ".git").mkdir(exist_ok=True)
@@ -159,10 +155,7 @@ def test_fixture_mirrors_manifest_sources():
     assert FIXTURE_ROOT.is_dir(), f"Fixture tree missing at {FIXTURE_ROOT}"
     for source_rel, _dest_rel in SUBMODULE_COPY_MANIFEST:
         fixture_src = FIXTURE_ROOT / source_rel
-        assert fixture_src.exists(), (
-            f"Fixture is missing manifest source '{source_rel}' "
-            f"(expected at {fixture_src})"
-        )
+        assert fixture_src.exists(), f"Fixture is missing manifest source '{source_rel}' (expected at {fixture_src})"
 
 
 # ---------------------------------------------------------------------------
@@ -276,9 +269,7 @@ def test_fixture_backed_full_deploy_succeeds(tmp_path):
         # The fixture-provided submodule files landed at their manifest
         # destinations inside the EXPDIR.
         for dest in EXPECTED_DEST_FILES:
-            assert (expdir / dest).is_file(), (
-                f"Fixture-backed deploy did not stage '{dest}'"
-            )
+            assert (expdir / dest).is_file(), f"Fixture-backed deploy did not stage '{dest}'"
     finally:
         _unseal_expdir(expdir)
 
@@ -306,10 +297,7 @@ def test_skip_optional_skips_missing_optional_sources(tmp_path):
         policy=SubmodulePolicy.SKIP_OPTIONAL,
     )
 
-    assert copied == [], (
-        "SKIP_OPTIONAL should skip all optional missing sources, "
-        f"but copied: {copied}"
-    )
+    assert copied == [], f"SKIP_OPTIONAL should skip all optional missing sources, but copied: {copied}"
 
 
 def test_skip_optional_emits_warning(tmp_path, caplog):
@@ -330,7 +318,6 @@ def test_skip_optional_emits_warning(tmp_path, caplog):
             policy=SubmodulePolicy.SKIP_OPTIONAL,
         )
 
-    assert any(
-        "Skipping optional submodule source" in rec.getMessage()
-        for rec in caplog.records
-    ), "Expected a warning about skipping an optional submodule source"
+    assert any("Skipping optional submodule source" in rec.getMessage() for rec in caplog.records), (
+        "Expected a warning about skipping an optional submodule source"
+    )

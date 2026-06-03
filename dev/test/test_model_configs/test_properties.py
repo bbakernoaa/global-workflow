@@ -15,23 +15,23 @@ import sys
 from pathlib import Path
 
 import pytest
-from hypothesis import given, settings, assume, HealthCheck
+from hypothesis import HealthCheck, assume, given, settings
 from hypothesis import strategies as st
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "workflow"))
 
 from deployment.atparse_migration import validate_no_atparse_remaining
+from deployment.component_composer import (
+    COMPONENT_FAMILY_PREFIXES,
+    COMPONENT_REGISTRY,
+    compose_components,
+)
 from deployment.model_config_renderer import ModelConfigRenderer
 from deployment.model_context import (
     SUPPORTED_COUPLING_MODES,
     SUPPORTED_EMISSION_DATASETS,
     SUPPORTED_PHYSICS_SUITES,
     SUPPORTED_RESOLUTIONS,
-)
-from deployment.component_composer import (
-    COMPONENT_FAMILY_PREFIXES,
-    COMPONENT_REGISTRY,
-    compose_components,
 )
 from deployment.template_renderer import TemplateRenderer, TemplateRenderError
 
@@ -47,9 +47,7 @@ _ATPARSE_RE = re.compile(r"@\[[A-Za-z_][A-Za-z0-9_]*\]")
 
 # Available GOCART collection templates (derived from files on disk)
 _COLLECTIONS_DIR = DEV_ROOT / "parm" / "ufs" / "gocart" / "collections"
-AVAILABLE_COLLECTIONS: list[str] = sorted(
-    p.stem for p in _COLLECTIONS_DIR.glob("*.j2")
-) if _COLLECTIONS_DIR.exists() else ["inst_aod"]
+AVAILABLE_COLLECTIONS: list[str] = sorted(p.stem for p in _COLLECTIONS_DIR.glob("*.j2")) if _COLLECTIONS_DIR.exists() else ["inst_aod"]
 
 
 # ---------------------------------------------------------------------------
@@ -210,9 +208,7 @@ def valid_model_context(draw: st.DrawFn) -> dict:
     if "aerosol" in active_components:
         emission_dataset = draw(st.sampled_from(sorted(SUPPORTED_EMISSION_DATASETS)))
         # Pick 1-3 collections from available ones
-        num_collections = draw(
-            st.integers(min_value=1, max_value=min(3, len(AVAILABLE_COLLECTIONS)))
-        )
+        num_collections = draw(st.integers(min_value=1, max_value=min(3, len(AVAILABLE_COLLECTIONS))))
         collections = draw(
             st.lists(
                 st.sampled_from(AVAILABLE_COLLECTIONS),
@@ -238,16 +234,14 @@ def valid_model_context(draw: st.DrawFn) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def _render_templates_individually(
-    model_context: dict, expdir: Path
-) -> list[Path]:
+def _render_templates_individually(model_context: dict, expdir: Path) -> list[Path]:
     """Render each template individually, skipping those that fail validation.
 
     This renders templates one at a time so that format validation failures
     in one template don't prevent checking other templates for atparse tokens.
     Returns paths to all successfully rendered files.
     """
-    from deployment.model_context import merge_resolution_defaults, ModelContextSchema
+    from deployment.model_context import ModelContextSchema, merge_resolution_defaults
 
     # Merge defaults and validate schema first
     model_context = merge_resolution_defaults(model_context)
@@ -320,9 +314,7 @@ class TestNoLegacyAtparseTokens:
         deadline=None,
     )
     @given(model_context=valid_model_context())
-    def test_no_atparse_tokens_in_rendered_output(
-        self, model_context: dict, tmp_path_factory
-    ):
+    def test_no_atparse_tokens_in_rendered_output(self, model_context: dict, tmp_path_factory):
         """Assert no rendered file contains @[...] atparse substitution patterns.
 
         **Validates: Requirements 8.1, 8.2, 8.3**
@@ -346,16 +338,11 @@ class TestNoLegacyAtparseTokens:
 
             # Use validate_no_atparse_remaining from atparse_migration module
             remaining_tokens = validate_no_atparse_remaining(content)
-            assert remaining_tokens == [], (
-                f"Legacy atparse tokens found in {output_path.name}: "
-                f"{['@[' + t + ']' for t in remaining_tokens]}"
-            )
+            assert remaining_tokens == [], f"Legacy atparse tokens found in {output_path.name}: {['@[' + t + ']' for t in remaining_tokens]}"
 
             # Double-check with direct regex search
             matches = _ATPARSE_RE.findall(content)
-            assert matches == [], (
-                f"Legacy @[...] patterns found in {output_path.name}: {matches}"
-            )
+            assert matches == [], f"Legacy @[...] patterns found in {output_path.name}: {matches}"
 
 
 # ---------------------------------------------------------------------------
@@ -432,9 +419,7 @@ def _full_model_context_for_format_validity(draw: st.DrawFn) -> dict:
     )
 
     # Pick collections for aerosol
-    num_collections = draw(
-        st.integers(min_value=1, max_value=min(3, len(AVAILABLE_COLLECTIONS)))
-    )
+    num_collections = draw(st.integers(min_value=1, max_value=min(3, len(AVAILABLE_COLLECTIONS))))
     collections = draw(
         st.lists(
             st.sampled_from(AVAILABLE_COLLECTIONS),
@@ -545,9 +530,7 @@ class TestFormatValidity:
         deadline=None,
     )
     @given(model_context=_full_model_context_for_format_validity())
-    def test_all_rendered_files_pass_format_validation(
-        self, model_context: dict, tmp_path_factory
-    ):
+    def test_all_rendered_files_pass_format_validation(self, model_context: dict, tmp_path_factory):
         """Every rendered config file passes its format-specific validator.
 
         **Validates: Requirements 7.1, 7.2, 7.3, 7.4, 7.5**
@@ -584,13 +567,8 @@ class TestFormatValidity:
 
         # Verify each rendered file exists on disk and has a valid hash
         for rendered_file in results:
-            assert rendered_file.path.exists(), (
-                f"Rendered file {rendered_file.path} does not exist"
-            )
-            assert rendered_file.sha256, (
-                f"Rendered file {rendered_file.path} has no SHA-256 hash"
-            )
-
+            assert rendered_file.path.exists(), f"Rendered file {rendered_file.path} does not exist"
+            assert rendered_file.sha256, f"Rendered file {rendered_file.path} has no SHA-256 hash"
 
 
 # ---------------------------------------------------------------------------
@@ -639,9 +617,7 @@ def _extract_all_trigger_paths(families: list[dict]) -> list[str]:
         for task in family.get("tasks", []):
             trigger = task.get("trigger", "")
             if trigger:
-                paths.extend(
-                    m.group(1) for m in trigger_path_re.finditer(trigger)
-                )
+                paths.extend(m.group(1) for m in trigger_path_re.finditer(trigger))
     return paths
 
 
@@ -664,9 +640,7 @@ class TestComponentCompositionValidity:
 
     @given(components=_component_subsets)
     @settings(max_examples=100)
-    def test_model_section_contains_exactly_included_components(
-        self, components: set[str]
-    ):
+    def test_model_section_contains_exactly_included_components(self, components: set[str]):
         """Assert merged Model_Context contains exactly the union of
         included components' model sections.
 
@@ -680,25 +654,17 @@ class TestComponentCompositionValidity:
         # Each active component's model_key should be present
         for comp_name in components:
             model_key = COMPONENT_REGISTRY[comp_name]["model_key"]
-            assert model_key in model, (
-                f"Expected model.{model_key} for active component "
-                f"'{comp_name}' but it was missing"
-            )
+            assert model_key in model, f"Expected model.{model_key} for active component '{comp_name}' but it was missing"
 
         # No excluded component's model_key should be present
         excluded = set(_SUPPORTED_COMPONENTS) - components
         for comp_name in excluded:
             model_key = COMPONENT_REGISTRY[comp_name]["model_key"]
-            assert model_key not in model, (
-                f"model.{model_key} should not be present when "
-                f"component '{comp_name}' is excluded"
-            )
+            assert model_key not in model, f"model.{model_key} should not be present when component '{comp_name}' is excluded"
 
     @given(components=_component_subsets)
     @settings(max_examples=100)
-    def test_active_components_matches_input_subset(
-        self, components: set[str]
-    ):
+    def test_active_components_matches_input_subset(self, components: set[str]):
         """Assert active_components matches the input subset.
 
         **Validates: Requirements 10.4**
@@ -707,16 +673,11 @@ class TestComponentCompositionValidity:
         result = compose_components(workflow_config, _COMPONENTS_DIR)
 
         active = result["model"]["active_components"]
-        assert set(active) == components, (
-            f"active_components {set(active)} does not match "
-            f"input components {components}"
-        )
+        assert set(active) == components, f"active_components {set(active)} does not match input components {components}"
 
     @given(components=_component_subsets)
     @settings(max_examples=100)
-    def test_no_dangling_trigger_references_to_excluded_components(
-        self, components: set[str]
-    ):
+    def test_no_dangling_trigger_references_to_excluded_components(self, components: set[str]):
         """Assert no trigger references to excluded component family paths
         remain in the resulting DAG.
 
@@ -738,16 +699,12 @@ class TestComponentCompositionValidity:
                 prefixes = COMPONENT_FAMILY_PREFIXES.get(excl_comp, [])
                 for prefix in prefixes:
                     assert not path.startswith(prefix), (
-                        f"Dangling trigger reference '{path}' belongs to "
-                        f"excluded component '{excl_comp}' "
-                        f"(prefix: '{prefix}')"
+                        f"Dangling trigger reference '{path}' belongs to excluded component '{excl_comp}' (prefix: '{prefix}')"
                     )
 
     @given(components=_component_subsets)
     @settings(max_examples=100)
-    def test_families_only_contain_paths_belonging_to_active_components(
-        self, components: set[str]
-    ):
+    def test_families_only_contain_paths_belonging_to_active_components(self, components: set[str]):
         """Assert families only contain paths belonging to active components.
 
         **Validates: Requirements 10.4, 10.9**
@@ -767,7 +724,4 @@ class TestComponentCompositionValidity:
             for excl_comp in excluded:
                 prefixes = COMPONENT_FAMILY_PREFIXES.get(excl_comp, [])
                 for prefix in prefixes:
-                    assert not fpath.startswith(prefix), (
-                        f"Family path '{fpath}' belongs to excluded "
-                        f"component '{excl_comp}' (prefix: '{prefix}')"
-                    )
+                    assert not fpath.startswith(prefix), f"Family path '{fpath}' belongs to excluded component '{excl_comp}' (prefix: '{prefix}')"

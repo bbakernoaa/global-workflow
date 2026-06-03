@@ -78,9 +78,9 @@
 #######################
 
 # include all subroutines. Executions later.
-source "${USHglobal}/forecast_predet.sh"       # include functions for variable definition
-source "${USHglobal}/forecast_det.sh"          # include functions for run type determination
-source "${USHglobal}/forecast_postdet.sh"      # include functions for variables after run type determination
+source "${USHglobal}/forecast_predet.sh"  # include functions for variable definition
+source "${USHglobal}/forecast_det.sh"     # include functions for run type determination
+source "${USHglobal}/forecast_postdet.sh" # include functions for variables after run type determination
 # NOTE: parsing_ufs_configure.sh and atparse.bash are no longer sourced.
 # UFS model configuration files (ufs.configure, input.nml, model_configure,
 # diag_table, field_table) are now pre-rendered at deployment time by the
@@ -107,19 +107,19 @@ common_predet
 echo "MAIN: Loading variables before determination of run type"
 FV3_predet
 if [[ "${cplflx}" == ".true." ]]; then
-    CMEPS_predet
+  CMEPS_predet
 fi
 if [[ "${cplflx}" == ".true." ]]; then
-    MOM6_predet
+  MOM6_predet
 fi
 if [[ "${cplwav}" == ".true." ]]; then
-    WW3_predet
+  WW3_predet
 fi
 if [[ "${cplice}" == ".true." ]]; then
-    CICE_predet
+  CICE_predet
 fi
 if [[ "${cplchm}" == ".true." ]]; then
-    GOCART_predet
+  GOCART_predet
 fi
 echo "MAIN: Variables before determination of run type loaded"
 
@@ -130,19 +130,19 @@ echo "MAIN: run type determined"
 echo "MAIN: Post-determination set up of run type"
 FV3_postdet
 if [[ "${cplflx}" == ".true." ]]; then
-    CMEPS_postdet
+  CMEPS_postdet
 fi
 if [[ "${cplflx}" == ".true." ]]; then
-    MOM6_postdet
+  MOM6_postdet
 fi
 if [[ "${cplwav}" == ".true." ]]; then
-    WW3_postdet
+  WW3_postdet
 fi
 if [[ "${cplice}" == ".true." ]]; then
-    CICE_postdet
+  CICE_postdet
 fi
 if [[ "${cplchm}" == ".true." ]]; then
-    GOCART_postdet
+  GOCART_postdet
 fi
 echo "MAIN: Post-determination set up of run type finished"
 
@@ -155,41 +155,41 @@ FV3_nml
 # Replaces: source "${USHglobal}/parsing_namelists_WW3.sh"; WW3_namelists
 # See: coupled-model-configs spec (Requirements 8.1, 8.2, 8.3, 8.4, 8.5, 9.7)
 if [[ "${cplflx}" == ".true." ]]; then
-    echo "MAIN: Copying pre-rendered MOM6 configs from EXPDIR"
-    cpreq "${EXPDIR}/parm/ufs/ocean/MOM_input" "${DATA}/INPUT/MOM_input"
-    cpreq "${EXPDIR}/parm/ufs/ocean/MOM6_data_table" "${DATA}/data_table"
+  echo "MAIN: Copying pre-rendered MOM6 configs from EXPDIR"
+  cpreq "${EXPDIR}/parm/ufs/ocean/MOM_input" "${DATA}/INPUT/MOM_input"
+  cpreq "${EXPDIR}/parm/ufs/ocean/MOM6_data_table" "${DATA}/data_table"
 fi
 if [[ "${cplice}" == ".true." ]]; then
-    echo "MAIN: Copying pre-rendered CICE6 config from EXPDIR"
-    cpreq "${EXPDIR}/parm/ufs/ice/ice_in" "${DATA}/ice_in"
+  echo "MAIN: Copying pre-rendered CICE6 config from EXPDIR"
+  cpreq "${EXPDIR}/parm/ufs/ice/ice_in" "${DATA}/ice_in"
 fi
 if [[ "${cplwav}" == ".true." ]]; then
-    echo "MAIN: Copying pre-rendered WW3 config from EXPDIR"
-    cpreq "${EXPDIR}/parm/ufs/wave/ww3_shel.nml" "${DATA}/ww3_shel.nml"
+  echo "MAIN: Copying pre-rendered WW3 config from EXPDIR"
+  cpreq "${EXPDIR}/parm/ufs/wave/ww3_shel.nml" "${DATA}/ww3_shel.nml"
 fi
 
 if [[ "${cplchm}" == ".true." ]]; then
-    GOCART_rc
+  GOCART_rc
 fi
 
 # Copy pre-rendered ufs.configure from EXPDIR (replaces legacy UFS_configure/atparse)
 echo "MAIN: Copying pre-rendered ufs.configure from EXPDIR"
 if [[ ! -f "${EXPDIR}/parm/ufs/ufs.configure" ]]; then
-    echo "FATAL ERROR: Pre-rendered ufs.configure not found at ${EXPDIR}/parm/ufs/ufs.configure"
-    exit 1
+  echo "FATAL ERROR: Pre-rendered ufs.configure not found at ${EXPDIR}/parm/ufs/ufs.configure"
+  exit 1
 fi
 cpreq "${EXPDIR}/parm/ufs/ufs.configure" "${DATA}/ufs.configure"
 
 # Copy pre-rendered GOCART configs from EXPDIR if aerosol coupling is active
 if [[ "${cplchm}" == ".true." ]]; then
-    echo "MAIN: Copying pre-rendered GOCART configs from EXPDIR"
-    if [[ -d "${EXPDIR}/parm/ufs/gocart" ]]; then
-        for rc_file in "${EXPDIR}/parm/ufs/gocart"/*.rc "${EXPDIR}/parm/ufs/gocart"/ExtData; do
-            if [[ -f "${rc_file}" ]]; then
-                cpreq "${rc_file}" "${DATA}/$(basename "${rc_file}")"
-            fi
-        done
-    fi
+  echo "MAIN: Copying pre-rendered GOCART configs from EXPDIR"
+  if [[ -d "${EXPDIR}/parm/ufs/gocart" ]]; then
+    for rc_file in "${EXPDIR}/parm/ufs/gocart"/*.rc "${EXPDIR}/parm/ufs/gocart"/ExtData; do
+      if [[ -f "${rc_file}" ]]; then
+        cpreq "${rc_file}" "${DATA}/$(basename "${rc_file}")"
+      fi
+    done
+  fi
 fi
 echo "MAIN: Name lists and model configuration written"
 
@@ -197,41 +197,41 @@ echo "MAIN: Name lists and model configuration written"
 # run the executable
 
 if [[ "${esmf_profile:-}" == ".true." ]]; then
-    export ESMF_RUNTIME_PROFILE=ON
-    export ESMF_RUNTIME_PROFILE_OUTPUT=SUMMARY
+  export ESMF_RUNTIME_PROFILE=ON
+  export ESMF_RUNTIME_PROFILE_OUTPUT=SUMMARY
 fi
 
 if [[ "${USE_ESMF_THREADING:-}" == "YES" ]]; then
-    unset OMP_NUM_THREADS
+  unset OMP_NUM_THREADS
 else
-    export OMP_NUM_THREADS=${UFS_THREADS:-1}
+  export OMP_NUM_THREADS=${UFS_THREADS:-1}
 fi
 
 cpreq "${EXECglobal}/${FCSTEXEC}" "${DATA}/"
 ${APRUN_UFS} "${DATA}/${FCSTEXEC}" 1>&1 2>&2 && true
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "The forecast failed to run to completion!"
+  err_exit "The forecast failed to run to completion!"
 fi
 
 FV3_out
 if [[ "${cplflx}" == ".true." ]]; then
-    MOM6_out
+  MOM6_out
 fi
 if [[ "${cplflx}" == ".true." ]]; then
-    CMEPS_out
+  CMEPS_out
 fi
 if [[ "${cplwav}" == ".true." ]]; then
-    WW3_out
+  WW3_out
 fi
 if [[ "${cplice}" == ".true." ]]; then
-    CICE_out
+  CICE_out
 fi
 if [[ "${cplchm}" == ".true." ]]; then
-    GOCART_out
+  GOCART_out
 fi
 if [[ "${esmf_profile:-}" == ".true." ]]; then
-    CPL_out
+  CPL_out
 fi
 echo "MAIN: Output copied to ROTDIR"
 

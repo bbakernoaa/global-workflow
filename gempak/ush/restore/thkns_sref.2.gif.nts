@@ -13,7 +13,7 @@ FINT      10;12;15;20;25;30;35;40;50;60
 CINT                                     ! 40
 TYPE      F                              ! C
 FLINE     0;5;3;6;26;25;4;17;2;7;28
-CLRBAR    1|.8/2/2/sw                   
-LINE      1/1/2   
-TEXT      .8/3/2/c/sw 
-CONTUR    
+CLRBAR    1|.8/2/2/sw
+LINE      1/1/2
+TEXT      .8/3/2/c/sw
+CONTUR

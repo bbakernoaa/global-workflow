@@ -36,19 +36,19 @@ mkdir -m 755 -p "${COMOUT_ATMOS_ANALYSIS}"
 mkdir -m 755 -p "${COMOUT_CONF}"
 
 if [[ "${DO_AERO_ANL:-NO}" == "YES" ]]; then
-    declare -rx COMIN_AERO_ANALYSIS="${ROTDIR}/${RUN}.${PDY}/${cyc}/analysis/chem"
-    declare -rx COMOUT_AERO_ANALYSIS="${ROTDIR}/${RUN}.${PDY}/${cyc}/analysis/chem"
-    declare -rx COMOUT_AERO_ANLMON="${ROTDIR}/${RUN}.${PDY}/${cyc}/products/chem/anlmon"
-    mkdir -m 755 -p "${COMOUT_AERO_ANALYSIS}"
-    mkdir -m 755 -p "${COMOUT_AERO_ANLMON}"
+  declare -rx COMIN_AERO_ANALYSIS="${ROTDIR}/${RUN}.${PDY}/${cyc}/analysis/chem"
+  declare -rx COMOUT_AERO_ANALYSIS="${ROTDIR}/${RUN}.${PDY}/${cyc}/analysis/chem"
+  declare -rx COMOUT_AERO_ANLMON="${ROTDIR}/${RUN}.${PDY}/${cyc}/products/chem/anlmon"
+  mkdir -m 755 -p "${COMOUT_AERO_ANALYSIS}"
+  mkdir -m 755 -p "${COMOUT_AERO_ANLMON}"
 fi
 
 if [[ "${DO_JEDISNOWDA:-NO}" == "YES" ]]; then
-    declare -rx COMIN_SNOW_ANALYSIS="${ROTDIR}/${RUN}.${PDY}/${cyc}/analysis/snow"
-    declare -rx COMOUT_SNOW_ANALYSIS="${ROTDIR}/${RUN}.${PDY}/${cyc}/analysis/snow"
-    declare -rx COMOUT_SNOW_ANLMON="${ROTDIR}/${RUN}.${PDY}/${cyc}/products/snow/anlmon"
-    mkdir -m 755 -p "${COMOUT_SNOW_ANALYSIS}"
-    mkdir -m 755 -p "${COMOUT_SNOW_ANLMON}"
+  declare -rx COMIN_SNOW_ANALYSIS="${ROTDIR}/${RUN}.${PDY}/${cyc}/analysis/snow"
+  declare -rx COMOUT_SNOW_ANALYSIS="${ROTDIR}/${RUN}.${PDY}/${cyc}/analysis/snow"
+  declare -rx COMOUT_SNOW_ANLMON="${ROTDIR}/${RUN}.${PDY}/${cyc}/products/snow/anlmon"
+  mkdir -m 755 -p "${COMOUT_SNOW_ANALYSIS}"
+  mkdir -m 755 -p "${COMOUT_SNOW_ANLMON}"
 fi
 
 ###############################################################
@@ -58,7 +58,7 @@ EXSCRIPT=${ANLSTATSPY:-${SCRglobal}/exglobal_analysis_stats.py}
 ${EXSCRIPT} && true
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Failed to generate analysis statistics for ${RUN} ${PDY}${cyc}"
+  err_exit "Failed to generate analysis statistics for ${RUN} ${PDY}${cyc}"
 fi
 
 ##############################################
@@ -69,7 +69,7 @@ fi
 # Final processing
 ##############################################
 if [[ -e "${pgmout}" ]]; then
-    cat "${pgmout}"
+  cat "${pgmout}"
 fi
 
 exit 0

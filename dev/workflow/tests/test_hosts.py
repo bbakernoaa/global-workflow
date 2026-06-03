@@ -27,7 +27,7 @@ pytest.importorskip("wxflow")
 # file is collected from the tests/ subdirectory.
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from hosts import Host  # noqa: E402
+from hosts import Host
 
 
 def test_hosts():
@@ -36,23 +36,23 @@ def test_hosts():
     Skips when no supported host can be detected so the test collects and
     runs cleanly on hosts outside the supported set.
     """
-    print(f'supported hosts are: {", ".join(Host.SUPPORTED_HOSTS)}')
+    print(f"supported hosts are: {', '.join(Host.SUPPORTED_HOSTS)}")
 
     try:
         host = Host()
     except NotImplementedError as exc:
         pytest.skip(f"No supported host detected: {exc}")
 
-    print('initializing host ...')
+    print("initializing host ...")
 
-    print(f'hostname: {host.machine}')
+    print(f"hostname: {host.machine}")
 
-    print(f'scheduler on host: {host.scheduler}')
+    print(f"scheduler on host: {host.scheduler}")
 
-    print('host information ...')
-    line_separator = '\n'  # \escapes are not allowed inside f-strings
-    print(f'{line_separator.join(f"{key}: {host.info[key]}" for key in host.info.keys())}')
+    print("host information ...")
+    line_separator = "\n"  # \escapes are not allowed inside f-strings
+    print(f"{line_separator.join(f'{key}: {host.info[key]}' for key in host.info.keys())}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test_hosts()

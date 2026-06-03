@@ -22,16 +22,16 @@ export DBN_ALERT_TYPE=${DBN_ALERT_TYPE:-GDAS_GEMPAK}
 # Define COM directories
 ##############################################
 for grid in 0p25 1p00; do
-    declare -rx "COMIN_ATMOS_GRIB_${grid}"="${ROTDIR}/${RUN}.${PDY}/${cyc}/products/atmos/grib2/${grid}"
+  declare -rx "COMIN_ATMOS_GRIB_${grid}"="${ROTDIR}/${RUN}.${PDY}/${cyc}/products/atmos/grib2/${grid}"
 done
 
 for grid in 0p25 1p00; do
-    prod_dir="COMOUT_ATMOS_GEMPAK_${grid}"
-    declare -rx "COMOUT_ATMOS_GEMPAK_${grid}"="${ROTDIR}/${RUN}.${PDY}/${cyc}/products/atmos/gempak/${grid}"
+  prod_dir="COMOUT_ATMOS_GEMPAK_${grid}"
+  declare -rx "COMOUT_ATMOS_GEMPAK_${grid}"="${ROTDIR}/${RUN}.${PDY}/${cyc}/products/atmos/gempak/${grid}"
 
-    if [[ ! -d "${!prod_dir}" ]]; then
-        mkdir -m 775 -p "${!prod_dir}"
-    fi
+  if [[ ! -d "${!prod_dir}" ]]; then
+    mkdir -m 775 -p "${!prod_dir}"
+  fi
 done
 
 ########################################################
@@ -42,7 +42,7 @@ done
 
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Failed to generate AWIPS products at 1 degree resolution for forecast hour ${FHR3}"
+  err_exit "Failed to generate AWIPS products at 1 degree resolution for forecast hour ${FHR3}"
 fi
 
 ########################################################
@@ -53,19 +53,19 @@ fi
 
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Failed to generate AWIPS products at 0.25 degree resolution for forecast hour ${FHR3}"
+  err_exit "Failed to generate AWIPS products at 0.25 degree resolution for forecast hour ${FHR3}"
 fi
 
 ############################################
 # print exec I/O output
 ############################################
 if [[ -e "${pgmout}" ]]; then
-    cat "${pgmout}"
+  cat "${pgmout}"
 fi
 
 ###################################
 # Remove temp directories
 ###################################
 if [[ "${KEEPDATA}" != "YES" ]]; then
-    rm -rf "${DATA}"
+  rm -rf "${DATA}"
 fi

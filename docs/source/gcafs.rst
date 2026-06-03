@@ -128,7 +128,7 @@ GCAFS supports multiple biomass burning emission datasets that can be configured
 **Available Fire Emission Datasets:**
 
 * **GBBEPx** (Global Biomass Burning Emissions Product): NOAA/NWS operational fire emissions
-* **QFED** (Quick Fire Emission Dataset): NASA fire emissions with near-real-time updates  
+* **QFED** (Quick Fire Emission Dataset): NASA fire emissions with near-real-time updates
 * **None**: Disable fire emissions entirely
 
 **Configuration Options:**
@@ -139,7 +139,7 @@ GCAFS supports multiple biomass burning emission datasets that can be configured
    export AERO_EMIS_FIRE="gbbepx"           # Options: gbbepx, qfed, none
    export AERO_EMIS_FIRE_VERSION="061"      # Dataset version
    export AERO_EMIS_FIRE_HIST=1             # Use historical (1) or near-real-time (0)
-   
+
    # Directories for emissions data
    export FIRE_EMIS_NRT_DIR=""              # Near-real-time data location
    export FIRE_EMIS_DIR=""                  # Historical data location
@@ -162,14 +162,14 @@ NEXUS (Next-generation Emissions eXchange Utility System) preprocesses anthropog
    # NEXUS system configuration
    export NEXUS_CONFIG="gocart"             # Configuration set (gocart, none)
    export NEXUS_TSTEP=3600                  # Time step in seconds
-   
+
    # Grid specification (0.25-degree global)
    export NEXUS_NX=1440                     # Longitude points
    export NEXUS_NY=720                      # Latitude points
-   
+
    # Enable/disable emission inventories
    export NEXUS_DO_CEDS2019=.true.          # CEDS 2019 emissions
-   export NEXUS_DO_CEDS2024=.false.         # CEDS 2024 emissions  
+   export NEXUS_DO_CEDS2024=.false.         # CEDS 2024 emissions
    export NEXUS_DO_HTAPv2=.true.            # HTAP v2 emissions
    export NEXUS_DO_CAMS=.false.             # CAMS emissions
 
@@ -177,11 +177,11 @@ NEXUS (Next-generation Emissions eXchange Utility System) preprocesses anthropog
 
 **Fire Emissions:**
 
-* **GBBEPx (Global Biomass Burning Emissions Product)**: 
+* **GBBEPx (Global Biomass Burning Emissions Product)**:
   - Operational NOAA/NWS fire emissions based on VIIRS satellite data
   - Near-real-time updates with ~6-hour latency
   - Includes wildfire, agricultural burning, and prescribed burns
-  
+
 * **QFED (Quick Fire Emission Dataset)**:
   - NASA fire emissions using MODIS satellite observations
   - Available in near-real-time and historical versions
@@ -193,12 +193,12 @@ NEXUS (Next-generation Emissions eXchange Utility System) preprocesses anthropog
   - Global gridded emissions inventory (1750-2019/2024)
   - Anthropogenic sources: energy, industry, transport, residential, agriculture
   - Species: SO2, NOx, CO, NH3, black carbon, organic carbon, PM2.5
-  
+
 * **HTAP (Hemispheric Transport of Air Pollution)**:
   - Regional high-resolution emissions for Europe, Asia, North America
   - Focuses on transboundary air pollution
   - Complements CEDS with finer spatial detail
-  
+
 * **CAMS (Copernicus Atmosphere Monitoring Service)**:
   - European Centre reanalysis emissions
   - Consistent with meteorological fields
@@ -249,7 +249,7 @@ Emissions Configuration
 External data sources for emissions are configured through ExtData resource files:
 
 - **ExtData.gbbepx**: GBBEPx biomass burning emissions configuration
-- **ExtData.qfed**: QFED fire emissions configuration  
+- **ExtData.qfed**: QFED fire emissions configuration
 - **ExtData.nexus**: NEXUS-processed anthropogenic/biogenic emissions
 - **ExtData.other**: Additional emission sources (volcanic, lightning, etc.)
 - **ExtData.none**: Placeholder configuration when emissions are disabled
@@ -310,8 +310,8 @@ The NEXUS-processed emissions are configured through **ExtData.nexus**, which ha
 
    # Anthropogenic SO2 from CEDS
    SU_ANTHRO NA N Y %y4-%m2-%d2t12:00:00 none none so2_anthro ExtData/nexus/CEDS/%y4/CEDS.emis_so2.%y4%m2%d2.nc4
-   
-   # Black carbon from HTAP  
+
+   # Black carbon from HTAP
    BC_ANTHRO NA N Y %y4-%m2-%d2t12:00:00 none none bc_anthro ExtData/nexus/HTAP/%y4/HTAP.emis_bc.%y4%m2%d2.nc4
 
 The NEXUS preprocessing system generates these files by:

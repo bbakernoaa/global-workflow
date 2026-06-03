@@ -25,9 +25,7 @@ class MOM6ParameterValidator:
 
     # Pattern for valid parameter assignment lines:
     # Uppercase letters/digits/underscores, optional whitespace, =, optional whitespace, value
-    _PARAM_PATTERN = re.compile(
-        r'^[A-Z][A-Z0-9_]*\s*=\s*.+$'
-    )
+    _PARAM_PATTERN = re.compile(r"^[A-Z][A-Z0-9_]*\s*=\s*.+$")
 
     def validate(self, content: str, filepath: str) -> list[str]:
         """Validate MOM6 parameter file content.
@@ -48,7 +46,7 @@ class MOM6ParameterValidator:
                 continue
 
             # Comment lines starting with ! are valid
-            if stripped.startswith('!'):
+            if stripped.startswith("!"):
                 continue
 
             # Parameter assignment lines: PARAM = VALUE
@@ -56,9 +54,6 @@ class MOM6ParameterValidator:
                 continue
 
             # Anything else is invalid
-            errors.append(
-                f"MOM6 parameter format error at "
-                f"{filepath}:{lineno}: {stripped}"
-            )
+            errors.append(f"MOM6 parameter format error at {filepath}:{lineno}: {stripped}")
 
         return errors

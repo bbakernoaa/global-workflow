@@ -185,16 +185,16 @@ ex
 EOF
 
 for fhr in $(seq -s ' ' 6 24 126); do
-    gfsfhr="F$(printf "%03g" "${fhr}")"
-    if [[ fhr -lt 100 ]]; then
-        offset=6
-    else
-        offset=18
-    fi
-    ecmwffhr="F$(printf "%03g" $((fhr + offset)))"
-    grid2="${HPCECMWF}/ecmwf_glob_${PDYm1}12"
+  gfsfhr="F$(printf "%03g" "${fhr}")"
+  if [[ fhr -lt 100 ]]; then
+    offset=6
+  else
+    offset=18
+  fi
+  ecmwffhr="F$(printf "%03g" $((fhr + offset)))"
+  grid2="${HPCECMWF}/ecmwf_glob_${PDYm1}12"
 
-    "${GEMEXE}/gdplot2_nc" << EOF10
+  "${GEMEXE}/gdplot2_nc" << EOF10
 \$MAPFIL = mepowo.gsf
 GDFILE	= ${grid1} !${grid2}
 GDATTIM	= ${gfsfhr}!${ecmwffhr}
@@ -259,11 +259,11 @@ EOF10
 done
 
 for fhr in $(seq -s ' ' 6 12 138); do
-    gfsfhr="F$(printf "%03g" "${fhr}")"
-    ukmetfhr="F$(printf "%03g" $((fhr + 6)))"
-    grid3="${HPCUKMET}/ukmet_${PDY}00f${ukmetfhr}"
+  gfsfhr="F$(printf "%03g" "${fhr}")"
+  ukmetfhr="F$(printf "%03g" $((fhr + 6)))"
+  grid3="${HPCUKMET}/ukmet_${PDY}00f${ukmetfhr}"
 
-    "${GEMEXE}/gdplot2_nc" << EOF25
+  "${GEMEXE}/gdplot2_nc" << EOF25
 \$MAPFIL = mepowo.gsf
 DEVICE  = ${device}
 PANEL   = 0
@@ -333,19 +333,19 @@ err_chk
 # FOR THIS CASE HERE.
 #####################################################
 if [[ "${err}" -ne 0 ]] || [[ ! -s "${metaname}" ]] &> /dev/null; then
-    echo "FATAL ERROR: Failed to create gempak meta file ${metaname}"
-    exit $((err + 100))
+  echo "FATAL ERROR: Failed to create gempak meta file ${metaname}"
+  exit $((err + 100))
 fi
 
 cpfs "${metaname}" "${COMOUT_ATMOS_GEMPAK_META}/${mdl}_${PDY}_${cyc}_${metatype}"
 if [[ "${SENDDBN}" == "YES" ]]; then
+  "${DBNROOT}/bin/dbn_alert" MODEL "${DBN_ALERT_TYPE}" "${job}" \
+    "${COMOUT_ATMOS_GEMPAK_META}/${mdl}_${PDY}_${cyc}_${metatype}"
+  if [[ ${DBN_ALERT_TYPE} == "GFS_METAFILE_LAST" ]]; then
+    DBN_ALERT_TYPE=GFS_METAFILE
     "${DBNROOT}/bin/dbn_alert" MODEL "${DBN_ALERT_TYPE}" "${job}" \
-        "${COMOUT_ATMOS_GEMPAK_META}/${mdl}_${PDY}_${cyc}_${metatype}"
-    if [[ ${DBN_ALERT_TYPE} == "GFS_METAFILE_LAST" ]]; then
-        DBN_ALERT_TYPE=GFS_METAFILE
-        "${DBNROOT}/bin/dbn_alert" MODEL "${DBN_ALERT_TYPE}" "${job}" \
-            "${COMOUT_ATMOS_GEMPAK_META}/${mdl}_${PDY}_${cyc}_${metatype}"
-    fi
+      "${COMOUT_ATMOS_GEMPAK_META}/${mdl}_${PDY}_${cyc}_${metatype}"
+  fi
 fi
 
 exit

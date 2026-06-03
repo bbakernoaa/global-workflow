@@ -17,4 +17,3 @@ Forecast output
 ===============
 
 This section will be updated when we have some basic plotting utilities using EMCPY
-

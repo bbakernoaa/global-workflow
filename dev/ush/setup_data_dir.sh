@@ -14,10 +14,10 @@
 
 dir_to_create_="${1:?setup_data_dir.sh requires a directory argument}"
 if [[ ${WIPE_DATA:-YES} == "YES" ]]; then
-    rm -rf "${dir_to_create_}"
+  rm -rf "${dir_to_create_}"
 fi
 mkdir -p "${dir_to_create_}"
 if ! cd "${dir_to_create_}"; then
-    export err=1
-    err_exit "[${BASH_SOURCE[0]}]: ${dir_to_create_} does not exist"
+  export err=1
+  err_exit "[${BASH_SOURCE[0]}]: ${dir_to_create_} does not exist"
 fi

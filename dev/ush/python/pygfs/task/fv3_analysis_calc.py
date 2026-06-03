@@ -1,21 +1,24 @@
 #!/usr/bin/env python3
 
+import os
 from datetime import datetime
 from logging import getLogger
+from typing import Any, Dict
+
 import netCDF4 as nc
-import os
+
 from pygfs.jedi import Jedi
 from pygfs.task.analysis import Analysis
-from typing import Dict, Any
-from wxflow import AttrDict, FileHandler, to_fv3time, parse_j2yaml, logit
+from wxflow import AttrDict, FileHandler, logit, parse_j2yaml, to_fv3time
 
-logger = getLogger(__name__.split('.')[-1])
+logger = getLogger(__name__.split(".")[-1])
 
 
 class FV3AnalysisCalc(Analysis):
     """
     Class for analysis calculation
     """
+
     def __init__(self, config: Dict[str, Any]):
         """Constructor for analysis calculation task
 
@@ -36,30 +39,32 @@ class FV3AnalysisCalc(Analysis):
         super().__init__(config)
 
         _res = int(self.task_config.CASE[1:])
-        _res_anl = int(self.task_config['CASE_ANL'][1:])
+        _res_anl = int(self.task_config["CASE_ANL"][1:])
 
         # Create a local dictionary that is repeatedly used across this class
-        self.task_config.update(AttrDict(
-            {
-                'npx_ges': _res + 1,
-                'npy_ges': _res + 1,
-                'npz_ges': self.task_config.LEVS - 1,
-                'npx_anl': _res_anl + 1,
-                'npy_anl': _res_anl + 1,
-                'npz_anl': self.task_config.LEVS - 1,
-                'npz': self.task_config.LEVS - 1,
-            }
-        ))
+        self.task_config.update(
+            AttrDict(
+                {
+                    "npx_ges": _res + 1,
+                    "npy_ges": _res + 1,
+                    "npz_ges": self.task_config.LEVS - 1,
+                    "npx_anl": _res_anl + 1,
+                    "npy_anl": _res_anl + 1,
+                    "npz_anl": self.task_config.LEVS - 1,
+                    "npz": self.task_config.LEVS - 1,
+                }
+            )
+        )
 
         # Extend task_config with content of config yaml for this task
         self.task_config.update(parse_j2yaml(self.task_config.TASK_CONFIG_YAML, self.task_config))
 
         # Create dictionary of Jedi objects
-        expected_keys = ['atm_addincrement']
+        expected_keys = ["atm_addincrement"]
         if self.task_config.DO_AERO_ANL:
-            expected_keys.append('aero_addincrement')
+            expected_keys.append("aero_addincrement")
         if self.task_config.DO_JEDISNOWDA:
-            expected_keys.append('snow_addincrement')
+            expected_keys.append("snow_addincrement")
         self.jedi_dict = Jedi.get_jedi_dict(self.task_config.jedi_config, self.task_config, expected_keys)
 
     @logit(logger)
@@ -81,16 +86,16 @@ class FV3AnalysisCalc(Analysis):
         """
 
         # Stage files from COM
-        logger.info(f"Staging files from COM")
+        logger.info("Staging files from COM")
         FileHandler(self.task_config.data_in).sync()
 
         # Initialize GDASApp JEDI addincrement application
-        logger.info(f"Initializing GDASApp JEDI addincrement applications")
-        self.jedi_dict['atm_addincrement'].initialize()
+        logger.info("Initializing GDASApp JEDI addincrement applications")
+        self.jedi_dict["atm_addincrement"].initialize()
         if self.task_config.DO_AERO_ANL:
-            self.jedi_dict['aero_addincrement'].initialize()
+            self.jedi_dict["aero_addincrement"].initialize()
         if self.task_config.DO_JEDISNOWDA:
-            self.jedi_dict['snow_addincrement'].initialize()
+            self.jedi_dict["snow_addincrement"].initialize()
 
     @logit(logger)
     def execute(self) -> None:
@@ -112,34 +117,28 @@ class FV3AnalysisCalc(Analysis):
         """
 
         # Convert cubed sphere increments to Gaussian grid
-        self.jedi_dict['atm_addincrement'].execute()
+        self.jedi_dict["atm_addincrement"].execute()
         if self.task_config.DO_AERO_ANL:
-            self.jedi_dict['aero_addincrement'].execute()
+            self.jedi_dict["aero_addincrement"].execute()
         if self.task_config.DO_JEDISNOWDA:
-            self.jedi_dict['snow_addincrement'].execute()
+            self.jedi_dict["snow_addincrement"].execute()
 
         # Loop through forecast hours
-        auxgrid_time_str = to_fv3time(self.task_config.current_cycle).replace('.', '_') + 'z'
+        auxgrid_time_str = to_fv3time(self.task_config.current_cycle).replace(".", "_") + "z"
 
         # Atmosphere
-        logger.info(f"Inserting analysis variables into atmospheric analysis file")
-        insert_analysis_variables(self.task_config.current_cycle,
-                                  f"atmanl.{auxgrid_time_str}.nc4",
-                                  f"{self.task_config.GPREFIX}atmf006.nc")
+        logger.info("Inserting analysis variables into atmospheric analysis file")
+        insert_analysis_variables(self.task_config.current_cycle, f"atmanl.{auxgrid_time_str}.nc4", f"{self.task_config.GPREFIX}atmf006.nc")
 
         # Aerosols
         if self.task_config.DO_AERO_ANL:
-            logger.info(f"Inserting analysis variables into aerosol analysis file")
-            insert_analysis_variables(self.task_config.current_cycle,
-                                      f"aeroanl.{auxgrid_time_str}.nc4",
-                                      f"{self.task_config.GPREFIX}atmf006.nc")
+            logger.info("Inserting analysis variables into aerosol analysis file")
+            insert_analysis_variables(self.task_config.current_cycle, f"aeroanl.{auxgrid_time_str}.nc4", f"{self.task_config.GPREFIX}atmf006.nc")
 
         # Snow
         if self.task_config.DO_JEDISNOWDA:
-            logger.info(f"Inserting analysis variables into snow analysis file")
-            insert_analysis_variables(self.task_config.current_cycle,
-                                      f"snowanl.{auxgrid_time_str}.nc4",
-                                      f"{self.task_config.GPREFIX}sfcf006.nc")
+            logger.info("Inserting analysis variables into snow analysis file")
+            insert_analysis_variables(self.task_config.current_cycle, f"snowanl.{auxgrid_time_str}.nc4", f"{self.task_config.GPREFIX}sfcf006.nc")
 
     @logit(logger)
     def finalize(self) -> None:
@@ -167,7 +166,7 @@ class FV3AnalysisCalc(Analysis):
             file.write(f"{message}\n")
 
         # Save files from COM
-        logger.info(f"Saving files to COM")
+        logger.info("Saving files to COM")
         FileHandler(self.task_config.data_out).sync()
 
 
@@ -195,18 +194,17 @@ def insert_analysis_variables(valid_time, fn_anl: str, fn_bkg: str) -> None:
     """
 
     try:
-        with nc.Dataset(fn_anl, 'r') as nc_anl, nc.Dataset(fn_bkg, 'r+') as nc_bkg:
+        with nc.Dataset(fn_anl, "r") as nc_anl, nc.Dataset(fn_bkg, "r+") as nc_bkg:
             # Change the units of the time coordinate since the units from the UFS history
             # file will break UPP
-            time_var = nc_bkg.variables['time']
-            time_var.units = valid_time.strftime('hours since %Y-%m-%dT%H:%M:%S')
-            time_var[:] = 0.
+            time_var = nc_bkg.variables["time"]
+            time_var.units = valid_time.strftime("hours since %Y-%m-%dT%H:%M:%S")
+            time_var[:] = 0.0
 
             # Insert analysis variables into history file
             for var in nc_anl.variables:
                 if len(nc_anl[var].dimensions) == 3 or len(nc_anl[var].dimensions) == 4:
                     var_anl = nc_anl[var][:]
-                    var_bkg = nc_bkg[var][:]
 
                     nc_bkg[var][:] = var_anl
 

@@ -24,9 +24,10 @@ Traces to parent: Req 4.6, Req 8, Property 14.
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Optional
 
 import yaml
 
@@ -43,9 +44,7 @@ ATPARSE_PATTERN = re.compile(r"@\[[A-Za-z_][A-Za-z0-9_]*\]")
 JINJA_PATTERNS = (re.compile(r"\{\{"), re.compile(r"\{%"), re.compile(r"(?<!\$)\{#"))
 
 #: ``source ... parsing_namelists_<COMPONENT>.sh`` (any superseded component).
-_PARSING_SOURCE_PATTERN = re.compile(
-    r"source\s+.*?(parsing_namelists_[A-Za-z0-9_]+\.sh)"
-)
+_PARSING_SOURCE_PATTERN = re.compile(r"source\s+.*?(parsing_namelists_[A-Za-z0-9_]+\.sh)")
 
 # ---------------------------------------------------------------------------
 # Scan scoping
@@ -77,14 +76,14 @@ _EXCLUDED_DIR_NAMES = {
 #: commented-out Jinja2 conditional compilation markers (``#{% if ... %}``).
 #: The ``parm/`` tree includes the exemption registry itself.
 EXPDIR_EXCLUDED_PREFIXES = (
-    "parm/workflow/",      # Workflow_Configuration source (staged verbatim)
+    "parm/workflow/",  # Workflow_Configuration source (staged verbatim)
     "parm/atparse_exemptions",  # Exemption registry (documents @[VAR] pattern)
-    "parm/components/",    # Workflow config components (contain Jinja2 by design)
+    "parm/components/",  # Workflow config components (contain Jinja2 by design)
     "parm/config/gcafs/yaml/",  # GCAFS YAML configs (contain Jinja2 includes)
-    "ecf/defs/",           # ecFlow .def files (contain ecFlow vars)
+    "ecf/defs/",  # ecFlow .def files (contain ecFlow vars)
     "workflow/provenance",  # provenance metadata (raw config values)
-    "manifest.yaml",       # deployment manifest (generated metadata)
-    "jobs/",               # J-Jobs (staged verbatim, contain {%} markers)
+    "manifest.yaml",  # deployment manifest (generated metadata)
+    "jobs/",  # J-Jobs (staged verbatim, contain {%} markers)
 )
 
 
@@ -113,35 +112,19 @@ class TokenScanResult:
         ``stale_exemptions`` are warnings only (Req 3.4) and do NOT affect the
         pass/fail outcome.
         """
-        return not (
-            self.atparse_violations
-            or self.jinja_violations
-            or self.parsing_source_violations
-        )
+        return not (self.atparse_violations or self.jinja_violations or self.parsing_source_violations)
 
     def format_report(self) -> str:
         """Render a human-readable summary of violations and warnings."""
         lines: list[str] = []
         for path, lineno, token in self.atparse_violations:
-            lines.append(
-                f"FATAL ERROR: unresolved atparse token '{token}' in "
-                f"{path}:{lineno} (not in Atparse_Exemption_Registry)"
-            )
+            lines.append(f"FATAL ERROR: unresolved atparse token '{token}' in {path}:{lineno} (not in Atparse_Exemption_Registry)")
         for path, lineno, token in self.jinja_violations:
-            lines.append(
-                f"FATAL ERROR: unresolved Jinja2 token '{token}' in "
-                f"{path}:{lineno}"
-            )
+            lines.append(f"FATAL ERROR: unresolved Jinja2 token '{token}' in {path}:{lineno}")
         for script, sourced in self.parsing_source_violations:
-            lines.append(
-                f"FATAL ERROR: {script} sources runtime templating script "
-                f"'{sourced}' (must consume pre-rendered config via cpreq)"
-            )
+            lines.append(f"FATAL ERROR: {script} sources runtime templating script '{sourced}' (must consume pre-rendered config via cpreq)")
         for entry in self.stale_exemptions:
-            lines.append(
-                f"WARNING: stale Atparse_Exemption_Registry entry '{entry}' "
-                f"no longer contains any @[...] tokens; remove it."
-            )
+            lines.append(f"WARNING: stale Atparse_Exemption_Registry entry '{entry}' no longer contains any @[...] tokens; remove it.")
         return "\n".join(lines)
 
 
@@ -180,7 +163,7 @@ def _read_text_safe(path: Path) -> Optional[str]:
     """
     try:
         raw = path.read_bytes()
-    except (OSError, IOError):
+    except OSError:
         return None
     if b"\x00" in raw:
         return None
@@ -234,10 +217,7 @@ def _is_expdir_excluded(rel_path: str) -> bool:
     """
     if rel_path.endswith(".j2"):
         return True
-    return any(
-        rel_path.startswith(prefix) or rel_path == prefix
-        for prefix in EXPDIR_EXCLUDED_PREFIXES
-    )
+    return any(rel_path.startswith(prefix) or rel_path == prefix for prefix in EXPDIR_EXCLUDED_PREFIXES)
 
 
 def scan_rendered_expdir(expdir: Path) -> TokenScanResult:
@@ -335,16 +315,12 @@ def scan_repo_runtime(
     # forecast_postdet.sh must not source any parsing_namelists_*.sh (Req 1.5).
     forecast_postdet = repo_root / "ush" / "forecast_postdet.sh"
     if forecast_postdet.is_file():
-        result.parsing_source_violations.extend(
-            _scan_parsing_sources(forecast_postdet, repo_root)
-        )
+        result.parsing_source_violations.extend(_scan_parsing_sources(forecast_postdet, repo_root))
 
     return result
 
 
-def _scan_parsing_sources(
-    script_path: Path, repo_root: Path
-) -> list[tuple[str, str]]:
+def _scan_parsing_sources(script_path: Path, repo_root: Path) -> list[tuple[str, str]]:
     """Return ``(script_rel, sourced_name)`` for parsing_namelists sources.
 
     Comment lines (first non-whitespace char ``#``) are ignored so that

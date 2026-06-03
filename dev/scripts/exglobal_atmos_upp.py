@@ -2,8 +2,9 @@
 
 import os
 
-from wxflow import AttrDict, Logger, logit, cast_strdict_as_dtypedict
 from pygfs.task.upp import UPP
+
+from wxflow import AttrDict, Logger, cast_strdict_as_dtypedict, logit
 
 # initialize root logger
 logger = Logger(level=os.environ.get("LOGGING_LEVEL", "DEBUG"), colored_log=True)
@@ -11,19 +12,28 @@ logger = Logger(level=os.environ.get("LOGGING_LEVEL", "DEBUG"), colored_log=True
 
 @logit(logger)
 def main():
-
     config = cast_strdict_as_dtypedict(os.environ)
 
     # Instantiate the UPP object
     upp = UPP(config)
 
     # Pull out all the configuration keys needed to run the rest of UPP steps
-    keys = ['HOMEglobal', 'DATA', 'current_cycle', 'RUN', 'NET',
-            'COMIN_ATMOS_ANALYSIS', 'COMIN_ATMOS_HISTORY', 'COMOUT_ATMOS_MASTER',
-            'upp_run',
-            'APRUN_UPP',
-            'forecast_hour', 'valid_datetime',
-            'atmos_filename', 'flux_filename']
+    keys = [
+        "HOMEglobal",
+        "DATA",
+        "current_cycle",
+        "RUN",
+        "NET",
+        "COMIN_ATMOS_ANALYSIS",
+        "COMIN_ATMOS_HISTORY",
+        "COMOUT_ATMOS_MASTER",
+        "upp_run",
+        "APRUN_UPP",
+        "forecast_hour",
+        "valid_datetime",
+        "atmos_filename",
+        "flux_filename",
+    ]
     upp_dict = AttrDict()
     for key in keys:
         upp_dict[key] = upp.task_config[key]
@@ -44,5 +54,5 @@ def main():
     upp.finalize(upp_dict.upp_run, upp_yaml)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

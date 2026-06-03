@@ -41,7 +41,7 @@ EXSCRIPT=${GDASATMFINALPY:-${SCRglobal}/exglobal_atm_analysis_finalize.py}
 ${EXSCRIPT} && true
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Failed to finalize the atmospheric analysis"
+  err_exit "Failed to finalize the atmospheric analysis"
 fi
 
 ##############################################
@@ -52,7 +52,7 @@ fi
 # Final processing
 ##############################################
 if [[ -e "${pgmout}" ]]; then
-    cat "${pgmout}"
+  cat "${pgmout}"
 fi
 
 ##########################################
@@ -62,11 +62,11 @@ cd "${DATAROOT}" && true
 export err=$?
 set +x
 if [[ ${err} -ne 0 ]]; then
-    err_exit "${DATAROOT} does not exist, ABORT!"
+  err_exit "${DATAROOT} does not exist, ABORT!"
 fi
 set -x
 if [[ "${KEEPDATA}" == "NO" ]]; then
-    rm -rf "${DATA}"
+  rm -rf "${DATA}"
 fi
 
 exit 0

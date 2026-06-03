@@ -4,7 +4,8 @@ import os
 import re
 
 from github import Auth, Github, GithubException, InputFileContent, UnknownObjectException
-from wxflow import which, Logger
+
+from wxflow import Logger, which
 
 # Initialize logger with environment variable for logging level
 logger = Logger(level=os.environ.get("LOGGING_LEVEL", "DEBUG"), logfile_path=os.environ.get("LOGFILE_PATH"), colored_log=False)
@@ -14,6 +15,7 @@ class GitHubDBError(Exception):
     """
     Base class for GitHubDB exceptions.
     """
+
     UnknownObjectException = UnknownObjectException
     GithubException = GithubException
 
@@ -57,12 +59,12 @@ class GitHubPR(Github):
         environment variable when repo_url is not provided.
         """
         if TOKEN is None:
-            TOKEN = os.environ.get('GH_TOKEN') or os.environ.get('GITHUB_TOKEN')
+            TOKEN = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
             if TOKEN:
                 logger.info("Using TOKEN from environment variable.")
             else:
-                gh_cli = which('gh')
-                gh_cli.add_default_arg(['auth', 'status', '--show-token'])
+                gh_cli = which("gh")
+                gh_cli.add_default_arg(["auth", "status", "--show-token"])
                 gh_output = gh_cli(output=str, error=str)
                 token_match = re.search(r"Token:\s*([a-zA-Z0-9_]+)", gh_output)
                 if token_match:
@@ -77,7 +79,7 @@ class GitHubPR(Github):
         super().__init__(auth=auth)
 
         self.repo = self.get_repo_url(repo_url)
-        self.pulls = self.repo.get_pulls(state='open', sort='updated', direction='desc')
+        self.pulls = self.repo.get_pulls(state="open", sort="updated", direction="desc")
         self.user = self.get_user()
 
         self.InputFileContent = InputFileContent
@@ -108,7 +110,7 @@ class GitHubPR(Github):
         """
         return [pull.number for pull in self.pulls]
 
-    def get_ci_pr_list(self, state='Ready', host=None):
+    def get_ci_pr_list(self, state="Ready", host=None):
         """
         get_ci_pr_list Get a list of pull requests that match a specified state and host.
 
@@ -127,7 +129,7 @@ class GitHubPR(Github):
         pr_list = []
         for pull in self.pulls:
             labels = pull.get_labels()
-            ci_labels = [s for s in labels if 'CI' in s.name]
+            ci_labels = [s for s in labels if "CI" in s.name]
             for label in ci_labels:
                 if state in label.name:
                     if host is not None:

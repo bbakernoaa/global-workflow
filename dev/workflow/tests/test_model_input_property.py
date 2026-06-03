@@ -20,25 +20,23 @@ import os
 import re
 import sys
 
-from hypothesis import given, settings, HealthCheck, assume
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from jinja2 import Environment, StrictUndefined
-
-from deployment.validators.namelist import NamelistValidator
 from deployment.validators.mom6_parameter import MOM6ParameterValidator
-
+from deployment.validators.namelist import NamelistValidator
+from jinja2 import Environment, StrictUndefined
 
 # ---------------------------------------------------------------------------
 # Unresolved token patterns (same as in model_config_renderer.py)
 # ---------------------------------------------------------------------------
 
 _UNRESOLVED_TOKEN_PATTERNS = [
-    re.compile(r"\{\{"),   # Variable expression
-    re.compile(r"\{%"),    # Block/statement tag
-    re.compile(r"\{#"),    # Comment tag
+    re.compile(r"\{\{"),  # Variable expression
+    re.compile(r"\{%"),  # Block/statement tag
+    re.compile(r"\{#"),  # Comment tag
 ]
 
 
@@ -133,12 +131,7 @@ def _template_with_conditionals_and_complete_context(draw):
 
     # Build template with if-block and for-loop
     template_string = (
-        f"{{% if {var_name_val} %}}"
-        f"value is {{{{ {var_name_val} }}}}\n"
-        f"{{% endif %}}"
-        f"{{% for item in {list_var} %}}"
-        f"item={{{{ item }}}}\n"
-        f"{{% endfor %}}"
+        f"{{% if {var_name_val} %}}value is {{{{ {var_name_val} }}}}\n{{% endif %}}{{% for item in {list_var} %}}item={{{{ item }}}}\n{{% endfor %}}"
     )
 
     return template_string, context
@@ -160,15 +153,15 @@ _nml_value = st.one_of(
     st.integers(min_value=-9999, max_value=9999).map(str),
     # Float values
     st.floats(
-        min_value=-999.0, max_value=999.0,
-        allow_nan=False, allow_infinity=False,
+        min_value=-999.0,
+        max_value=999.0,
+        allow_nan=False,
+        allow_infinity=False,
     ).map(lambda f: f"{f:.4f}"),
     # Fortran boolean values
     st.sampled_from([".true.", ".false."]),
     # Quoted string values
-    st.from_regex(r"[a-zA-Z0-9_./]{1,12}", fullmatch=True).map(
-        lambda s: f"'{s}'"
-    ),
+    st.from_regex(r"[a-zA-Z0-9_./]{1,12}", fullmatch=True).map(lambda s: f"'{s}'"),
 )
 
 
@@ -232,8 +225,10 @@ _mom6_value = st.one_of(
     # Numeric values
     st.integers(min_value=-9999, max_value=9999).map(str),
     st.floats(
-        min_value=-999.0, max_value=999.0,
-        allow_nan=False, allow_infinity=False,
+        min_value=-999.0,
+        max_value=999.0,
+        allow_nan=False,
+        allow_infinity=False,
     ).map(lambda f: f"{f:.6f}"),
     # Boolean-like values
     st.sampled_from(["True", "False"]),
@@ -308,10 +303,7 @@ def test_zero_token_guarantee_simple(data):
 
     # The rendered output must contain no unresolved Jinja2 tokens
     assert not _has_unresolved_tokens(rendered), (
-        f"Rendered output contains unresolved Jinja2 tokens.\n"
-        f"Template: {template_string!r}\n"
-        f"Context: {context}\n"
-        f"Rendered: {rendered!r}"
+        f"Rendered output contains unresolved Jinja2 tokens.\nTemplate: {template_string!r}\nContext: {context}\nRendered: {rendered!r}"
     )
 
 
@@ -339,10 +331,7 @@ def test_zero_token_guarantee_with_blocks(data):
 
     # The rendered output must contain no unresolved Jinja2 tokens
     assert not _has_unresolved_tokens(rendered), (
-        f"Rendered output contains unresolved Jinja2 tokens.\n"
-        f"Template: {template_string!r}\n"
-        f"Context: {context}\n"
-        f"Rendered: {rendered!r}"
+        f"Rendered output contains unresolved Jinja2 tokens.\nTemplate: {template_string!r}\nContext: {context}\nRendered: {rendered!r}"
     )
 
 
@@ -368,11 +357,7 @@ def test_round_trip_fidelity_namelist(namelist_content):
     validator = NamelistValidator()
     errors = validator.validate(namelist_content, "test_input.nml")
 
-    assert errors == [], (
-        f"NamelistValidator found errors in valid namelist content.\n"
-        f"Errors: {errors}\n"
-        f"Content:\n{namelist_content}"
-    )
+    assert errors == [], f"NamelistValidator found errors in valid namelist content.\nErrors: {errors}\nContent:\n{namelist_content}"
 
 
 @given(mom6_content=_valid_mom6_parameters())
@@ -392,11 +377,7 @@ def test_round_trip_fidelity_mom6(mom6_content):
     validator = MOM6ParameterValidator()
     errors = validator.validate(mom6_content, "test_MOM_input")
 
-    assert errors == [], (
-        f"MOM6ParameterValidator found errors in valid MOM6 content.\n"
-        f"Errors: {errors}\n"
-        f"Content:\n{mom6_content}"
-    )
+    assert errors == [], f"MOM6ParameterValidator found errors in valid MOM6 content.\nErrors: {errors}\nContent:\n{mom6_content}"
 
 
 @given(data=_template_with_complete_context())
@@ -435,8 +416,5 @@ def test_round_trip_fidelity_rendered_namelist(data):
     errors = validator.validate(rendered, "test_rendered.nml")
 
     assert errors == [], (
-        f"NamelistValidator found errors in rendered namelist.\n"
-        f"Errors: {errors}\n"
-        f"Template: {template_string!r}\n"
-        f"Rendered:\n{rendered}"
+        f"NamelistValidator found errors in rendered namelist.\nErrors: {errors}\nTemplate: {template_string!r}\nRendered:\n{rendered}"
     )

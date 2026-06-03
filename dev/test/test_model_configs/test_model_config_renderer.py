@@ -32,7 +32,6 @@ from deployment.validators import (
     NamelistValidator,
 )
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -65,7 +64,7 @@ def tmp_dev_root(tmp_path: Path) -> Path:
 
     # Create a simple field_table.j2 template
     (fv3_dir / "field_table.j2").write_text(
-        '# Field table for {{ model.physics_suite }}\n'
+        "# Field table for {{ model.physics_suite }}\n"
         ' "TRACER", "atmos_mod", "sphum"\n'
         '           "longname",     "specific humidity"\n'
         '           "units",        "kg/kg"\n'
@@ -87,9 +86,7 @@ def tmp_dev_root(tmp_path: Path) -> Path:
     )
 
     # Create a simple diag_table.j2 template (just comments for simplicity)
-    (fv3_dir / "diag_table.j2").write_text(
-        "# Diag table for {{ model.resolution }}\n"
-    )
+    (fv3_dir / "diag_table.j2").write_text("# Diag table for {{ model.resolution }}\n")
 
     # Create a simple ufs.configure.j2 template
     (ufs_dir / "ufs.configure.j2").write_text(
@@ -106,18 +103,10 @@ def tmp_dev_root(tmp_path: Path) -> Path:
     )
 
     # Create a GOCART template
-    (gocart_dir / "AERO_HISTORY.rc.j2").write_text(
-        "# GOCART history\n"
-        "VERSION: 1\n"
-        "EXPID:  gocart\n"
-        "COLLECTIONS::\n"
-        "::\n"
-    )
+    (gocart_dir / "AERO_HISTORY.rc.j2").write_text("# GOCART history\nVERSION: 1\nEXPID:  gocart\nCOLLECTIONS::\n::\n")
 
     # Create a collection fragment (should be excluded from discovery)
-    (collections_dir / "inst_aod.j2").write_text(
-        "# inst_aod collection fields\n"
-    )
+    (collections_dir / "inst_aod.j2").write_text("# inst_aod collection fields\n")
 
     return dev_root
 
@@ -189,6 +178,7 @@ class TestValidatorDispatch:
 
     def test_diag_table_validator(self):
         from deployment.validators import DiagTableValidator
+
         v = _get_validator("diag_table")
         assert isinstance(v, DiagTableValidator)
 
@@ -260,9 +250,7 @@ class TestTemplateDiscovery:
 class TestRenderAll:
     """Tests for the full render_all pipeline."""
 
-    def test_renders_all_templates(
-        self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path
-    ):
+    def test_renders_all_templates(self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path):
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
         results = renderer.render_all(valid_model_context, expdir)
 
@@ -275,11 +263,9 @@ class TestRenderAll:
             assert r.sha256  # Non-empty hash
             assert r.method in ("render", "copy")
 
-    def test_output_placement_fv3(
-        self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path
-    ):
+    def test_output_placement_fv3(self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path):
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
-        results = renderer.render_all(valid_model_context, expdir)
+        renderer.render_all(valid_model_context, expdir)
 
         # FV3 files should be at expdir/parm/ufs/fv3/
         fv3_dir = expdir / "parm" / "ufs" / "fv3"
@@ -287,27 +273,21 @@ class TestRenderAll:
         assert (fv3_dir / "field_table").exists()
         assert (fv3_dir / "input.nml").exists()
 
-    def test_output_placement_ufs_configure(
-        self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path
-    ):
+    def test_output_placement_ufs_configure(self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path):
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
         renderer.render_all(valid_model_context, expdir)
 
         # ufs.configure should be at expdir/parm/ufs/
         assert (expdir / "parm" / "ufs" / "ufs.configure").exists()
 
-    def test_output_placement_gocart(
-        self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path
-    ):
+    def test_output_placement_gocart(self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path):
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
         renderer.render_all(valid_model_context, expdir)
 
         # GOCART files should be at expdir/parm/ufs/gocart/
         assert (expdir / "parm" / "ufs" / "gocart" / "AERO_HISTORY.rc").exists()
 
-    def test_rendered_content_uses_context(
-        self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path
-    ):
+    def test_rendered_content_uses_context(self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path):
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
         renderer.render_all(valid_model_context, expdir)
 
@@ -317,9 +297,7 @@ class TestRenderAll:
         assert "dt_atmos:            450" in mc_content
         assert "quilting:            .true." in mc_content
 
-    def test_sha256_is_correct(
-        self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path
-    ):
+    def test_sha256_is_correct(self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path):
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
         results = renderer.render_all(valid_model_context, expdir)
 
@@ -327,9 +305,7 @@ class TestRenderAll:
             expected = _compute_sha256(r.path)
             assert r.sha256 == expected
 
-    def test_schema_validation_failure(
-        self, tmp_dev_root: Path, expdir: Path
-    ):
+    def test_schema_validation_failure(self, tmp_dev_root: Path, expdir: Path):
         # Missing required keys
         bad_context = {"resolution": "C96"}
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
@@ -337,18 +313,14 @@ class TestRenderAll:
         with pytest.raises(TemplateRenderError, match="schema validation failed"):
             renderer.render_all(bad_context, expdir)
 
-    def test_invalid_resolution(
-        self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path
-    ):
+    def test_invalid_resolution(self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path):
         valid_model_context["resolution"] = "C999"
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
 
         with pytest.raises(TemplateRenderError, match="schema validation failed"):
             renderer.render_all(valid_model_context, expdir)
 
-    def test_resolution_defaults_merged(
-        self, tmp_dev_root: Path, expdir: Path
-    ):
+    def test_resolution_defaults_merged(self, tmp_dev_root: Path, expdir: Path):
         """Test that resolution defaults are merged into fv3 section."""
         context = {
             "resolution": "C96",
@@ -391,9 +363,7 @@ class TestRenderAll:
 class TestFallbackResolution:
     """Tests for static file fallback when no .j2 template exists."""
 
-    def test_copies_static_file_when_no_template(
-        self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path
-    ):
+    def test_copies_static_file_when_no_template(self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path):
         # Add a static file with no corresponding .j2 template
         static_file = tmp_dev_root / "parm" / "ufs" / "fv3" / "data_table"
         static_file.write_text("# Static data table\n")
@@ -408,18 +378,13 @@ class TestFallbackResolution:
         assert static_results[0].path.exists()
         assert static_results[0].path.read_text() == "# Static data table\n"
 
-    def test_prefers_template_over_static(
-        self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path
-    ):
+    def test_prefers_template_over_static(self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path):
         # The field_table.j2 template exists, so even if a static field_table
         # existed, the template should be used
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
         results = renderer.render_all(valid_model_context, expdir)
 
-        field_table_results = [
-            r for r in results
-            if r.path.name == "field_table"
-        ]
+        field_table_results = [r for r in results if r.path.name == "field_table"]
         assert len(field_table_results) == 1
         assert field_table_results[0].method == "render"
 
@@ -432,9 +397,7 @@ class TestFallbackResolution:
 class TestTemplateOverrides:
     """Tests for template_overrides incremental migration support."""
 
-    def test_renders_template_when_in_overrides(
-        self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path
-    ):
+    def test_renders_template_when_in_overrides(self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path):
         valid_model_context["template_overrides"] = ["model_configure", "field_table"]
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
         results = renderer.render_all(valid_model_context, expdir)
@@ -443,24 +406,18 @@ class TestTemplateOverrides:
         rendered_names = [r.path.name for r in results if r.method == "render"]
         assert "model_configure" in rendered_names
 
-    def test_renders_template_even_when_not_in_overrides(
-        self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path
-    ):
+    def test_renders_template_even_when_not_in_overrides(self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path):
         """Template is preferred over static even when not in overrides (Req 11.3)."""
         valid_model_context["template_overrides"] = ["model_configure"]
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
         results = renderer.render_all(valid_model_context, expdir)
 
         # field_table.j2 exists, so it should still be rendered
-        field_table_results = [
-            r for r in results if r.path.name == "field_table"
-        ]
+        field_table_results = [r for r in results if r.path.name == "field_table"]
         assert len(field_table_results) == 1
         assert field_table_results[0].method == "render"
 
-    def test_static_file_skipped_when_in_overrides(
-        self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path
-    ):
+    def test_static_file_skipped_when_in_overrides(self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path):
         # Add a static file
         static_file = tmp_dev_root / "parm" / "ufs" / "fv3" / "data_table"
         static_file.write_text("# Static data table\n")
@@ -471,10 +428,7 @@ class TestTemplateOverrides:
         results = renderer.render_all(valid_model_context, expdir)
 
         # Static file should NOT be copied since it's in overrides
-        static_results = [
-            r for r in results
-            if r.method == "copy" and r.path.name == "data_table"
-        ]
+        static_results = [r for r in results if r.method == "copy" and r.path.name == "data_table"]
         assert len(static_results) == 0
 
 

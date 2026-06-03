@@ -17,7 +17,7 @@ class ESMFConfigValidator:
     # Pattern for lines that start a list/block that ends with ::
     # e.g., "COLLECTIONS:" or "GRID_LABELS:" (colon at end, no value after)
     # These are implicitly opened and closed by a standalone ::
-    _LIST_OPENER_RE = re.compile(r'^(\w[\w.]*)\s*:\s*$')
+    _LIST_OPENER_RE = re.compile(r"^(\w[\w.]*)\s*:\s*$")
 
     def validate(self, content: str, filepath: str) -> list[str]:
         """Validate ESMF configuration content.
@@ -33,13 +33,13 @@ class ESMFConfigValidator:
         block_stack = []
         for lineno, line in enumerate(content.splitlines(), 1):
             stripped = line.strip()
-            if not stripped or stripped.startswith('#'):
+            if not stripped or stripped.startswith("#"):
                 continue
             # Block opener: "label::" (not just "::")
-            if stripped.endswith('::') and stripped != '::':
+            if stripped.endswith("::") and stripped != "::":
                 block_name = stripped[:-2].strip()
                 block_stack.append((block_name, lineno))
-            elif stripped == '::':
+            elif stripped == "::":
                 if not block_stack:
                     # In ESMF/MAPL config, standalone :: can terminate
                     # inline lists (e.g., COLLECTIONS: 'x' \n ::)
@@ -49,7 +49,5 @@ class ESMFConfigValidator:
                     block_stack.pop()
             # Attribute line: "label: value" (outside blocks is fine)
         for block_name, open_line in block_stack:
-            errors.append(
-                f"{filepath}:{open_line}: Unclosed block '{block_name}::'"
-            )
+            errors.append(f"{filepath}:{open_line}: Unclosed block '{block_name}::'")
         return errors

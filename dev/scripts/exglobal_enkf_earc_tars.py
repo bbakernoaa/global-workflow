@@ -4,7 +4,8 @@ import os
 
 from pygfs.task.archive import Archive
 from pygfs.utils.archive_tar_vars import ArchiveTarVars
-from wxflow import AttrDict, Logger, cast_strdict_as_dtypedict, chdir, logit
+
+from wxflow import Logger, cast_strdict_as_dtypedict, chdir, logit
 
 # initialize root logger
 logger = Logger(level=os.environ.get("LOGGING_LEVEL", "DEBUG"), colored_log=True)
@@ -12,7 +13,6 @@ logger = Logger(level=os.environ.get("LOGGING_LEVEL", "DEBUG"), colored_log=True
 
 @logit(logger)
 def main():
-
     config = cast_strdict_as_dtypedict(os.environ)
 
     # Instantiate the Archive object
@@ -26,7 +26,6 @@ def main():
     # in YAML templates (e.g., logs/..., enkfgdas.20211221/...) are resolved
     # correctly during both file existence checks (glob) and tar creation
     with chdir(config.ROTDIR):
-
         # Determine which archives to create
         atardir_sets = archive.configure_tars(archive_dict)
 
@@ -38,5 +37,5 @@ def main():
         archive.clean()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

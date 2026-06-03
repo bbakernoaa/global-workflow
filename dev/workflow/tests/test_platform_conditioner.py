@@ -12,24 +12,21 @@ from __future__ import annotations
 
 import os
 import sys
-from pathlib import Path
 
 import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from deployment.platform_conditioner import (
-    PlatformConditionError,
-    PlatformRenderResult,
-    SUPPORTED_PLATFORMS,
     _PLATFORM_TO_MODULEFILE_SUFFIX,
+    SUPPORTED_PLATFORMS,
+    PlatformRenderResult,
     get_platform_conditioned_paths,
     render_all_platform_conditioned,
     render_platform_env,
     render_platform_resources,
     stage_platform_modulefiles,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -45,15 +42,9 @@ def project_tree(tmp_path):
     # Create env/ directory with platform env files
     env_dir = project_root / "env"
     env_dir.mkdir()
-    (env_dir / "HERA.env").write_text(
-        "# HERA environment\nexport MACHINE=HERA\n"
-    )
-    (env_dir / "WCOSS2.env").write_text(
-        "# WCOSS2 environment\nexport MACHINE=WCOSS2\n"
-    )
-    (env_dir / "ORION.env").write_text(
-        "# ORION environment\nexport MACHINE=ORION\n"
-    )
+    (env_dir / "HERA.env").write_text("# HERA environment\nexport MACHINE=HERA\n")
+    (env_dir / "WCOSS2.env").write_text("# WCOSS2 environment\nexport MACHINE=WCOSS2\n")
+    (env_dir / "ORION.env").write_text("# ORION environment\nexport MACHINE=ORION\n")
 
     # Create dev/ directory structure
     dev_dir = project_root / "dev"
@@ -63,53 +54,27 @@ def project_tree(tmp_path):
     # Create parm/config/<app>/ with resource files
     gfs_config = dev_dir / "parm" / "config" / "gfs"
     gfs_config.mkdir(parents=True)
-    (gfs_config / "config.resources").write_text(
-        "#!/bin/bash\n# Base resources\nexport ntasks=24\n"
-    )
-    (gfs_config / "config.resources.HERA").write_text(
-        "#!/bin/bash\n# HERA resources\nexport ntasks=48\n"
-    )
-    (gfs_config / "config.resources.WCOSS2").write_text(
-        "#!/bin/bash\n# WCOSS2 resources\nexport ntasks=96\n"
-    )
-    (gfs_config / "config.resources.ORION").write_text(
-        "#!/bin/bash\n# ORION resources\nexport ntasks=64\n"
-    )
+    (gfs_config / "config.resources").write_text("#!/bin/bash\n# Base resources\nexport ntasks=24\n")
+    (gfs_config / "config.resources.HERA").write_text("#!/bin/bash\n# HERA resources\nexport ntasks=48\n")
+    (gfs_config / "config.resources.WCOSS2").write_text("#!/bin/bash\n# WCOSS2 resources\nexport ntasks=96\n")
+    (gfs_config / "config.resources.ORION").write_text("#!/bin/bash\n# ORION resources\nexport ntasks=64\n")
 
     # Create gefs config with resources
     gefs_config = dev_dir / "parm" / "config" / "gefs"
     gefs_config.mkdir(parents=True)
-    (gefs_config / "config.resources").write_text(
-        "#!/bin/bash\n# GEFS base resources\n"
-    )
-    (gefs_config / "config.resources.HERA").write_text(
-        "#!/bin/bash\n# GEFS HERA resources\n"
-    )
+    (gefs_config / "config.resources").write_text("#!/bin/bash\n# GEFS base resources\n")
+    (gefs_config / "config.resources.HERA").write_text("#!/bin/bash\n# GEFS HERA resources\n")
 
     # Create modulefiles/ directory
     modulefiles_dir = project_root / "modulefiles"
     modulefiles_dir.mkdir()
-    (modulefiles_dir / "gw_run.hera.lua").write_text(
-        '-- Hera run module\nload("intel")\n'
-    )
-    (modulefiles_dir / "gw_setup.hera.lua").write_text(
-        '-- Hera setup module\nload("cmake")\n'
-    )
-    (modulefiles_dir / "gw_run.wcoss2.lua").write_text(
-        '-- WCOSS2 run module\nload("intel")\n'
-    )
-    (modulefiles_dir / "gw_setup.wcoss2.lua").write_text(
-        '-- WCOSS2 setup module\nload("cmake")\n'
-    )
-    (modulefiles_dir / "gw_run.orion.lua").write_text(
-        '-- Orion run module\nload("intel")\n'
-    )
-    (modulefiles_dir / "gw_run.common.lua").write_text(
-        "-- Common run module\n"
-    )
-    (modulefiles_dir / "gw_gsi.wcoss2.lua").write_text(
-        '-- GSI WCOSS2 module\nload("gsi")\n'
-    )
+    (modulefiles_dir / "gw_run.hera.lua").write_text('-- Hera run module\nload("intel")\n')
+    (modulefiles_dir / "gw_setup.hera.lua").write_text('-- Hera setup module\nload("cmake")\n')
+    (modulefiles_dir / "gw_run.wcoss2.lua").write_text('-- WCOSS2 run module\nload("intel")\n')
+    (modulefiles_dir / "gw_setup.wcoss2.lua").write_text('-- WCOSS2 setup module\nload("cmake")\n')
+    (modulefiles_dir / "gw_run.orion.lua").write_text('-- Orion run module\nload("intel")\n')
+    (modulefiles_dir / "gw_run.common.lua").write_text("-- Common run module\n")
+    (modulefiles_dir / "gw_gsi.wcoss2.lua").write_text('-- GSI WCOSS2 module\nload("gsi")\n')
 
     # Create EXPDIR
     expdir = tmp_path / "expdir"
@@ -242,7 +207,7 @@ class TestRenderPlatformResources:
 
     def test_renders_wcoss2_resources(self, project_tree):
         """Renders config.resources.WCOSS2 for gfs app."""
-        result = render_platform_resources(
+        render_platform_resources(
             project_root=project_tree["project_root"],
             expdir=project_tree["expdir"],
             platform="WCOSS2",
@@ -267,7 +232,7 @@ class TestRenderPlatformResources:
 
     def test_missing_platform_resource_returns_base_only(self, project_tree):
         """Returns only base resource when platform-specific doesn't exist."""
-        result = render_platform_resources(
+        render_platform_resources(
             project_root=project_tree["project_root"],
             expdir=project_tree["expdir"],
             platform="CONTAINER",
@@ -308,7 +273,7 @@ class TestStagePlatformModulefiles:
 
     def test_stages_wcoss2_modulefiles(self, project_tree):
         """Stages WCOSS2-specific modulefiles to modulefiles/WCOSS2/."""
-        result = stage_platform_modulefiles(
+        stage_platform_modulefiles(
             project_root=project_tree["project_root"],
             expdir=project_tree["expdir"],
             platform="WCOSS2",
@@ -429,12 +394,8 @@ class TestRenderAllPlatformConditioned:
             app="gfs",
         )
 
-        hera_res = (
-            expdir_hera / "parm" / "config" / "gfs" / "config.resources.HERA"
-        ).read_text()
-        wcoss2_res = (
-            expdir_wcoss2 / "parm" / "config" / "gfs" / "config.resources.WCOSS2"
-        ).read_text()
+        hera_res = (expdir_hera / "parm" / "config" / "gfs" / "config.resources.HERA").read_text()
+        wcoss2_res = (expdir_wcoss2 / "parm" / "config" / "gfs" / "config.resources.WCOSS2").read_text()
 
         assert "ntasks=48" in hera_res
         assert "ntasks=96" in wcoss2_res
@@ -513,9 +474,7 @@ class TestPlatformSuffixMapping:
     def test_all_supported_platforms_have_suffix(self):
         """Every supported platform has a modulefile suffix mapping."""
         for platform in SUPPORTED_PLATFORMS:
-            assert platform in _PLATFORM_TO_MODULEFILE_SUFFIX, (
-                f"Platform {platform} missing from suffix mapping"
-            )
+            assert platform in _PLATFORM_TO_MODULEFILE_SUFFIX, f"Platform {platform} missing from suffix mapping"
 
     def test_cloud_platforms_use_noaacloud(self):
         """Cloud platforms (AWSPW, AZUREPW, GOOGLEPW) use 'noaacloud'."""

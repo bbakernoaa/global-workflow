@@ -9,15 +9,15 @@ CINT    !3!-15;-9;-3!3;9;15
 LINE    !1/1/1/1!2!10
 FINT    -10;-8;-6;-4;-2
 FLINE   25;24;23;22; 3;0
-HILO    
-HLSYM   
+HILO
+HLSYM
 CLRBAR  1|.8/2/2/sw
 WIND    BM1
-REFVEC  
+REFVEC
 TITLE   1/0/~ DOC/NOAA/NWS/NCEP  http://www.ncep.noaa.gov
-TEXT    .8/3/2/c/sw 
+TEXT    .8/3/2/c/sw
 CLEAR   yes
-STREAM  
+STREAM
 POSN    0
 COLORS  1
 MARKER  0

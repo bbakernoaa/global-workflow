@@ -30,10 +30,10 @@ export CDUMP
 
 export NMEM_ENS_MAX=${NMEM_ENS}
 if [[ "${RUN}" == "enkfgfs" ]]; then
-    NMEM_ENS=${NMEM_ENS_GFS}
-    export mem_offset=$((NMEM_ENS_GFS_OFFSET * cyc / assim_freq))
+  NMEM_ENS=${NMEM_ENS_GFS}
+  export mem_offset=$((NMEM_ENS_GFS_OFFSET * cyc / assim_freq))
 else
-    export mem_offset=0
+  export mem_offset=0
 fi
 ##############################################
 # Begin JOB SPECIFIC work
@@ -44,10 +44,10 @@ declare -rx COMOUT_ATMOS_ANALYSIS="${ROTDIR}/${RUN}.${PDY}/${cyc}/analysis/atmos
 declare -rx COMOUT_CONF="${ROTDIR}/${RUN}.${PDY}/${cyc}/conf"
 
 for imem in $(seq 1 "${NMEM_ENS}"); do
-    # Make the member COM directories. These will be declared in the script as we cycle through members.
-    memchar="mem$(printf %03i "${imem}")"
-    product_dir="${ROTDIR}/${RUN}.${PDY}/${cyc}/${memchar}/analysis/snow"
-    mkdir -p "${product_dir}"
+  # Make the member COM directories. These will be declared in the script as we cycle through members.
+  memchar="mem$(printf %03i "${imem}")"
+  product_dir="${ROTDIR}/${RUN}.${PDY}/${cyc}/${memchar}/analysis/snow"
+  mkdir -p "${product_dir}"
 done
 
 unset product_dir
@@ -63,7 +63,7 @@ EXSCRIPT=${SNOWANLPY:-${SCRglobal}/exglobal_snowens_analysis.py}
 ${EXSCRIPT} && true
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Failed to caluclate the ensemble snow analysis"
+  err_exit "Failed to caluclate the ensemble snow analysis"
 fi
 
 ##############################################
@@ -74,7 +74,7 @@ fi
 # Final processing
 ##############################################
 if [[ -e "${pgmout}" ]]; then
-    cat "${pgmout}"
+  cat "${pgmout}"
 fi
 
 ##########################################
@@ -83,10 +83,10 @@ fi
 cd "${DATAROOT}" && true
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Failed to change directory to DATAROOT!"
+  err_exit "Failed to change directory to DATAROOT!"
 fi
 if [[ "${KEEPDATA}" == "NO" ]]; then
-    rm -rf "${DATA}"
+  rm -rf "${DATA}"
 fi
 
 exit 0

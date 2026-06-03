@@ -22,14 +22,7 @@ from deployment.component_composer import compose_components
 from deployment.model_config_renderer import (
     ModelConfigRenderer,
     RenderedFile,
-    _compute_sha256,
 )
-from deployment.model_context import (
-    SUPPORTED_COUPLING_MODES,
-    SUPPORTED_PHYSICS_SUITES,
-)
-from deployment.template_renderer import TemplateRenderError
-
 
 # ---------------------------------------------------------------------------
 # Path constants
@@ -259,9 +252,7 @@ def patch_validators(monkeypatch):
             return None
         return original_get_validator(filename)
 
-    monkeypatch.setattr(
-        model_config_renderer, "_get_validator", _patched_get_validator
-    )
+    monkeypatch.setattr(model_config_renderer, "_get_validator", _patched_get_validator)
 
 
 # ---------------------------------------------------------------------------
@@ -283,7 +274,10 @@ class TestFullRenderingPipeline:
     @pytest.mark.parametrize("physics_suite", PHYSICS_SUITES)
     @pytest.mark.parametrize("coupling_mode", COUPLING_MODES)
     def test_render_no_errors(
-        self, physics_suite: str, coupling_mode: str, expdir: Path,
+        self,
+        physics_suite: str,
+        coupling_mode: str,
+        expdir: Path,
         patch_validators,
     ):
         """Render all templates for each physics × coupling combo without error.
@@ -308,9 +302,7 @@ class TestFullRenderingPipeline:
             assert r.sha256, f"Empty SHA-256 for: {r.path}"
 
     @pytest.mark.parametrize("coupling_mode", COUPLING_MODES)
-    def test_output_placement_fv3(
-        self, coupling_mode: str, expdir: Path, patch_validators
-    ):
+    def test_output_placement_fv3(self, coupling_mode: str, expdir: Path, patch_validators):
         """FV3 config files land in <EXPDIR>/parm/ufs/fv3/."""
         model_context = _build_model_context(coupling_mode=coupling_mode)
         renderer = ModelConfigRenderer(dev_root=DEV_ROOT)
@@ -323,9 +315,7 @@ class TestFullRenderingPipeline:
         assert (fv3_dir / "diag_table").exists()
 
     @pytest.mark.parametrize("coupling_mode", COUPLING_MODES)
-    def test_output_placement_ufs_configure(
-        self, coupling_mode: str, expdir: Path, patch_validators
-    ):
+    def test_output_placement_ufs_configure(self, coupling_mode: str, expdir: Path, patch_validators):
         """ufs.configure lands in <EXPDIR>/parm/ufs/."""
         model_context = _build_model_context(coupling_mode=coupling_mode)
         renderer = ModelConfigRenderer(dev_root=DEV_ROOT)
@@ -344,9 +334,7 @@ class TestFullRenderingPipeline:
         assert (gocart_dir / "ExtData").exists()
 
     @pytest.mark.parametrize("physics_suite", PHYSICS_SUITES)
-    def test_field_table_contains_expected_tracers(
-        self, physics_suite: str, expdir: Path, patch_validators
-    ):
+    def test_field_table_contains_expected_tracers(self, physics_suite: str, expdir: Path, patch_validators):
         """Rendered field_table contains physics-suite-specific tracers."""
         model_context = _build_model_context(physics_suite=physics_suite)
         renderer = ModelConfigRenderer(dev_root=DEV_ROOT)
@@ -388,9 +376,7 @@ class TestComponentComposition:
     Validates: Requirements 10.3, 10.4, 10.7, 10.9
     """
 
-    def test_atm_only_renders_without_ocean_fields(
-        self, expdir: Path, patch_validators
-    ):
+    def test_atm_only_renders_without_ocean_fields(self, expdir: Path, patch_validators):
         """ATM-only mode renders without ocean-related content."""
         model_context = _build_model_context(
             coupling_mode="atm",
@@ -412,9 +398,7 @@ class TestComponentComposition:
         diag_content = (expdir / "parm" / "ufs" / "fv3" / "diag_table").read_text()
         assert "ocean_model" not in diag_content
 
-    def test_s2sw_includes_ocean_ice_wave(
-        self, expdir: Path, patch_validators
-    ):
+    def test_s2sw_includes_ocean_ice_wave(self, expdir: Path, patch_validators):
         """S2SW mode includes ocean, ice, and wave components."""
         model_context = _build_model_context(
             coupling_mode="s2sw",
@@ -430,9 +414,7 @@ class TestComponentComposition:
         assert "WAV" in ufs_content
         assert "MED" in ufs_content
 
-    def test_adding_aerosol_component(
-        self, expdir: Path, patch_validators
-    ):
+    def test_adding_aerosol_component(self, expdir: Path, patch_validators):
         """Adding aerosol component includes CHM in ufs.configure."""
         model_context = _build_model_context(
             coupling_mode="atmaero",
@@ -445,9 +427,7 @@ class TestComponentComposition:
         assert "CHM" in ufs_content
         assert "ATM -> CHM" in ufs_content
 
-    def test_removing_wave_from_s2swa(
-        self, expdir: Path, patch_validators
-    ):
+    def test_removing_wave_from_s2swa(self, expdir: Path, patch_validators):
         """Removing wave from s2swa still renders successfully."""
         # Use s2s coupling mode (no wave) but with aerosol
         model_context = _build_model_context(
@@ -464,9 +444,7 @@ class TestComponentComposition:
         assert "ICE" in ufs_content
         assert "CHM" in ufs_content
 
-    def test_component_composition_with_real_yamls(
-        self, expdir: Path, patch_validators
-    ):
+    def test_component_composition_with_real_yamls(self, expdir: Path, patch_validators):
         """Compose components from real YAML files and render successfully."""
         workflow_config = {
             "components": ["atmosphere", "ocean"],
@@ -571,15 +549,17 @@ class TestComponentComposition:
         }
 
         # Add coupled-model keys to ocean section (not in component YAML)
-        composed["model"]["ocean"].update({
-            "dt_therm": 3600,
-            "use_waves": False,
-            "oda_incupd": False,
-            "do_sppt": False,
-            "river_runoff": True,
-            "diag_coord_def_z_file": "oceanda_zgrid_75L.nc",
-            "frunoff": "INPUT/runoff.daitren.clim.nc",
-        })
+        composed["model"]["ocean"].update(
+            {
+                "dt_therm": 3600,
+                "use_waves": False,
+                "oda_incupd": False,
+                "do_sppt": False,
+                "river_runoff": True,
+                "diag_coord_def_z_file": "oceanda_zgrid_75L.nc",
+                "frunoff": "INPUT/runoff.daitren.clim.nc",
+            }
+        )
 
         # Add do_nest to fv3 section for input_global_nest.nml.j2
         composed["model"].setdefault("fv3", {})["do_nest"] = False
@@ -636,7 +616,7 @@ class TestFallbackMechanism:
 
         # Minimal template that renders without complex context
         (fv3_dir / "field_table.j2").write_text(
-            '# field_table for {{ model.physics_suite }}\n'
+            "# field_table for {{ model.physics_suite }}\n"
             ' "TRACER", "atmos_mod", "sphum"\n'
             '           "longname",     "specific humidity"\n'
             '           "units",        "kg/kg"\n'
@@ -688,14 +668,10 @@ class TestFallbackMechanism:
         fv3_dir.mkdir(parents=True)
 
         # Template
-        (fv3_dir / "model_configure.j2").write_text(
-            "dt_atmos:            {{ model.dt_atmos }}\n"
-        )
+        (fv3_dir / "model_configure.j2").write_text("dt_atmos:            {{ model.dt_atmos }}\n")
 
         # Static file with same base name (should NOT be copied)
-        (fv3_dir / "model_configure").write_text(
-            "dt_atmos:            STATIC_VALUE\n"
-        )
+        (fv3_dir / "model_configure").write_text("dt_atmos:            STATIC_VALUE\n")
 
         expdir = tmp_path / "expdir"
         expdir.mkdir()
@@ -753,9 +729,7 @@ class TestTemplateOverrides:
         fv3_dir = ufs_dir / "fv3"
         fv3_dir.mkdir(parents=True)
 
-        (fv3_dir / "model_configure.j2").write_text(
-            "dt_atmos:            {{ model.dt_atmos }}\n"
-        )
+        (fv3_dir / "model_configure.j2").write_text("dt_atmos:            {{ model.dt_atmos }}\n")
 
         expdir = tmp_path / "expdir"
         expdir.mkdir()
@@ -801,7 +775,7 @@ class TestTemplateOverrides:
 
         # Minimal template so renderer has something to render
         (fv3_dir / "field_table.j2").write_text(
-            '# field_table\n'
+            "# field_table\n"
             ' "TRACER", "atmos_mod", "sphum"\n'
             '           "longname",     "specific humidity"\n'
             '           "units",        "kg/kg"\n'
@@ -838,14 +812,10 @@ class TestTemplateOverrides:
 
         # data_table should NOT be copied (it's in overrides, meaning
         # user expects a template version which doesn't exist yet)
-        data_table_results = [
-            r for r in results if r.path.name == "data_table"
-        ]
+        data_table_results = [r for r in results if r.path.name == "data_table"]
         assert len(data_table_results) == 0
 
-    def test_template_preferred_even_when_not_in_overrides(
-        self, tmp_path: Path
-    ):
+    def test_template_preferred_even_when_not_in_overrides(self, tmp_path: Path):
         """Template is preferred over static even when not listed in overrides.
 
         Per Requirement 11.3: when both exist, prefer .j2 template.
@@ -855,9 +825,7 @@ class TestTemplateOverrides:
         fv3_dir = ufs_dir / "fv3"
         fv3_dir.mkdir(parents=True)
 
-        (fv3_dir / "model_configure.j2").write_text(
-            "dt_atmos:            {{ model.dt_atmos }}\n"
-        )
+        (fv3_dir / "model_configure.j2").write_text("dt_atmos:            {{ model.dt_atmos }}\n")
 
         expdir = tmp_path / "expdir"
         expdir.mkdir()
@@ -905,9 +873,7 @@ class TestSha256Hashes:
     Validates: Requirement 9.5
     """
 
-    def test_sha256_matches_file_content(
-        self, expdir: Path, patch_validators
-    ):
+    def test_sha256_matches_file_content(self, expdir: Path, patch_validators):
         """SHA-256 in RenderedFile matches actual file content hash."""
         model_context = _build_model_context(coupling_mode="atm")
         renderer = ModelConfigRenderer(dev_root=DEV_ROOT)
@@ -917,14 +883,9 @@ class TestSha256Hashes:
             # Compute hash independently
             content = r.path.read_bytes()
             expected_hash = hashlib.sha256(content).hexdigest()
-            assert r.sha256 == expected_hash, (
-                f"SHA-256 mismatch for {r.path.name}: "
-                f"got {r.sha256}, expected {expected_hash}"
-            )
+            assert r.sha256 == expected_hash, f"SHA-256 mismatch for {r.path.name}: got {r.sha256}, expected {expected_hash}"
 
-    def test_sha256_differs_between_physics_suites(
-        self, expdir: Path, patch_validators
-    ):
+    def test_sha256_differs_between_physics_suites(self, expdir: Path, patch_validators):
         """Different physics suites produce different field_table hashes."""
         hashes = {}
         for suite in ["gfdl", "thompson", "wsm6", "zhaocarr"]:
@@ -939,9 +900,7 @@ class TestSha256Hashes:
             hashes[suite] = ft_results[0].sha256
 
         # Each suite should produce a unique field_table
-        assert len(set(hashes.values())) == len(hashes), (
-            f"Expected unique hashes per suite, got: {hashes}"
-        )
+        assert len(set(hashes.values())) == len(hashes), f"Expected unique hashes per suite, got: {hashes}"
 
     def test_sha256_for_static_copy(self, tmp_path: Path):
         """SHA-256 is correctly computed for statically copied files."""
@@ -952,7 +911,7 @@ class TestSha256Hashes:
 
         # Minimal template
         (fv3_dir / "field_table.j2").write_text(
-            '# field_table\n'
+            "# field_table\n"
             ' "TRACER", "atmos_mod", "sphum"\n'
             '           "longname",     "specific humidity"\n'
             '           "units",        "kg/kg"\n'

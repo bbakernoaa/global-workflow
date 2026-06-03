@@ -6,15 +6,15 @@
 # create a soca MOM6 IAU increment
 import os
 
-from wxflow import Logger, cast_strdict_as_dtypedict
 from pygfs.task.marine_analysis import MarineAnalysis
 
+from wxflow import Logger, cast_strdict_as_dtypedict
+
 # Initialize root logger
-logger = Logger(level='DEBUG', colored_log=True)
+logger = Logger(level="DEBUG", colored_log=True)
 
 
-if __name__ == '__main__':
-
+if __name__ == "__main__":
     # Take configuration from environment and cast it as python dictionary
     config = cast_strdict_as_dtypedict(os.environ)
 
@@ -22,10 +22,10 @@ if __name__ == '__main__':
     MarineAnl = MarineAnalysis(config)
 
     # Prepare the SOCA increment for MOM6 IAU and CICE6 restart
-    MarineAnl.execute('soca_incpostproc')
+    MarineAnl.execute("soca_incpostproc")
 
     # Compute the observation space statistics
     try:
-        MarineAnl.execute('soca_diag_stats')
+        MarineAnl.execute("soca_diag_stats")
     except Exception as e:
         logger.warning(f"Execution of 'soca_diag_stat' application failed: {e}")

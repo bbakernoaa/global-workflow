@@ -52,19 +52,19 @@ ${CDO} remap,r4320x2160,weights.nc "cur_uv_${PDY}_${fext}${fh3}_flat.nc" "cur_5m
 # Perform 9-point smoothing twice to make RTOFS data less noisy when
 # interpolating from 1/12 deg RTOFS grid to 1/6 deg wave grid
 if [[ "${WAV_CUR_CDO_SMOOTH}" == "YES" ]]; then
-    ${CDO} -f nc -smooth9 "cur_5min_01.nc" "cur_5min_02.nc"
-    ${CDO} -f nc -smooth9 "cur_5min_02.nc" "cur_glo_uv_${PDY}_${fext}${fh3}_5min.nc"
+  ${CDO} -f nc -smooth9 "cur_5min_01.nc" "cur_5min_02.nc"
+  ${CDO} -f nc -smooth9 "cur_5min_02.nc" "cur_glo_uv_${PDY}_${fext}${fh3}_5min.nc"
 else
-    mv "cur_5min_01.nc" "cur_glo_uv_${PDY}_${fext}${fh3}_5min.nc"
+  mv "cur_5min_01.nc" "cur_glo_uv_${PDY}_${fext}${fh3}_5min.nc"
 fi
 
 # Cleanup
 rm -f cur_temp[123].nc cur_5min_??.nc "cur_glo_uv_${PDY}_${fext}${fh3}.nc weights.nc"
 
 if [[ "${flagfirst}" = "T" ]]; then
-    sed -e "s/HDRFL/T/g" "${PARMglobal}/wave/ww3_prnc.cur.${WAVECUR_FID}.inp.tmpl" > ww3_prnc.inp
+  sed -e "s/HDRFL/T/g" "${PARMglobal}/wave/ww3_prnc.cur.${WAVECUR_FID}.inp.tmpl" > ww3_prnc.inp
 else
-    sed -e "s/HDRFL/F/g" "${PARMglobal}/wave/ww3_prnc.cur.${WAVECUR_FID}.inp.tmpl" > ww3_prnc.inp
+  sed -e "s/HDRFL/F/g" "${PARMglobal}/wave/ww3_prnc.cur.${WAVECUR_FID}.inp.tmpl" > ww3_prnc.inp
 fi
 
 rm -f cur.nc
@@ -77,9 +77,9 @@ source prep_step
 "${EXECglobal}/${pgm}" 1> "prnc_${WAVECUR_FID}_${ymdh_rtofs}.out" 2>&1
 export err=$?
 if [[ "${err}" -ne 0 ]]; then
-    cat "prnc_${WAVECUR_FID}_${ymdh_rtofs}.out"
-    echo "WARNING: NON-FATAL ERROR IN ${pgm}."
-    exit 4
+  cat "prnc_${WAVECUR_FID}_${ymdh_rtofs}.out"
+  echo "WARNING: NON-FATAL ERROR IN ${pgm}."
+  exit 4
 fi
 
 mv -f current.ww3 "${DATA}/rtofs.${ymdh_rtofs}"

@@ -47,7 +47,7 @@ EXSCRIPT=${GDASATMRUNPY:-${SCRglobal}/exglobal_atmos_analysis_calc_fv3jedi.py}
 ${EXSCRIPT} && true
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Failed to calculate the atmospheric analysis with fv3jedi"
+  err_exit "Failed to calculate the atmospheric analysis with fv3jedi"
 fi
 
 # Write analysis log file
@@ -62,7 +62,7 @@ echo "${rCDUMP} ${PDY}${cyc} atmanl and sfcanl done at $(date)" > "${COMOUT_ATMO
 ##############################################
 
 if [[ -e "${pgmout}" ]]; then
-    cat "${pgmout}"
+  cat "${pgmout}"
 fi
 
 ##############################################
@@ -73,11 +73,11 @@ cd "${DATAROOT}" && true
 export err=$?
 set +x
 if [[ ${err} -ne 0 ]]; then
-    err_exit "${DATAROOT} does not exist, ABORT!"
+  err_exit "${DATAROOT} does not exist, ABORT!"
 fi
 set -x
 if [[ ${KEEPDATA} == "NO" ]]; then
-    rm -rf "${DATA}"
+  rm -rf "${DATA}"
 fi
 
 exit 0

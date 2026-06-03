@@ -40,15 +40,15 @@ export OUTPUT_FILETYPE=${OUTPUT_FILETYPE:-netcdf}
 
 export FIT_DIR=${ARCDIR}/fits
 if [[ ! -d "${FIT_DIR}" ]]; then
-    mkdir -p "${FIT_DIR}"
+  mkdir -p "${FIT_DIR}"
 fi
 export HORZ_DIR=${ARCDIR}/horiz
 if [[ ! -d "${HORZ_DIR}" ]]; then
-    mkdir -p "${HORZ_DIR}"
+  mkdir -p "${HORZ_DIR}"
 fi
 export COMOUT_FITX=${DATA}/fitx
 if [[ ! -d "${COMOUT_FITX}" ]]; then
-    mkdir -p "${COMOUT_FITX}"
+  mkdir -p "${COMOUT_FITX}"
 fi
 
 echo "echo err_chk" > "${DATA}/err_chk"
@@ -63,39 +63,39 @@ chmod 755 "${DATA}/postmsg"
 # Ignore spelling warning; nothing is misspelled
 # shellcheck disable=SC2153
 if [[ ${CDATE} -gt ${SDATE} ]]; then
-    for file in ${PRPI} ${sig1} ${sfc1} ${CNVS}; do
-        if [[ ! -f "${file}" ]]; then
-            echo "FATAL ERROR: FILE MISSING: ${file}"
-            exit 1
-        fi
-    done
-
-    ##############################################
-    # RUN FIT2OBS VERIFICATION
-    ##############################################
-
-    # Un-export SHELLOPTS before going into the Fit2Obs package (let that package handle logging/errors)
-    export -n SHELLOPTS
-    "${SCRIPTSfit2obs}/excfs_gdas_vrfyfits.sh"
-    err=$?
-    if [[ ${err} -ne 0 ]]; then
-        exit "${err}"
+  for file in ${PRPI} ${sig1} ${sfc1} ${CNVS}; do
+    if [[ ! -f "${file}" ]]; then
+      echo "FATAL ERROR: FILE MISSING: ${file}"
+      exit 1
     fi
+  done
 
-    ##############################################
-    # End JOB SPECIFIC work
-    ##############################################
+  ##############################################
+  # RUN FIT2OBS VERIFICATION
+  ##############################################
 
-    ##############################################
-    # Final processing
-    ##############################################
-    if [[ -e "${pgmout}" ]]; then
-        cat "${pgmout}"
-    fi
+  # Un-export SHELLOPTS before going into the Fit2Obs package (let that package handle logging/errors)
+  export -n SHELLOPTS
+  "${SCRIPTSfit2obs}/excfs_gdas_vrfyfits.sh"
+  err=$?
+  if [[ ${err} -ne 0 ]]; then
+    exit "${err}"
+  fi
+
+  ##############################################
+  # End JOB SPECIFIC work
+  ##############################################
+
+  ##############################################
+  # Final processing
+  ##############################################
+  if [[ -e "${pgmout}" ]]; then
+    cat "${pgmout}"
+  fi
 
 else
 
-    echo "Too early for FIT2OBS to run. Exiting."
+  echo "Too early for FIT2OBS to run. Exiting."
 
 fi
 
@@ -103,11 +103,11 @@ fi
 # Remove the Temporary working directory
 ##########################################
 cd "${DATAROOT}" || (
-    echo "FATAL ERROR: ${DATAROOT} does not exist. ABORT!"
-    exit 1
+  echo "FATAL ERROR: ${DATAROOT} does not exist. ABORT!"
+  exit 1
 )
 if [[ "${KEEPDATA}" == "NO" ]]; then
-    rm -rf "${DATA}"
+  rm -rf "${DATA}"
 fi
 
 exit 0

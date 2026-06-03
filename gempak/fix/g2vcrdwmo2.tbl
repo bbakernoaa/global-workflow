@@ -4,8 +4,8 @@
 !ID1 ID2  NAME                             UNITS                GNAM SCALE
 !23|123|123456789012345678901234567890123|12345678901234567890|1234|12345678
 !
-001 001 Ground or water surface           -                    NONE     0 
-001 255 Ground or water surface           -                    NONE     0 
+001 001 Ground or water surface           -                    NONE     0
+001 255 Ground or water surface           -                    NONE     0
 002 255 Cloud base level                  -                    CLDL     0
 003 255 Level of cloud tops               -                    CLDT     0
 004 255 Level of 0 deg C isotherm         -                    FRZL     0
@@ -38,5 +38,5 @@
 109 255 Potential vorticity surface       K*m**2*kg-1*s-1      POTV     9
 111 255 ETA level                         -                    ELVL     0
 111 111 ETA layer                         -                    ELYR     0
-!117 255 Mixed layer depth                 m  
+!117 255 Mixed layer depth                 m
 160 255 Depth below sea-level             m                    DPTH     0

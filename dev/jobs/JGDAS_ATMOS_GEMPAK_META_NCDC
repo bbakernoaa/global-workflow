@@ -46,14 +46,14 @@ declare -rx COMIN_ATMOS_GEMPAK_1p00="${ROTDIR}/${RUN}.${PDY}/${cyc}/products/atm
 
 declare -rx COMOUT_ATMOS_GEMPAK_META="${ROTDIR}/${RUN}.${PDY}/${cyc}/products/atmos/gempak/meta"
 if [[ ! -d "${COMOUT_ATMOS_GEMPAK_META}" ]]; then
-    mkdir -m 775 -p "${COMOUT_ATMOS_GEMPAK_META}"
+  mkdir -m 775 -p "${COMOUT_ATMOS_GEMPAK_META}"
 fi
 
 if ((cyc % 12 == 0)); then
-    declare -rx COMOUT_ATMOS_GEMPAK_GIF="${ROTDIR}/${RUN}.${PDY}/${cyc}/products/atmos/gempak/gif"
-    if [[ ! -d "${COMOUT_ATMOS_GEMPAK_GIF}" ]]; then
-        mkdir -m 775 -p "${COMOUT_ATMOS_GEMPAK_GIF}"
-    fi
+  declare -rx COMOUT_ATMOS_GEMPAK_GIF="${ROTDIR}/${RUN}.${PDY}/${cyc}/products/atmos/gempak/gif"
+  if [[ ! -d "${COMOUT_ATMOS_GEMPAK_GIF}" ]]; then
+    mkdir -m 775 -p "${COMOUT_ATMOS_GEMPAK_GIF}"
+  fi
 fi
 
 export COMINecmwf="${COMINecmwf:-$(compath.py "${envir}/ecmwf/${ecmwf_ver}")/ecmwf}"
@@ -66,28 +66,28 @@ export pgmout=OUTPUT.$$
 "${HOMEglobal}/gempak/ush/gdas_meta_na.sh" && true
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Failed to generate North American meta gempak products"
+  err_exit "Failed to generate North American meta gempak products"
 fi
 
 "${HOMEglobal}/gempak/ush/gdas_meta_loop.sh" && true
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Failed to generate looped image meta gempak products"
+  err_exit "Failed to generate looped image meta gempak products"
 fi
 
 if [[ "${cyc}" == '06' ]]; then
-    # TODO remove ECMWF and UKMET meta generation once the products are no longer needed
-    "${HOMEglobal}/gempak/ush/gdas_ecmwf_meta_ver.sh" && true
-    export err=$?
-    if [[ ${err} -ne 0 ]]; then
-        err_exit "Failed to generate ECMWF meta gempak products"
-    fi
+  # TODO remove ECMWF and UKMET meta generation once the products are no longer needed
+  "${HOMEglobal}/gempak/ush/gdas_ecmwf_meta_ver.sh" && true
+  export err=$?
+  if [[ ${err} -ne 0 ]]; then
+    err_exit "Failed to generate ECMWF meta gempak products"
+  fi
 
-    "${HOMEglobal}/gempak/ush/gdas_ukmet_meta_ver.sh" && true
-    export err=$?
-    if [[ ${err} -ne 0 ]]; then
-        err_exit "Failed to generate UKMET meta gempak products"
-    fi
+  "${HOMEglobal}/gempak/ush/gdas_ukmet_meta_ver.sh" && true
+  export err=$?
+  if [[ ${err} -ne 0 ]]; then
+    err_exit "Failed to generate UKMET meta gempak products"
+  fi
 fi
 ########################################################
 
@@ -98,11 +98,11 @@ fi
 ########################################################
 # Execute the script.
 if ((cyc % 12 == 0)); then
-    "${SCRglobal}/exgdas_atmos_gempak_gif_ncdc.sh" && true
+  "${SCRglobal}/exgdas_atmos_gempak_gif_ncdc.sh" && true
 fi
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Failed to generate NCDC GIFs from GDAS GEMPAK products"
+  err_exit "Failed to generate NCDC GIFs from GDAS GEMPAK products"
 fi
 ########################################################
 
@@ -110,12 +110,12 @@ fi
 # print exec I/O output
 ############################################
 if [[ -e "${pgmout}" ]]; then
-    cat "${pgmout}"
+  cat "${pgmout}"
 fi
 
 ###################################
 # Remove temp directories
 ###################################
 if [[ "${KEEPDATA}" != "YES" ]]; then
-    rm -rf "${DATA}"
+  rm -rf "${DATA}"
 fi

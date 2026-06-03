@@ -27,8 +27,7 @@ import os
 import subprocess
 from pathlib import Path
 
-import pytest
-from hypothesis import given, settings, HealthCheck, assume
+from hypothesis import HealthCheck, assume, given, settings
 from hypothesis import strategies as st
 
 # Path to the atomic_publish.sh script
@@ -40,9 +39,7 @@ SCRIPT_PATH = Path(__file__).parents[2] / "ush" / "atomic_publish.sh"
 # ---------------------------------------------------------------------------
 
 # Valid filename characters (safe for bash and filesystem)
-_SAFE_CHARS = st.sampled_from(
-    "abcdefghijklmnopqrstuvwxyz0123456789_"
-)
+_SAFE_CHARS = st.sampled_from("abcdefghijklmnopqrstuvwxyz0123456789_")
 
 _EXTENSIONS = st.sampled_from([".grib2", ".nc", ".idx", ".bufr", ".txt", ".bin"])
 
@@ -97,12 +94,7 @@ def _setup_environment(tmp_path: Path) -> dict:
 
     # Mock EE2 utilities: err_exit aborts, cpfs copies
     mock_utils = tmp_path / "mock_utils.sh"
-    mock_utils.write_text(
-        '#!/usr/bin/env bash\n'
-        'err_exit() { echo "ERR_EXIT: $*" >&2; exit 1; }\n'
-        'cpfs() { cp "$1" "$2"; }\n'
-        'export -f err_exit cpfs\n'
-    )
+    mock_utils.write_text('#!/usr/bin/env bash\nerr_exit() { echo "ERR_EXIT: $*" >&2; exit 1; }\ncpfs() { cp "$1" "$2"; }\nexport -f err_exit cpfs\n')
 
     env = os.environ.copy()
     env["COMOUT"] = str(comout)
@@ -113,9 +105,7 @@ def _setup_environment(tmp_path: Path) -> dict:
     return env
 
 
-def _create_source_files(
-    data_dir: Path, deliverable_set: list[tuple[str, bytes]]
-) -> list[str]:
+def _create_source_files(data_dir: Path, deliverable_set: list[tuple[str, bytes]]) -> list[str]:
     """Write deliverable files to the data directory and return their paths."""
     source_files = []
     for filename, content in deliverable_set:
@@ -125,17 +115,11 @@ def _create_source_files(
     return source_files
 
 
-def _run_atomic_publish(
-    tmp_path: Path, source_files: list[str], env: dict
-) -> subprocess.CompletedProcess:
+def _run_atomic_publish(tmp_path: Path, source_files: list[str], env: dict) -> subprocess.CompletedProcess:
     """Execute atomic_publish.sh via a wrapper script."""
     file_args = " ".join(f'"{f}"' for f in source_files)
     wrapper = tmp_path / "run_test.sh"
-    wrapper.write_text(
-        f'#!/usr/bin/env bash\n'
-        f'source "{env["MOCK_UTILS"]}"\n'
-        f'source "{SCRIPT_PATH}" {file_args}\n'
-    )
+    wrapper.write_text(f'#!/usr/bin/env bash\nsource "{env["MOCK_UTILS"]}"\nsource "{SCRIPT_PATH}" {file_args}\n')
     wrapper.chmod(0o755)
 
     return subprocess.run(
@@ -169,9 +153,7 @@ class TestAtomicityProperty:
         deadline=None,
         suppress_health_check=[HealthCheck.too_slow],
     )
-    def test_partial_staging_failure_no_files_in_comout(
-        self, deliverable_set, tmp_path_factory
-    ):
+    def test_partial_staging_failure_no_files_in_comout(self, deliverable_set, tmp_path_factory):
         """When cpfs fails mid-staging, COMOUT must contain no partial files.
 
         **Validates: Requirements 7.6**
@@ -195,17 +177,17 @@ class TestAtomicityProperty:
         fail_at = max(2, len(deliverable_set) // 2)
         mock_utils = tmp_path / "mock_utils.sh"
         mock_utils.write_text(
-            '#!/usr/bin/env bash\n'
+            "#!/usr/bin/env bash\n"
             'err_exit() { echo "ERR_EXIT: $*" >&2; exit 1; }\n'
-            f'_CPFS_COUNT=0\n'
-            'cpfs() {\n'
-            '    _CPFS_COUNT=$((_CPFS_COUNT + 1))\n'
-            f'    if [[ $_CPFS_COUNT -ge {fail_at} ]]; then\n'
-            '        return 1\n'
-            '    fi\n'
+            f"_CPFS_COUNT=0\n"
+            "cpfs() {\n"
+            "    _CPFS_COUNT=$((_CPFS_COUNT + 1))\n"
+            f"    if [[ $_CPFS_COUNT -ge {fail_at} ]]; then\n"
+            "        return 1\n"
+            "    fi\n"
             '    cp "$1" "$2"\n'
-            '}\n'
-            'export -f err_exit cpfs\n'
+            "}\n"
+            "export -f err_exit cpfs\n"
         )
         env["MOCK_UTILS"] = str(mock_utils)
 
@@ -215,10 +197,7 @@ class TestAtomicityProperty:
         result = _run_atomic_publish(tmp_path, source_files, env)
 
         # Script must fail
-        assert result.returncode != 0, (
-            f"Expected staging failure but script succeeded.\n"
-            f"stderr: {result.stderr}"
-        )
+        assert result.returncode != 0, f"Expected staging failure but script succeeded.\nstderr: {result.stderr}"
 
         # COMOUT must remain unchanged — no deliverable files leaked
         final_files = _get_comout_files(comout)
@@ -240,9 +219,7 @@ class TestAtomicityProperty:
         deadline=None,
         suppress_health_check=[HealthCheck.too_slow],
     )
-    def test_verification_failure_no_files_in_comout(
-        self, deliverable_set, tmp_path_factory
-    ):
+    def test_verification_failure_no_files_in_comout(self, deliverable_set, tmp_path_factory):
         """When a staged file fails verification (empty), COMOUT stays unchanged.
 
         **Validates: Requirements 7.6**
@@ -268,18 +245,18 @@ class TestAtomicityProperty:
 
         mock_utils = tmp_path / "mock_utils.sh"
         mock_utils.write_text(
-            '#!/usr/bin/env bash\n'
+            "#!/usr/bin/env bash\n"
             'err_exit() { echo "ERR_EXIT: $*" >&2; exit 1; }\n'
-            'cpfs() {\n'
-            '    local bname\n'
+            "cpfs() {\n"
+            "    local bname\n"
             '    bname=$(basename "$2")\n'
             f'    if [[ "$bname" == "{corrupt_name}" ]]; then\n'
             '        : > "$2"\n'
-            '    else\n'
+            "    else\n"
             '        cp "$1" "$2"\n'
-            '    fi\n'
-            '}\n'
-            'export -f err_exit cpfs\n'
+            "    fi\n"
+            "}\n"
+            "export -f err_exit cpfs\n"
         )
         env["MOCK_UTILS"] = str(mock_utils)
 
@@ -289,11 +266,7 @@ class TestAtomicityProperty:
         result = _run_atomic_publish(tmp_path, source_files, env)
 
         # Script must fail due to empty file verification
-        assert result.returncode != 0, (
-            f"Expected verification failure but script succeeded.\n"
-            f"Corrupted file: {corrupt_name}\n"
-            f"stderr: {result.stderr}"
-        )
+        assert result.returncode != 0, f"Expected verification failure but script succeeded.\nCorrupted file: {corrupt_name}\nstderr: {result.stderr}"
 
         # COMOUT must remain unchanged
         final_files = _get_comout_files(comout)
@@ -315,9 +288,7 @@ class TestAtomicityProperty:
         deadline=None,
         suppress_health_check=[HealthCheck.too_slow],
     )
-    def test_success_path_all_files_in_comout(
-        self, deliverable_set, tmp_path_factory
-    ):
+    def test_success_path_all_files_in_comout(self, deliverable_set, tmp_path_factory):
         """On success, ALL files in the deliverable set appear in COMOUT.
 
         **Validates: Requirements 7.6**
@@ -339,10 +310,7 @@ class TestAtomicityProperty:
         result = _run_atomic_publish(tmp_path, source_files, env)
 
         # Script must succeed
-        assert result.returncode == 0, (
-            f"Expected success but script failed.\n"
-            f"stderr: {result.stderr}"
-        )
+        assert result.returncode == 0, f"Expected success but script failed.\nstderr: {result.stderr}"
 
         # ALL deliverable files must be in COMOUT
         final_files = _get_comout_files(comout)
@@ -359,9 +327,7 @@ class TestAtomicityProperty:
         for filename, content in deliverable_set:
             final_file = comout / filename
             assert final_file.exists(), f"Missing: {filename}"
-            assert final_file.read_bytes() == content, (
-                f"Content mismatch for {filename}"
-            )
+            assert final_file.read_bytes() == content, f"Content mismatch for {filename}"
 
     @given(deliverable_set=deliverable_fileset())
     @settings(
@@ -369,9 +335,7 @@ class TestAtomicityProperty:
         deadline=None,
         suppress_health_check=[HealthCheck.too_slow],
     )
-    def test_all_or_nothing_invariant(
-        self, deliverable_set, tmp_path_factory
-    ):
+    def test_all_or_nothing_invariant(self, deliverable_set, tmp_path_factory):
         """The all-or-nothing invariant: either ALL or NONE of the set is in COMOUT.
 
         **Validates: Requirements 7.6**

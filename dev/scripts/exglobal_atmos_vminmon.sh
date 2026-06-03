@@ -19,8 +19,8 @@
 
 if [[ ! -s "${gsistat}" ]]; then
 
-    export err=1
-    err_exit "Required GSI statistics file is missing!"
+  export err=1
+  err_exit "Required GSI statistics file is missing!"
 
 fi
 
@@ -34,9 +34,9 @@ fi
 #  data into ${cyc} subdirectories (elif condition).
 #-----------------------------------------------------------------------
 if [[ -s "${M_TANKverf}/gnorm_data.txt" ]]; then
-    cpreq "${M_TANKverf}/gnorm_data.txt" gnorm_data.txt
+  cpreq "${M_TANKverf}/gnorm_data.txt" gnorm_data.txt
 elif [[ -s "${M_TANKverfM1}/gnorm_data.txt" ]]; then
-    cpreq "${M_TANKverfM1}/gnorm_data.txt" gnorm_data.txt
+  cpreq "${M_TANKverfM1}/gnorm_data.txt" gnorm_data.txt
 fi
 
 #------------------------------------------------------------------
@@ -61,5 +61,5 @@ err=$((rc_costs + rc_gnorms + rc_reduct))
 export err=${err}
 
 if [[ ${err} -ne 0 ]]; then
-    err_exit "One or more minimization monitor subjobs failed!!"
+  err_exit "One or more minimization monitor subjobs failed!!"
 fi

@@ -44,14 +44,14 @@ mkdir -p "${M_TANKverf}"
 "${SCRglobal}/exglobal_atmos_vminmon.sh" && true
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Failed to run the GSI minimization monitor"
+  err_exit "Failed to run the GSI minimization monitor"
 fi
 
 ################################
 # Remove the Working Directory
 ################################
 if [[ "${KEEPDATA}" == "NO" ]]; then
-    rm -rf "${DATA}"
+  rm -rf "${DATA}"
 fi
 
 exit 0

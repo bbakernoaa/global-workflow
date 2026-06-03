@@ -13,7 +13,7 @@ experiment:
   idate: 2021063018
   edate: 2021070306
   # NOTE: this directory is read-only
-  icsdir: 
+  icsdir:
   yaml: {{ HOMEglobal }}/dev/ci/cases/gfsv17/marine3dvar.yaml
 
 workflow:

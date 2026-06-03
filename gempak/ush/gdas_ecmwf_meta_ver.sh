@@ -28,28 +28,28 @@ fcsthr="0600f006"
 areas="SAM NAM"
 
 for area in ${areas}; do
-    if [[ "${area}" == "NAM" ]]; then
-        garea="5.1;-124.6;49.6;-11.9"
-        proj="STR/90.0;-95.0;0.0"
-        latlon="0"
-        run="run"
-    else
-        garea="-33.7;-150.5;8.0;-35.0"
-        proj="str/-85;-70;0"
-        latlon="1/10/1/2/10;10"
-        run=" "
-    fi
-    for ((fhr = 24; fhr <= 168; fhr += 24)); do
-        dgdattim=$(printf "f%03d" "${fhr}")
-        sdatenum=$(date --utc +%y%m%d -d "${PDY} ${cyc2} - ${fhr} hours")
+  if [[ "${area}" == "NAM" ]]; then
+    garea="5.1;-124.6;49.6;-11.9"
+    proj="STR/90.0;-95.0;0.0"
+    latlon="0"
+    run="run"
+  else
+    garea="-33.7;-150.5;8.0;-35.0"
+    proj="str/-85;-70;0"
+    latlon="1/10/1/2/10;10"
+    run=" "
+  fi
+  for ((fhr = 24; fhr <= 168; fhr += 24)); do
+    dgdattim=$(printf "f%03d" "${fhr}")
+    sdatenum=$(date --utc +%y%m%d -d "${PDY} ${cyc2} - ${fhr} hours")
 
-        rm -f "ecmwf.20${sdatenum}"
-        ${NLN} "${COMINecmwf}/ecmwf.20${sdatenum}/gempak" "ecmwf.20${sdatenum}"
-        gdfile="ecmwf.20${sdatenum}/ecmwf_glob_20${sdatenum}12"
+    rm -f "ecmwf.20${sdatenum}"
+    ${NLN} "${COMINecmwf}/ecmwf.20${sdatenum}/gempak" "ecmwf.20${sdatenum}"
+    gdfile="ecmwf.20${sdatenum}/ecmwf_glob_20${sdatenum}12"
 
-        # 500 MB HEIGHT METAFILE
+    # 500 MB HEIGHT METAFILE
 
-        "${GEMEXE}/gdplot2_nc" << EOFplt
+    "${GEMEXE}/gdplot2_nc" << EOFplt
 \$MAPFIL = mepowo.gsf
 PROJ     = ${proj}
 GAREA    = ${garea}
@@ -131,7 +131,7 @@ ${run}
 ex
 EOFplt
 
-    done
+  done
 done
 
 export err=$?
@@ -142,20 +142,20 @@ export err=$?
 # FOR THIS CASE HERE.
 #####################################################
 if [[ "${err}" -ne 0 ]] || [[ ! -s ecmwfver.meta ]]; then
-    echo "FATAL ERROR: Failed to create ecmwf meta file"
-    exit "${err}"
+  echo "FATAL ERROR: Failed to create ecmwf meta file"
+  exit "${err}"
 fi
 
 cpfs ecmwfver.meta "${COMOUT_ATMOS_GEMPAK_META}/ecmwfver_${PDY}_${cyc2}"
 export err=$?
 if [[ "${err}" -ne 0 ]]; then
-    echo "FATAL ERROR: Failed to move meta file to ${COMOUT_ATMOS_GEMPAK_META}/ecmwfver_${PDY}_${cyc2}"
-    exit "${err}"
+  echo "FATAL ERROR: Failed to move meta file to ${COMOUT_ATMOS_GEMPAK_META}/ecmwfver_${PDY}_${cyc2}"
+  exit "${err}"
 fi
 
 if [[ "${SENDDBN}" == "YES" ]]; then
-    "${DBNROOT}/bin/dbn_alert" MODEL ECMWFVER_HPCMETAFILE "${job}" \
-        "${COMOUT_ATMOS_GEMPAK_META}/ecmwfver_${PDY}_${cyc2}"
+  "${DBNROOT}/bin/dbn_alert" MODEL ECMWFVER_HPCMETAFILE "${job}" \
+    "${COMOUT_ATMOS_GEMPAK_META}/ecmwfver_${PDY}_${cyc2}"
 fi
 
 exit

@@ -137,7 +137,7 @@
 000 006 199 000 Ice fraction of total condensate -                    FICE             0  -9999.00
 000 006 201 000 Sunshine Duration                s                    SUNSD            0  -9999.00
 !
-! thermodynamic stability indices 
+! thermodynamic stability indices
 !D# CT# ID# PD# NAME                             UNITS                GNAM         SCALE   MISSING
 !23|123|123|123|12345678901234567890123456789012|12345678901234567890|123456789012|12345|123456.89
 000 007 192 000 Surface lifted index             K                    LIFT             0  -9999.00

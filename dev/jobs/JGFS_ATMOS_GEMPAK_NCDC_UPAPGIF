@@ -24,7 +24,7 @@ export MP_TIMEOUT=2000
 export MODEL=GFS
 export fend=384
 if [[ "${fend}" -gt "${FHMAX_GFS}" ]]; then
-    export fend="${FHMAX_GFS}"
+  export fend="${FHMAX_GFS}"
 fi
 
 # set increment to 6 hours  --  3 hours is available.
@@ -41,10 +41,10 @@ declare -rx COMIN_ATMOS_GEMPAK_1p00="${ROTDIR}/${RUN}.${PDY}/${cyc}/products/atm
 
 # Declare COMOUT_ATMOS_GEMPAK_GIF and COMOUT_ATMOS_GEMPAK_UPPER_AIR
 for grid in gif upper_air; do
-    _GRID="${grid^^}"
-    gempak_dir="COMOUT_ATMOS_GEMPAK_${_GRID}"
-    declare -rx "${gempak_dir}"="${ROTDIR}/${RUN}.${PDY}/${cyc}/products/atmos/gempak/${grid}"
-    if [[ ! -d "${!gempak_dir}" ]]; then mkdir -m 775 -p "${!gempak_dir}"; fi
+  _GRID="${grid^^}"
+  gempak_dir="COMOUT_ATMOS_GEMPAK_${_GRID}"
+  declare -rx "${gempak_dir}"="${ROTDIR}/${RUN}.${PDY}/${cyc}/products/atmos/gempak/${grid}"
+  if [[ ! -d "${!gempak_dir}" ]]; then mkdir -m 775 -p "${!gempak_dir}"; fi
 done
 
 declare -rx COMOUT_ATMOS_WMO="${ROTDIR}/${RUN}.${PDY}/${cyc}/products/atmos/wmo"
@@ -57,7 +57,7 @@ export pgmout=OUTPUT.$$
 "${SCRglobal}/exgfs_atmos_gempak_gif_ncdc_skew_t.sh"
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Failed to generate NCDC skew-T GIFs from GFS GEMPAK products"
+  err_exit "Failed to generate NCDC skew-T GIFs from GFS GEMPAK products"
 fi
 ########################################################
 
@@ -65,12 +65,12 @@ fi
 # print exec I/O output
 ############################################
 if [[ -e "${pgmout}" ]]; then
-    cat "${pgmout}"
+  cat "${pgmout}"
 fi
 
 ###################################
 # Remove temp directories
 ###################################
 if [[ "${KEEPDATA}" != "YES" ]]; then
-    rm -rf "${DATA}"
+  rm -rf "${DATA}"
 fi

@@ -30,7 +30,7 @@ import yaml
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from deployment.traceability import (  # noqa: E402
+from deployment.traceability import (
     DEFAULT_MATRIX_PATH,
     PARENT_PROPERTY_NUMBERS,
     PARENT_REQUIREMENT_KEYS,
@@ -128,9 +128,7 @@ class TestLoadTraceabilityMatrix:
         """An unknown status value is rejected."""
         path = _write(
             tmp_path / "m.yaml",
-            yaml.dump(
-                {"properties": {1: {"tests": ["t.py"], "status": "green"}}}
-            ),
+            yaml.dump({"properties": {1: {"tests": ["t.py"], "status": "green"}}}),
         )
         with pytest.raises(TraceabilityMatrixError, match="invalid status"):
             load_traceability_matrix(path)
@@ -162,9 +160,7 @@ class TestFindUnmappedParentItems:
     def test_missing_property_is_reported(self):
         """A parent Property absent from the matrix is reported."""
         matrix = TraceabilityMatrix()  # empty
-        errors = find_unmapped_parent_items(
-            matrix, requirement_keys=(), property_numbers=(7,)
-        )
+        errors = find_unmapped_parent_items(matrix, requirement_keys=(), property_numbers=(7,))
         assert len(errors) == 1
         assert "Property 7" in errors[0]
 
@@ -175,18 +171,14 @@ class TestFindUnmappedParentItems:
             yaml.dump({"properties": {3: {"name": "P3", "tests": []}}}),
         )
         matrix = load_traceability_matrix(path)
-        errors = find_unmapped_parent_items(
-            matrix, requirement_keys=(), property_numbers=(3,)
-        )
+        errors = find_unmapped_parent_items(matrix, requirement_keys=(), property_numbers=(3,))
         assert len(errors) == 1
         assert "Property 3" in errors[0]
 
     def test_missing_requirement_is_reported(self):
         """A parent requirement absent from the matrix is reported."""
         matrix = TraceabilityMatrix()
-        errors = find_unmapped_parent_items(
-            matrix, requirement_keys=("R9",), property_numbers=()
-        )
+        errors = find_unmapped_parent_items(matrix, requirement_keys=("R9",), property_numbers=())
         assert len(errors) == 1
         assert "R9" in errors[0]
 

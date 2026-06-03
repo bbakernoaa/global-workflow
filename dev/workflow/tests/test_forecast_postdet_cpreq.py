@@ -27,27 +27,27 @@ COMPONENTS = ("WW3", "MOM6", "CICE", "GOCART")
 # All pre-rendered EXPDIR sources expected to appear in the script (Req 7.1).
 # These are the files copied via cpreq from ${EXPDIR}/parm/ufs/<component>/ to ${DATA}/
 EXPECTED_CPREQ_SOURCES = (
-    '${EXPDIR}/parm/ufs/fv3/input.nml',
-    '${EXPDIR}/parm/ufs/fv3/model_configure',
-    '${EXPDIR}/parm/ufs/fv3/diag_table',
-    '${EXPDIR}/parm/ufs/fv3/field_table',
-    '${EXPDIR}/parm/ufs/wave/ww3_shel.nml',
-    '${EXPDIR}/parm/ufs/ocean/MOM_input',
-    '${EXPDIR}/parm/ufs/ocean/MOM6_data_table',
-    '${EXPDIR}/parm/ufs/ice/ice_in',
-    '${EXPDIR}/parm/ufs/gocart',
+    "${EXPDIR}/parm/ufs/fv3/input.nml",
+    "${EXPDIR}/parm/ufs/fv3/model_configure",
+    "${EXPDIR}/parm/ufs/fv3/diag_table",
+    "${EXPDIR}/parm/ufs/fv3/field_table",
+    "${EXPDIR}/parm/ufs/wave/ww3_shel.nml",
+    "${EXPDIR}/parm/ufs/ocean/MOM_input",
+    "${EXPDIR}/parm/ufs/ocean/MOM6_data_table",
+    "${EXPDIR}/parm/ufs/ice/ice_in",
+    "${EXPDIR}/parm/ufs/gocart",
 )
 
 # Sources copied via a direct `cpreq "<source>" "<dest>"` (not via loop).
 DIRECT_CPREQ_SOURCES = (
-    '${EXPDIR}/parm/ufs/fv3/input.nml',
-    '${EXPDIR}/parm/ufs/fv3/model_configure',
-    '${EXPDIR}/parm/ufs/fv3/diag_table',
-    '${EXPDIR}/parm/ufs/fv3/field_table',
-    '${EXPDIR}/parm/ufs/wave/ww3_shel.nml',
-    '${EXPDIR}/parm/ufs/ocean/MOM_input',
-    '${EXPDIR}/parm/ufs/ocean/MOM6_data_table',
-    '${EXPDIR}/parm/ufs/ice/ice_in',
+    "${EXPDIR}/parm/ufs/fv3/input.nml",
+    "${EXPDIR}/parm/ufs/fv3/model_configure",
+    "${EXPDIR}/parm/ufs/fv3/diag_table",
+    "${EXPDIR}/parm/ufs/fv3/field_table",
+    "${EXPDIR}/parm/ufs/wave/ww3_shel.nml",
+    "${EXPDIR}/parm/ufs/ocean/MOM_input",
+    "${EXPDIR}/parm/ufs/ocean/MOM6_data_table",
+    "${EXPDIR}/parm/ufs/ice/ice_in",
 )
 
 
@@ -87,8 +87,7 @@ def test_cpreq_from_expdir_present(script_text: str, source_path: str):
     """
     non_comment = "\n".join(_non_comment_lines(script_text))
     assert source_path in non_comment, (
-        f"Expected a cpreq staging the pre-rendered config from "
-        f"'{source_path}' but it was not found in forecast_postdet.sh."
+        f"Expected a cpreq staging the pre-rendered config from '{source_path}' but it was not found in forecast_postdet.sh."
     )
 
 
@@ -100,14 +99,9 @@ def test_cpreq_copies_to_data_directory(script_text: str, source_path: str):
     using the variable established by the J-Job.
     """
     # Find the cpreq line for this source and verify destination uses ${DATA}
-    cpreq_pattern = re.compile(
-        r'cpreq\s+"' + re.escape(source_path) + r'"\s+"(\$\{DATA\}[^"]*)"'
-    )
+    cpreq_pattern = re.compile(r'cpreq\s+"' + re.escape(source_path) + r'"\s+"(\$\{DATA\}[^"]*)"')
     match = cpreq_pattern.search(script_text)
-    assert match is not None, (
-        f"Expected `cpreq \"{source_path}\" \"${{DATA}}/...\"` but no matching "
-        f"cpreq line was found with a ${{DATA}} destination."
-    )
+    assert match is not None, f'Expected `cpreq "{source_path}" "${{DATA}}/..."` but no matching cpreq line was found with a ${{DATA}} destination.'
 
 
 def test_gocart_staged_via_cpreq_loop(script_text: str):
@@ -118,16 +112,12 @@ def test_gocart_staged_via_cpreq_loop(script_text: str):
     """
     non_comment = "\n".join(_non_comment_lines(script_text))
     # The loop iterates over the gocart .rc files (and ExtData).
-    assert re.search(
-        r'for\s+\w+\s+in\s+"\$\{EXPDIR\}/parm/ufs/gocart"/\*\.rc', non_comment
-    ), "Expected a `for ... in \"${EXPDIR}/parm/ufs/gocart\"/*.rc` loop for GOCART."
-    assert 'ExtData' in non_comment, (
-        "Expected the GOCART staging loop to include the ExtData file."
+    assert re.search(r'for\s+\w+\s+in\s+"\$\{EXPDIR\}/parm/ufs/gocart"/\*\.rc', non_comment), (
+        'Expected a `for ... in "${EXPDIR}/parm/ufs/gocart"/*.rc` loop for GOCART.'
     )
+    assert "ExtData" in non_comment, "Expected the GOCART staging loop to include the ExtData file."
     # The loop body copies each resolved file with cpreq.
-    assert re.search(r'cpreq\s+"\$\{rc_file\}"', non_comment), (
-        "Expected `cpreq \"${rc_file}\" ...` inside the GOCART staging loop."
-    )
+    assert re.search(r'cpreq\s+"\$\{rc_file\}"', non_comment), 'Expected `cpreq "${rc_file}" ...` inside the GOCART staging loop.'
 
 
 # ============================================================================
@@ -143,18 +133,9 @@ def test_no_runtime_parsing_namelists_source(script_text: str):
     Comment lines that merely mention the script names for documentation
     are not violations.
     """
-    pattern = re.compile(
-        r"source\s+.*parsing_namelists_(?:WW3|MOM6|CICE|GOCART)\.sh"
-    )
-    violations = [
-        line.strip()
-        for line in _non_comment_lines(script_text)
-        if pattern.search(line)
-    ]
-    assert violations == [], (
-        "forecast_postdet.sh still sources runtime parsing_namelists scripts:\n"
-        + "\n".join(f"  {v}" for v in violations)
-    )
+    pattern = re.compile(r"source\s+.*parsing_namelists_(?:WW3|MOM6|CICE|GOCART)\.sh")
+    violations = [line.strip() for line in _non_comment_lines(script_text) if pattern.search(line)]
+    assert violations == [], "forecast_postdet.sh still sources runtime parsing_namelists scripts:\n" + "\n".join(f"  {v}" for v in violations)
 
 
 def test_no_namelist_function_invocations(script_text: str):
@@ -167,8 +148,7 @@ def test_no_namelist_function_invocations(script_text: str):
     for component in COMPONENTS:
         invocation = f"{component}_namelists"
         assert invocation not in non_comment, (
-            f"forecast_postdet.sh still invokes {invocation}; runtime "
-            f"namelist generation for {component} must be removed."
+            f"forecast_postdet.sh still invokes {invocation}; runtime namelist generation for {component} must be removed."
         )
 
 
@@ -178,18 +158,9 @@ def test_no_parsing_namelists_fv3_source(script_text: str):
     FV3 namelists are pre-rendered; the legacy FV3 parsing script must not
     be sourced.
     """
-    pattern = re.compile(
-        r"source\s+.*parsing_namelists_FV3\.sh"
-    )
-    violations = [
-        line.strip()
-        for line in _non_comment_lines(script_text)
-        if pattern.search(line)
-    ]
-    assert violations == [], (
-        "forecast_postdet.sh still sources parsing_namelists_FV3.sh:\n"
-        + "\n".join(f"  {v}" for v in violations)
-    )
+    pattern = re.compile(r"source\s+.*parsing_namelists_FV3\.sh")
+    violations = [line.strip() for line in _non_comment_lines(script_text) if pattern.search(line)]
+    assert violations == [], "forecast_postdet.sh still sources parsing_namelists_FV3.sh:\n" + "\n".join(f"  {v}" for v in violations)
 
 
 # ============================================================================
@@ -201,15 +172,15 @@ def test_no_parsing_namelists_fv3_source(script_text: str):
 @pytest.mark.parametrize(
     "expected_path",
     (
-        '${EXPDIR}/parm/ufs/fv3/input.nml',
-        '${EXPDIR}/parm/ufs/fv3/model_configure',
-        '${EXPDIR}/parm/ufs/fv3/diag_table',
-        '${EXPDIR}/parm/ufs/fv3/field_table',
-        '${EXPDIR}/parm/ufs/wave/ww3_shel.nml',
-        '${EXPDIR}/parm/ufs/ocean/MOM_input',
-        '${EXPDIR}/parm/ufs/ocean/MOM6_data_table',
-        '${EXPDIR}/parm/ufs/ice/ice_in',
-        '${EXPDIR}/parm/ufs/gocart',
+        "${EXPDIR}/parm/ufs/fv3/input.nml",
+        "${EXPDIR}/parm/ufs/fv3/model_configure",
+        "${EXPDIR}/parm/ufs/fv3/diag_table",
+        "${EXPDIR}/parm/ufs/fv3/field_table",
+        "${EXPDIR}/parm/ufs/wave/ww3_shel.nml",
+        "${EXPDIR}/parm/ufs/ocean/MOM_input",
+        "${EXPDIR}/parm/ufs/ocean/MOM6_data_table",
+        "${EXPDIR}/parm/ufs/ice/ice_in",
+        "${EXPDIR}/parm/ufs/gocart",
     ),
 )
 def test_preflight_existence_check_present(script_text: str, expected_path: str):
@@ -219,27 +190,22 @@ def test_preflight_existence_check_present(script_text: str, expected_path: str)
     `[[ ! -d ... ]]` before the cpreq copy to ensure a descriptive error is
     emitted if missing.
     """
-    guard_pattern = re.compile(
-        r"\[\[\s*!\s*-[fd]\s+\"" + re.escape(expected_path) + r"[^\"]*\"\s*\]\]"
-    )
-    assert guard_pattern.search(script_text), (
-        f"Missing existence pre-flight check for '{expected_path}' in "
-        f"forecast_postdet.sh."
-    )
+    guard_pattern = re.compile(r"\[\[\s*!\s*-[fd]\s+\"" + re.escape(expected_path) + r"[^\"]*\"\s*\]\]")
+    assert guard_pattern.search(script_text), f"Missing existence pre-flight check for '{expected_path}' in forecast_postdet.sh."
 
 
 @pytest.mark.parametrize(
     "expected_path",
     (
-        '${EXPDIR}/parm/ufs/fv3/input.nml',
-        '${EXPDIR}/parm/ufs/fv3/model_configure',
-        '${EXPDIR}/parm/ufs/fv3/diag_table',
-        '${EXPDIR}/parm/ufs/fv3/field_table',
-        '${EXPDIR}/parm/ufs/wave/ww3_shel.nml',
-        '${EXPDIR}/parm/ufs/ocean/MOM_input',
-        '${EXPDIR}/parm/ufs/ocean/MOM6_data_table',
-        '${EXPDIR}/parm/ufs/ice/ice_in',
-        '${EXPDIR}/parm/ufs/gocart',
+        "${EXPDIR}/parm/ufs/fv3/input.nml",
+        "${EXPDIR}/parm/ufs/fv3/model_configure",
+        "${EXPDIR}/parm/ufs/fv3/diag_table",
+        "${EXPDIR}/parm/ufs/fv3/field_table",
+        "${EXPDIR}/parm/ufs/wave/ww3_shel.nml",
+        "${EXPDIR}/parm/ufs/ocean/MOM_input",
+        "${EXPDIR}/parm/ufs/ocean/MOM6_data_table",
+        "${EXPDIR}/parm/ufs/ice/ice_in",
+        "${EXPDIR}/parm/ufs/gocart",
     ),
 )
 def test_fatal_error_names_missing_file_path(script_text: str, expected_path: str):
@@ -253,12 +219,9 @@ def test_fatal_error_names_missing_file_path(script_text: str, expected_path: st
     path_basename = expected_path.rsplit("/", 1)[-1]
 
     # Find FATAL ERROR lines that reference this specific file/directory
-    fatal_pattern = re.compile(
-        r'echo\s+"FATAL ERROR:.*' + re.escape(path_basename) + r'.*"'
-    )
+    fatal_pattern = re.compile(r'echo\s+"FATAL ERROR:.*' + re.escape(path_basename) + r'.*"')
     assert fatal_pattern.search(script_text), (
-        f"Expected a 'FATAL ERROR:' message referencing '{path_basename}' "
-        f"but none was found. The error message must name the missing file path."
+        f"Expected a 'FATAL ERROR:' message referencing '{path_basename}' but none was found. The error message must name the missing file path."
     )
 
 
@@ -269,11 +232,7 @@ def test_fatal_error_messages_cover_all_components(script_text: str):
     plus FV3 must each have a FATAL ERROR guard message referencing the
     pre-rendered file.
     """
-    fatal_lines = [
-        line.strip()
-        for line in script_text.splitlines()
-        if "FATAL ERROR:" in line and "Pre-rendered" in line
-    ]
+    fatal_lines = [line.strip() for line in script_text.splitlines() if "FATAL ERROR:" in line and "Pre-rendered" in line]
     joined = "\n".join(fatal_lines)
     required_tokens = (
         "input.nml",
@@ -287,10 +246,7 @@ def test_fatal_error_messages_cover_all_components(script_text: str):
         "GOCART",
     )
     for token in required_tokens:
-        assert token in joined, (
-            f"Expected a 'FATAL ERROR: Pre-rendered ...' message referencing "
-            f"'{token}' but none was found."
-        )
+        assert token in joined, f"Expected a 'FATAL ERROR: Pre-rendered ...' message referencing '{token}' but none was found."
 
 
 # ============================================================================
@@ -308,29 +264,20 @@ def test_uses_cpreq_not_cp_or_cpfs(script_text: str, source_path: str):
     required abort-on-failure semantics.
     """
     # Verify cpreq is used
-    cpreq_pattern = re.compile(
-        r'cpreq\s+"' + re.escape(source_path)
-    )
+    cpreq_pattern = re.compile(r'cpreq\s+"' + re.escape(source_path))
     assert cpreq_pattern.search(script_text), (
-        f"Expected `cpreq \"{source_path}\"...` but cpreq usage not found; "
-        f"staging must use cpreq per EE2 essential-file pattern."
+        f'Expected `cpreq "{source_path}"...` but cpreq usage not found; staging must use cpreq per EE2 essential-file pattern.'
     )
 
     # Verify plain cp or cpfs are NOT used for this specific source
-    cp_pattern = re.compile(
-        r'(?:^|\s)cp\s+"' + re.escape(source_path)
-    )
-    cpfs_pattern = re.compile(
-        r'cpfs\s+"' + re.escape(source_path)
-    )
+    cp_pattern = re.compile(r'(?:^|\s)cp\s+"' + re.escape(source_path))
+    cpfs_pattern = re.compile(r'cpfs\s+"' + re.escape(source_path))
     non_comment = "\n".join(_non_comment_lines(script_text))
     assert not cp_pattern.search(non_comment), (
-        f"Found `cp \"{source_path}\"...` — must use cpreq, not cp, "
-        f"for essential model input files (EE2 abort-on-failure)."
+        f'Found `cp "{source_path}"...` — must use cpreq, not cp, for essential model input files (EE2 abort-on-failure).'
     )
     assert not cpfs_pattern.search(non_comment), (
-        f"Found `cpfs \"{source_path}\"...` — must use cpreq, not cpfs, "
-        f"for essential model input files from EXPDIR."
+        f'Found `cpfs "{source_path}"...` — must use cpreq, not cpfs, for essential model input files from EXPDIR.'
     )
 
 
@@ -348,17 +295,12 @@ def test_uses_expdir_variable_for_source(script_text: str):
     """
     non_comment = "\n".join(_non_comment_lines(script_text))
     # Find all cpreq lines that copy from parm/ufs/ (our pre-rendered model inputs)
-    cpreq_model_input_pattern = re.compile(
-        r'cpreq\s+"([^"]+parm/ufs/[^"]+)"'
-    )
+    cpreq_model_input_pattern = re.compile(r'cpreq\s+"([^"]+parm/ufs/[^"]+)"')
     matches = cpreq_model_input_pattern.findall(non_comment)
-    assert len(matches) > 0, (
-        "Expected cpreq calls with parm/ufs/ sources but found none."
-    )
+    assert len(matches) > 0, "Expected cpreq calls with parm/ufs/ sources but found none."
     for source in matches:
         assert source.startswith("${EXPDIR}") or source.startswith("$EXPDIR"), (
-            f"Model input source '{source}' does not use ${{EXPDIR}} variable. "
-            f"All pre-rendered inputs must be sourced via ${{EXPDIR}} from J-Job."
+            f"Model input source '{source}' does not use ${{EXPDIR}} variable. All pre-rendered inputs must be sourced via ${{EXPDIR}} from J-Job."
         )
 
 
@@ -371,17 +313,12 @@ def test_uses_data_variable_for_destination(script_text: str):
     """
     non_comment = "\n".join(_non_comment_lines(script_text))
     # Find cpreq lines copying from EXPDIR/parm/ufs/ and check destination
-    cpreq_full_pattern = re.compile(
-        r'cpreq\s+"(\$\{EXPDIR\}/parm/ufs/[^"]+)"\s+"([^"]+)"'
-    )
+    cpreq_full_pattern = re.compile(r'cpreq\s+"(\$\{EXPDIR\}/parm/ufs/[^"]+)"\s+"([^"]+)"')
     matches = cpreq_full_pattern.findall(non_comment)
-    assert len(matches) > 0, (
-        "Expected cpreq calls with ${EXPDIR}/parm/ufs/ sources but found none."
-    )
+    assert len(matches) > 0, "Expected cpreq calls with ${EXPDIR}/parm/ufs/ sources but found none."
     for source, dest in matches:
         assert "${DATA}" in dest or "$DATA" in dest, (
-            f"cpreq destination '{dest}' for source '{source}' does not use "
-            f"${{DATA}} variable. Model inputs must be staged to ${{DATA}}/."
+            f"cpreq destination '{dest}' for source '{source}' does not use ${{DATA}} variable. Model inputs must be staged to ${{DATA}}/."
         )
 
 
@@ -392,17 +329,10 @@ def test_does_not_reassign_expdir(script_text: str):
     modified in the forecast ush script.
     """
     non_comment = _non_comment_lines(script_text)
-    reassign_pattern = re.compile(
-        r'^\s*(?:export\s+)?EXPDIR\s*='
-    )
-    violations = [
-        line.strip()
-        for line in non_comment
-        if reassign_pattern.search(line)
-    ]
-    assert violations == [], (
-        "forecast_postdet.sh reassigns EXPDIR, which must remain as set "
-        "by the J-Job:\n" + "\n".join(f"  {v}" for v in violations)
+    reassign_pattern = re.compile(r"^\s*(?:export\s+)?EXPDIR\s*=")
+    violations = [line.strip() for line in non_comment if reassign_pattern.search(line)]
+    assert violations == [], "forecast_postdet.sh reassigns EXPDIR, which must remain as set by the J-Job:\n" + "\n".join(
+        f"  {v}" for v in violations
     )
 
 
@@ -413,18 +343,9 @@ def test_does_not_reassign_data(script_text: str):
     forecast ush script.
     """
     non_comment = _non_comment_lines(script_text)
-    reassign_pattern = re.compile(
-        r'^\s*(?:export\s+)?DATA\s*='
-    )
-    violations = [
-        line.strip()
-        for line in non_comment
-        if reassign_pattern.search(line)
-    ]
-    assert violations == [], (
-        "forecast_postdet.sh reassigns DATA, which must remain as set "
-        "by the J-Job:\n" + "\n".join(f"  {v}" for v in violations)
-    )
+    reassign_pattern = re.compile(r"^\s*(?:export\s+)?DATA\s*=")
+    violations = [line.strip() for line in non_comment if reassign_pattern.search(line)]
+    assert violations == [], "forecast_postdet.sh reassigns DATA, which must remain as set by the J-Job:\n" + "\n".join(f"  {v}" for v in violations)
 
 
 # ============================================================================
@@ -443,6 +364,5 @@ def test_no_set_e_added_for_error_handling(script_text: str):
     offenders = [line.strip() for line in non_comment if set_e_pattern.search(line)]
     assert offenders == [], (
         "forecast_postdet.sh must not add `set -e`/`set -eu` for error "
-        "handling (EE2 Phase 2 SME correction); found:\n"
-        + "\n".join(f"  {o}" for o in offenders)
+        "handling (EE2 Phase 2 SME correction); found:\n" + "\n".join(f"  {o}" for o in offenders)
     )

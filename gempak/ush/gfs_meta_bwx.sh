@@ -341,18 +341,18 @@ export err=$?
 # FOR THIS CASE HERE.
 #####################################################
 if [[ "${err}" -ne 0 ]] || [[ ! -s "${metaname}" ]]; then
-    echo "FATAL ERROR: Failed to create bwx meta file"
-    exit $((err + 100))
+  echo "FATAL ERROR: Failed to create bwx meta file"
+  exit $((err + 100))
 fi
 
 cpfs "${metaname}" "${COMOUT_ATMOS_GEMPAK_META}/${metaname}"
 if [[ "${SENDDBN}" == "YES" ]]; then
+  "${DBNROOT}/bin/dbn_alert" MODEL "${DBN_ALERT_TYPE}" "${job}" \
+    "${COMOUT_ATMOS_GEMPAK_META}/${metaname}"
+  if [[ ${DBN_ALERT_TYPE} = "GFS_METAFILE_LAST" ]]; then
+    DBN_ALERT_TYPE=GFS_METAFILE
     "${DBNROOT}/bin/dbn_alert" MODEL "${DBN_ALERT_TYPE}" "${job}" \
-        "${COMOUT_ATMOS_GEMPAK_META}/${metaname}"
-    if [[ ${DBN_ALERT_TYPE} = "GFS_METAFILE_LAST" ]]; then
-        DBN_ALERT_TYPE=GFS_METAFILE
-        "${DBNROOT}/bin/dbn_alert" MODEL "${DBN_ALERT_TYPE}" "${job}" \
-            "${COMOUT_ATMOS_GEMPAK_META}/${metaname}"
-    fi
+      "${COMOUT_ATMOS_GEMPAK_META}/${metaname}"
+  fi
 fi
 exit

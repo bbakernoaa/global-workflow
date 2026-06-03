@@ -72,7 +72,7 @@ ice:
     sinvar: ""
     cosvar: ""
     angvar: "ANGLET"
-  subset: 
+  subset:
       variables: ['hi_1', 'hs_1', 'aice_1', 'Tsfc_1', 'uvel_1', 'vvel_1', 'frzmlt_1', 'albsni_1', 'tmask', 'tarea']
       compress_with: 'zlib'
       compress: True

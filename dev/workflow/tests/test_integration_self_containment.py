@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import os
 import re
-import stat
 import sys
 from pathlib import Path
 
@@ -25,8 +24,7 @@ import yaml
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from deployment.pipeline import run, SubmodulePolicy
-
+from deployment.pipeline import SubmodulePolicy, run
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -34,7 +32,7 @@ from deployment.pipeline import run, SubmodulePolicy
 
 # Committed Submodule_Fixture tree (Req 6.2, 6.7). Resolved relative to this
 # test file so it works regardless of the current working directory.
-FIXTURE_ROOT = (Path(__file__).resolve().parent / "fixtures" / "submodules")
+FIXTURE_ROOT = Path(__file__).resolve().parent / "fixtures" / "submodules"
 
 # NCO production layout directories required for self-containment (Req 3.2)
 NCO_REQUIRED_DIRS = [
@@ -127,9 +125,7 @@ def minimal_dev_tree(tmp_path):
                         "trigger": "gfs/atmos/stage/stage_ic == complete",
                         "jjob": "JGLOBAL_FORECAST",
                         "events": ["forecast_hour"],
-                        "meters": [
-                            {"name": "forecast_hour", "min": 0, "max": 120}
-                        ],
+                        "meters": [{"name": "forecast_hour", "min": 0, "max": 120}],
                     }
                 ],
             },
@@ -175,20 +171,12 @@ def minimal_dev_tree(tmp_path):
 ${EXPDIR}/ush/universal_wrapper.sh {{ task.jjob }}
 %include <tail.h>
 """
-    (dev_root / "workflow" / "ecflow" / "templates" / "task.ecf.j2").write_text(
-        template
-    )
+    (dev_root / "workflow" / "ecflow" / "templates" / "task.ecf.j2").write_text(template)
 
     # Create ecFlow include files
-    (dev_root / "workflow" / "ecflow" / "include" / "head.h").write_text(
-        "# head.h - ecFlow header\n"
-    )
-    (dev_root / "workflow" / "ecflow" / "include" / "tail.h").write_text(
-        "# tail.h - ecFlow tail\n"
-    )
-    (dev_root / "workflow" / "ecflow" / "include" / "envsetup.h").write_text(
-        "# envsetup.h - environment setup\n"
-    )
+    (dev_root / "workflow" / "ecflow" / "include" / "head.h").write_text("# head.h - ecFlow header\n")
+    (dev_root / "workflow" / "ecflow" / "include" / "tail.h").write_text("# tail.h - ecFlow tail\n")
+    (dev_root / "workflow" / "ecflow" / "include" / "envsetup.h").write_text("# envsetup.h - environment setup\n")
 
     # Create sample J-Jobs (EE2 compliant)
     jjob_template = (
@@ -212,24 +200,16 @@ ${EXPDIR}/ush/universal_wrapper.sh {{ task.jjob }}
         "JGFS_ATMOS_POST",
         "JGLOBAL_ARCHIVE",
     ]:
-        (dev_root / "jobs" / jjob_name).write_text(
-            jjob_template.format(name=jjob_name)
-        )
+        (dev_root / "jobs" / jjob_name).write_text(jjob_template.format(name=jjob_name))
 
     # Create a sample ex-script
-    (dev_root / "scripts" / "exglobal_forecast.sh").write_text(
-        "#!/bin/bash\n# Ex-script: exglobal_forecast.sh\nexit 0\n"
-    )
+    (dev_root / "scripts" / "exglobal_forecast.sh").write_text("#!/bin/bash\n# Ex-script: exglobal_forecast.sh\nexit 0\n")
 
     # Create a sample ush utility
-    (dev_root / "ush" / "detect_machine.sh").write_text(
-        "#!/bin/bash\n# detect_machine.sh\nexport MACHINE=HERA\n"
-    )
+    (dev_root / "ush" / "detect_machine.sh").write_text("#!/bin/bash\n# detect_machine.sh\nexport MACHINE=HERA\n")
 
     # Create a versions file
-    (dev_root / "versions" / "run.ver").write_text(
-        "export gfs_ver=v17.0.0\n"
-    )
+    (dev_root / "versions" / "run.ver").write_text("export gfs_ver=v17.0.0\n")
 
     # Create a .git directory to mark repo root
     (tmp_path / ".git").mkdir()
@@ -301,9 +281,7 @@ def _make_inaccessible(path: Path) -> None:
     """Make a directory tree inaccessible (chmod 000)."""
     # First make all contents inaccessible bottom-up
     for item in sorted(path.rglob("*"), reverse=True):
-        if item.is_dir():
-            os.chmod(item, 0o000)
-        elif item.is_file():
+        if item.is_dir() or item.is_file():
             os.chmod(item, 0o000)
     os.chmod(path, 0o000)
 
@@ -362,9 +340,7 @@ class TestSelfContainment:
 
             # Extract ECF_HOME, ECF_FILES, ECF_INCLUDE variable definitions
             # These appear as: edit ECF_HOME '/path/to/ecf'
-            ecf_var_pattern = re.compile(
-                r"edit\s+(ECF_HOME|ECF_FILES|ECF_INCLUDE)\s+'([^']+)'"
-            )
+            ecf_var_pattern = re.compile(r"edit\s+(ECF_HOME|ECF_FILES|ECF_INCLUDE)\s+'([^']+)'")
             matches = ecf_var_pattern.findall(content)
 
             for var_name, var_value in matches:
@@ -377,9 +353,7 @@ class TestSelfContainment:
                 if str(expdir) in resolved:
                     resolved_path = Path(resolved)
                     assert resolved_path.exists(), (
-                        f".def file references {var_name}='{var_value}' "
-                        f"which resolves to '{resolved}' but does not exist "
-                        f"within the EXPDIR"
+                        f".def file references {var_name}='{var_value}' which resolves to '{resolved}' but does not exist within the EXPDIR"
                     )
 
     def test_ecf_scripts_no_dev_references(self, deployed_expdir):
@@ -404,8 +378,8 @@ class TestSelfContainment:
         # Pattern to detect references to the dev/ source tree
         dev_path_str = str(dev_root)
         dev_patterns = [
-            dev_path_str,           # Absolute path to dev/
-            "/dev/jobs/",           # Common dev/ subpaths
+            dev_path_str,  # Absolute path to dev/
+            "/dev/jobs/",  # Common dev/ subpaths
             "/dev/scripts/",
             "/dev/ush/",
             "/dev/parm/",
@@ -419,14 +393,9 @@ class TestSelfContainment:
 
             for pattern in dev_patterns:
                 if pattern in content:
-                    violations.append(
-                        f"{rel_name}: contains reference to '{pattern}'"
-                    )
+                    violations.append(f"{rel_name}: contains reference to '{pattern}'")
 
-        assert not violations, (
-            "Self-containment violation: .ecf scripts reference dev/ paths:\n"
-            + "\n".join(f"  - {v}" for v in violations)
-        )
+        assert not violations, "Self-containment violation: .ecf scripts reference dev/ paths:\n" + "\n".join(f"  - {v}" for v in violations)
 
     def test_expdir_has_nco_layout_directories(self, deployed_expdir):
         """EXPDIR contains all required NCO layout directories.
@@ -446,10 +415,7 @@ class TestSelfContainment:
             if required_dir not in existing_dirs:
                 missing.append(required_dir)
 
-        assert not missing, (
-            f"EXPDIR is missing required NCO layout directories: {missing}. "
-            f"Found: {sorted(existing_dirs)}"
-        )
+        assert not missing, f"EXPDIR is missing required NCO layout directories: {missing}. Found: {sorted(existing_dirs)}"
 
     def test_no_symlinks_outside_expdir(self, deployed_expdir):
         """No symlinks in the EXPDIR point to targets outside the EXPDIR.
@@ -470,13 +436,10 @@ class TestSelfContainment:
                     target.relative_to(expdir)
                 except ValueError:
                     rel_link = item.relative_to(expdir)
-                    external_symlinks.append(
-                        f"{rel_link} -> {target}"
-                    )
+                    external_symlinks.append(f"{rel_link} -> {target}")
 
-        assert not external_symlinks, (
-            "Self-containment violation: symlinks point outside EXPDIR:\n"
-            + "\n".join(f"  - {s}" for s in external_symlinks)
+        assert not external_symlinks, "Self-containment violation: symlinks point outside EXPDIR:\n" + "\n".join(
+            f"  - {s}" for s in external_symlinks
         )
 
     def test_jobs_do_not_reference_dev_paths(self, deployed_expdir):
@@ -507,14 +470,9 @@ class TestSelfContainment:
             rel_name = job_file.relative_to(expdir)
 
             if dev_path_str in content:
-                violations.append(
-                    f"{rel_name}: contains hardcoded dev/ path '{dev_path_str}'"
-                )
+                violations.append(f"{rel_name}: contains hardcoded dev/ path '{dev_path_str}'")
 
-        assert not violations, (
-            "Self-containment violation: J-Jobs reference dev/ paths:\n"
-            + "\n".join(f"  - {v}" for v in violations)
-        )
+        assert not violations, "Self-containment violation: J-Jobs reference dev/ paths:\n" + "\n".join(f"  - {v}" for v in violations)
 
     def test_scripts_do_not_reference_dev_paths(self, deployed_expdir):
         """Staged scripts do not contain hardcoded references to dev/.
@@ -539,14 +497,9 @@ class TestSelfContainment:
             rel_name = script_file.relative_to(expdir)
 
             if dev_path_str in content:
-                violations.append(
-                    f"{rel_name}: contains hardcoded dev/ path"
-                )
+                violations.append(f"{rel_name}: contains hardcoded dev/ path")
 
-        assert not violations, (
-            "Self-containment violation: scripts reference dev/ paths:\n"
-            + "\n".join(f"  - {v}" for v in violations)
-        )
+        assert not violations, "Self-containment violation: scripts reference dev/ paths:\n" + "\n".join(f"  - {v}" for v in violations)
 
     def test_dev_inaccessible_expdir_still_valid(self, deployed_expdir):
         """EXPDIR remains structurally valid after dev/ is made inaccessible.
@@ -565,9 +518,7 @@ class TestSelfContainment:
 
         try:
             # Verify dev/ is truly inaccessible
-            assert not os.access(dev_root, os.R_OK), (
-                "dev/ should not be readable after chmod 000"
-            )
+            assert not os.access(dev_root, os.R_OK), "dev/ should not be readable after chmod 000"
 
             # Verify all EXPDIR files are still readable
             unreadable = []
@@ -578,10 +529,7 @@ class TestSelfContainment:
                     except PermissionError:
                         unreadable.append(str(item.relative_to(expdir)))
 
-            assert not unreadable, (
-                f"Files in EXPDIR became unreadable after dev/ was removed: "
-                f"{unreadable[:10]}"
-            )
+            assert not unreadable, f"Files in EXPDIR became unreadable after dev/ was removed: {unreadable[:10]}"
 
             # Verify manifest.yaml is readable and parseable
             manifest_path = expdir / "manifest.yaml"
@@ -634,9 +582,8 @@ class TestSelfContainment:
             if not full_path.exists():
                 missing_files.append(rel_path)
 
-        assert not missing_files, (
-            f"Manifest lists {len(missing_files)} file(s) not found in EXPDIR:\n"
-            + "\n".join(f"  - {f}" for f in missing_files[:20])
+        assert not missing_files, f"Manifest lists {len(missing_files)} file(s) not found in EXPDIR:\n" + "\n".join(
+            f"  - {f}" for f in missing_files[:20]
         )
 
     def test_ecf_include_files_present(self, deployed_expdir):
@@ -675,8 +622,6 @@ class TestSelfContainment:
             if not include_path.exists():
                 missing_includes.append(include_name)
 
-        assert not missing_includes, (
-            f"ecf scripts reference include files not found in "
-            f"ecf/include/:\n"
-            + "\n".join(f"  - {f}" for f in missing_includes)
+        assert not missing_includes, "ecf scripts reference include files not found in ecf/include/:\n" + "\n".join(
+            f"  - {f}" for f in missing_includes
         )

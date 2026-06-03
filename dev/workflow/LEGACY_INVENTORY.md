@@ -4,6 +4,25 @@
 
 This document inventories root-level directories and files that are candidates for removal or migration now that the immutable DAG deployment pipeline operates exclusively from `dev/`. Each entry is classified by its current status and whether it's safe to remove.
 
+## Removed Legacy Files (from `dev/workflow/`)
+
+The following files were removed as they are fully superseded by the `deploy.py` pipeline:
+
+| Removed File | Was | Replaced By |
+|--------------|-----|-------------|
+| `setup_expt.py` | Interactive experiment setup | `deploy.py` → `deployment/pipeline.py` Stages 2+3 |
+| `setup_workflow.py` | Rocoto/ecFlow XML generator | `deploy.py` → `deployment/pipeline.py` Stage 5 |
+| `create_experiment.py` | Wrapper around setup_expt + setup_workflow | `deploy.py` (single command) |
+| `hosts.py` | Host detection class | Pipeline reads `hosts/<platform>.yaml` directly |
+| `workflow_suite.py` | ABC for suite generation | `deployment/dag_generator.py` |
+| `setup_ecf.py` | Older ecFlow setup script | `deployment/dag_generator.py` |
+| `applications/` | Application factory classes | Workflow YAMLs in `dev/parm/workflow/` |
+| `ecflow/*.py` | ecFlow suite factory + definitions | `deployment/dag_generator.py` |
+| `prod.yml` | Legacy prod workflow config | `dev/parm/workflow/*.yaml` |
+| `ecflow_build.yml` | Legacy ecFlow build config | Pipeline Stage 5 |
+
+**Note:** `dev/ci/scripts/utils/ci_utils.sh` and `dev/workflow/generate_workflows.sh` still reference `create_experiment.py`. These need migration to call `deploy.py` directly.
+
 ---
 
 ## Classification Legend

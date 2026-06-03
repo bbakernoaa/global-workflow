@@ -54,12 +54,12 @@ hour_list=()
 
 # Generate hours from 0 to NEND1 with interval NINT1
 for ((hour = 0; hour <= NEND1 && hour <= ENDHOUR; hour += NINT1)); do
-    hour_list+=("$(printf "%03d" "${hour}")")
+  hour_list+=("$(printf "%03d" "${hour}")")
 done
 
 # Generate hours from NEND1 + NINT3 to ENDHOUR with interval NINT3
 for ((hour = NEND1 + NINT3; hour <= ENDHOUR; hour += NINT3)); do
-    hour_list+=("$(printf "%03d" "${hour}")")
+  hour_list+=("$(printf "%03d" "${hour}")")
 done
 
 # Print the hour list
@@ -80,44 +80,44 @@ rm -f "${DATA}/poescript_bufr"
 
 for fhr in "${hour_list[@]}"; do
 
-    if [[ ! -s "${DATA}/${fhr}" ]]; then mkdir -p "${DATA}/${fhr}"; fi
-    export FINT=${NINT1}
-    ## 1-hourly output before $NEND1, 3-hourly output after
-    if [[ $((10#${fhr})) -gt $((10#${NEND1})) ]]; then
-        export FINT=${NINT3}
-    fi
-    if [[ $((10#${fhr})) -eq 0 ]]; then
-        export F00FLAG="YES"
-    else
-        export F00FLAG="NO"
-    fi
+  if [[ ! -s "${DATA}/${fhr}" ]]; then mkdir -p "${DATA}/${fhr}"; fi
+  export FINT=${NINT1}
+  ## 1-hourly output before $NEND1, 3-hourly output after
+  if [[ $((10#${fhr})) -gt $((10#${NEND1})) ]]; then
+    export FINT=${NINT3}
+  fi
+  if [[ $((10#${fhr})) -eq 0 ]]; then
+    export F00FLAG="YES"
+  else
+    export F00FLAG="NO"
+  fi
 
-    # Convert fhr to integer
-    fhr_int=$((10#${fhr}))
+  # Convert fhr to integer
+  fhr_int=$((10#${fhr}))
 
-    # Get previous hour
-    if ((fhr_int == STARTHOUR)); then
-        fhr_p=${fhr_int}
-    else
-        fhr_p=$((fhr_int - FINT))
-    fi
+  # Get previous hour
+  if ((fhr_int == STARTHOUR)); then
+    fhr_p=${fhr_int}
+  else
+    fhr_p=$((fhr_int - FINT))
+  fi
 
-    # Format fhr_p with leading zeros
-    fhr_p="$(printf "%03d" "${fhr_p}")"
+  # Format fhr_p with leading zeros
+  fhr_p="$(printf "%03d" "${fhr_p}")"
 
-    filename="${COMIN_ATMOS_HISTORY}/${RUN}.${cycle}.atm.logf${fhr}.${logfm}"
-    if [[ -z ${filename} ]]; then
-        err_exit "FATAL ERROR: File ${filename} not found."
-    else
-        echo "${runscript} ${fhr} ${fhr_p} ${FINT} ${F00FLAG} ${DATA}/${fhr}" >> "${DATA}/poescript_bufr"
-    fi
+  filename="${COMIN_ATMOS_HISTORY}/${RUN}.${cycle}.atm.logf${fhr}.${logfm}"
+  if [[ -z ${filename} ]]; then
+    err_exit "FATAL ERROR: File ${filename} not found."
+  else
+    echo "${runscript} ${fhr} ${fhr_p} ${FINT} ${F00FLAG} ${DATA}/${fhr}" >> "${DATA}/poescript_bufr"
+  fi
 done
 
 # Run with MPMD
 "${USHglobal}/run_mpmd.sh" "${DATA}/poescript_bufr" && true
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "One or more BUFR MPMD tasks failed!"
+  err_exit "One or more BUFR MPMD tasks failed!"
 fi
 
 cd "${DATA}" || exit 2
@@ -127,9 +127,9 @@ fortnum=20
 
 # Loop through each element in the array
 for fhr in "${hour_list[@]}"; do
-    # Increment fortnum
-    fortnum=$((fortnum + 1))
-    ${NLN} "${DATA}/${fhr}/fort.${fortnum}" "fort.${fortnum}"
+  # Increment fortnum
+  fortnum=$((fortnum + 1))
+  ${NLN} "${DATA}/${fhr}/fort.${fortnum}" "fort.${fortnum}"
 done
 
 # start to generate bufr products at fhr=${ENDHOUR}
@@ -140,17 +140,17 @@ export fhr
 export FINT=${NINT1}
 ## 1-hourly output before $NEND1, 3-hourly output after
 if [[ $((10#${fhr})) -gt $((10#${NEND1})) ]]; then
-    export FINT=${NINT3}
+  export FINT=${NINT3}
 fi
 if [[ $((10#${fhr})) -eq 0 ]]; then
-    export F00FLAG="YES"
+  export F00FLAG="YES"
 else
-    export F00FLAG="NO"
+  export F00FLAG="NO"
 fi
 ${runscript} "${fhr}" "${fhr_p}" "${FINT}" "${F00FLAG}" "${DATA}" && true
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Failed to generate BUFR sounding files for forecast hour ${fhr}!"
+  err_exit "Failed to generate BUFR sounding files for forecast hour ${fhr}!"
 fi
 
 ############################################
@@ -166,8 +166,8 @@ cpfs "${RUN}.${cycle}.soundings.tar.gz" "${COMOUT_ATMOS_BUFR}/"
 # Send the single tar file to OSO
 ########################################
 if [[ "${SENDDBN}" == "YES" ]]; then
-    "${DBNROOT}/bin/dbn_alert" MODEL GFS_BUFRSND_TAR "${job}" \
-        "${COMOUT_ATMOS_BUFR}/${RUN}.${cycle}.soundings.tar.gz"
+  "${DBNROOT}/bin/dbn_alert" MODEL GFS_BUFRSND_TAR "${job}" \
+    "${COMOUT_ATMOS_BUFR}/${RUN}.${cycle}.soundings.tar.gz"
 fi
 
 ########################################
@@ -176,13 +176,13 @@ fi
 ########################################
 rm -rf poe_col
 for ((m = 1; m <= NUM_SND_COLLECTIVES; m++)); do
-    echo "${USHglobal}/gfs_sndp.sh ${m} " >> poe_col
+  echo "${USHglobal}/gfs_sndp.sh ${m} " >> poe_col
 done
 
 if [[ "${CFP_MP:-"NO"}" == "YES" ]]; then
-    nl -n ln -v 0 poe_col > cmdfile
+  nl -n ln -v 0 poe_col > cmdfile
 else
-    mv poe_col cmdfile
+  mv poe_col cmdfile
 fi
 
 cat cmdfile
@@ -195,7 +195,7 @@ ${APRUN_POSTSNDCFP} cmdfile
 # GEMPAK surface and sounding data files
 ########################################
 if [[ "${DO_GEMPAK:-"NO"}" == "YES" ]]; then
-    sh "${USHglobal}/gfs_bfr2gpk.sh"
+  sh "${USHglobal}/gfs_bfr2gpk.sh"
 fi
 
 ############## END OF SCRIPT #######################

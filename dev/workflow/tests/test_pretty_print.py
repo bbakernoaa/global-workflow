@@ -16,27 +16,21 @@ import os
 import sys
 import tempfile
 
-import pytest
-
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from deployment.workflow_config import (
     DAG,
-    Edge,
     MeterDef,
     TaskNode,
     parse,
     pretty_print,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
-SAMPLE_DIR = os.path.join(
-    os.path.dirname(__file__), "..", "..", "parm", "workflow"
-)
+SAMPLE_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "parm", "workflow")
 
 
 def _parse_from_string(yaml_str: str) -> DAG:
@@ -102,9 +96,7 @@ class TestDeterminism:
 
     def test_deterministic_simple_dag(self):
         dag = DAG(suite_name="test")
-        dag.nodes["fam/task1"] = TaskNode(
-            name="task1", family_path="fam", jjob="JTASK1"
-        )
+        dag.nodes["fam/task1"] = TaskNode(name="task1", family_path="fam", jjob="JTASK1")
         output1 = pretty_print(dag)
         output2 = pretty_print(dag)
         assert output1 == output2
@@ -156,17 +148,13 @@ class TestRoundTrip:
 
     def test_round_trip_minimal(self):
         dag = DAG(suite_name="minimal")
-        dag.nodes["fam/task1"] = TaskNode(
-            name="task1", family_path="fam", jjob="JTASK1"
-        )
+        dag.nodes["fam/task1"] = TaskNode(name="task1", family_path="fam", jjob="JTASK1")
         dag2 = _round_trip_dag(dag)
         assert _dags_structurally_equal(dag, dag2)
 
     def test_round_trip_with_trigger(self):
         dag = DAG(suite_name="test")
-        dag.nodes["app/prep"] = TaskNode(
-            name="prep", family_path="app", jjob="JPREP"
-        )
+        dag.nodes["app/prep"] = TaskNode(name="prep", family_path="app", jjob="JPREP")
         dag.nodes["app/anal"] = TaskNode(
             name="anal",
             family_path="app",
@@ -247,9 +235,7 @@ class TestRoundTrip:
 
     def test_round_trip_multiple_families(self):
         dag = DAG(suite_name="multi")
-        dag.nodes["gdas/prep/prep"] = TaskNode(
-            name="prep", family_path="gdas/prep", jjob="JGDAS_PREP"
-        )
+        dag.nodes["gdas/prep/prep"] = TaskNode(name="prep", family_path="gdas/prep", jjob="JGDAS_PREP")
         dag.nodes["gdas/anal/anal"] = TaskNode(
             name="anal",
             family_path="gdas/anal",
@@ -290,9 +276,7 @@ class TestOutputFormat:
         import yaml
 
         dag = DAG(suite_name="test")
-        dag.nodes["fam/task1"] = TaskNode(
-            name="task1", family_path="fam", jjob="JTASK1"
-        )
+        dag.nodes["fam/task1"] = TaskNode(name="task1", family_path="fam", jjob="JTASK1")
         output = pretty_print(dag)
         parsed = yaml.safe_load(output)
         assert isinstance(parsed, dict)
@@ -303,9 +287,7 @@ class TestOutputFormat:
         import yaml
 
         dag = DAG(suite_name="gfs_v17_special")
-        dag.nodes["fam/task1"] = TaskNode(
-            name="task1", family_path="fam", jjob="JTASK1"
-        )
+        dag.nodes["fam/task1"] = TaskNode(name="task1", family_path="fam", jjob="JTASK1")
         output = pretty_print(dag)
         parsed = yaml.safe_load(output)
         assert parsed["suite"]["name"] == "gfs_v17_special"
@@ -322,10 +304,8 @@ class TestOutputFormat:
         output = pretty_print(dag)
         lines = output.strip().splitlines()
         # 'suite' should come before 'families'
-        suite_idx = next(i for i, l in enumerate(lines) if l.startswith("suite"))
-        families_idx = next(
-            i for i, l in enumerate(lines) if l.startswith("families")
-        )
+        suite_idx = next(i for i, ln in enumerate(lines) if ln.startswith("suite"))
+        families_idx = next(i for i, ln in enumerate(lines) if ln.startswith("families"))
         assert suite_idx < families_idx
 
     def test_task_key_order(self):
@@ -340,7 +320,9 @@ class TestOutputFormat:
         output = pretty_print(dag)
         # Find the task section
         lines = output.strip().splitlines()
-        task_lines = [l.strip() for l in lines if l.strip().startswith("name:") or l.strip().startswith("trigger:") or l.strip().startswith("jjob:")]
+        task_lines = [
+            ln.strip() for ln in lines if ln.strip().startswith("name:") or ln.strip().startswith("trigger:") or ln.strip().startswith("jjob:")
+        ]
         # name should come first, then trigger, then jjob
         assert task_lines[0].startswith("name:")
         assert task_lines[1].startswith("trigger:")
@@ -349,9 +331,7 @@ class TestOutputFormat:
     def test_empty_trigger_quoted(self):
         """Verify empty trigger is represented as quoted empty string."""
         dag = DAG(suite_name="test")
-        dag.nodes["fam/task1"] = TaskNode(
-            name="task1", family_path="fam", jjob="JTASK1", trigger=None
-        )
+        dag.nodes["fam/task1"] = TaskNode(name="task1", family_path="fam", jjob="JTASK1", trigger=None)
         output = pretty_print(dag)
         assert '""' in output
 
@@ -360,15 +340,9 @@ class TestOutputFormat:
         import yaml
 
         dag = DAG(suite_name="test")
-        dag.nodes["fam_a/task1"] = TaskNode(
-            name="task1", family_path="fam_a", jjob="JA"
-        )
-        dag.nodes["fam_b/task2"] = TaskNode(
-            name="task2", family_path="fam_b", jjob="JB"
-        )
-        dag.nodes["fam_a/task3"] = TaskNode(
-            name="task3", family_path="fam_a", jjob="JC"
-        )
+        dag.nodes["fam_a/task1"] = TaskNode(name="task1", family_path="fam_a", jjob="JA")
+        dag.nodes["fam_b/task2"] = TaskNode(name="task2", family_path="fam_b", jjob="JB")
+        dag.nodes["fam_a/task3"] = TaskNode(name="task3", family_path="fam_a", jjob="JC")
         output = pretty_print(dag)
         parsed = yaml.safe_load(output)
         families = parsed["families"]
@@ -407,10 +381,7 @@ class TestEdgeCases:
             trigger="a/b/c == complete and d/e/f == complete",
         )
         dag2 = _round_trip_dag(dag)
-        assert (
-            dag2.nodes["fam/task1"].trigger
-            == "a/b/c == complete and d/e/f == complete"
-        )
+        assert dag2.nodes["fam/task1"].trigger == "a/b/c == complete and d/e/f == complete"
 
     def test_meter_with_threshold(self):
         """Meters with threshold should round-trip correctly."""

@@ -19,7 +19,7 @@ import os
 import shutil
 import subprocess
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
@@ -37,8 +37,7 @@ from .validation import _get_installed_version, check_pinned_versions
 from .workflow_config import parse as parse_workflow_config
 
 if TYPE_CHECKING:
-    from .completeness_verifier import CompletenessVerifier
-    from .dag_filter import DAGFilter, DAGReachabilitySet
+    from .dag_filter import DAGReachabilitySet
     from .name_resolver import NameResolver
 
 # Packages whose pinned versions are enforced as a hard precondition
@@ -104,19 +103,21 @@ class SizeReductionReport:
 # ---------------------------------------------------------------------------
 
 # Supported platforms (Req 12.1)
-SUPPORTED_PLATFORMS = frozenset({
-    "WCOSS2",
-    "HERA",
-    "HERCULES",
-    "ORION",
-    "GAEAC6",
-    "DERECHO",
-    "URSA",
-    "AWSPW",
-    "AZUREPW",
-    "GOOGLEPW",
-    "CONTAINER",
-})
+SUPPORTED_PLATFORMS = frozenset(
+    {
+        "WCOSS2",
+        "HERA",
+        "HERCULES",
+        "ORION",
+        "GAEAC6",
+        "DERECHO",
+        "URSA",
+        "AWSPW",
+        "AZUREPW",
+        "GOOGLEPW",
+        "CONTAINER",
+    }
+)
 
 # Source-to-target mapping for file staging (design table)
 # Maps dev/ subdirectories to EXPDIR subdirectories
@@ -132,12 +133,14 @@ _STAGE_MAPPING: list[tuple[str, str]] = [
 ]
 
 # Directories excluded from staging by default (Req 8.7)
-_DEFAULT_EXCLUDES = frozenset({
-    "ci",
-    "ctests",
-    "workflow/tests",
-    "workflow/deployment/__pycache__",
-})
+_DEFAULT_EXCLUDES = frozenset(
+    {
+        "ci",
+        "ctests",
+        "workflow/tests",
+        "workflow/deployment/__pycache__",
+    }
+)
 
 # Submodule copy manifest: files owned by external submodules that are
 # copied verbatim (never templated) into the EXPDIR.
@@ -154,10 +157,12 @@ SUBMODULE_COPY_MANIFEST: list[tuple[str, str]] = [
 # in SUBMODULE_COPY_MANIFEST. These submodules contribute non-essential
 # inputs (e.g. chemistry/post config) and a non-production EXPDIR can be
 # produced without them; a warning is emitted when they are skipped.
-_OPTIONAL_SUBMODULE_SOURCES: frozenset[str] = frozenset({
-    "sorc/nexus.fd/config/gocart/",
-    "sorc/upp.fd/parm/",
-})
+_OPTIONAL_SUBMODULE_SOURCES: frozenset[str] = frozenset(
+    {
+        "sorc/nexus.fd/config/gocart/",
+        "sorc/upp.fd/parm/",
+    }
+)
 
 
 class SubmodulePolicy(enum.Enum):
@@ -177,6 +182,7 @@ class SubmodulePolicy(enum.Enum):
     REQUIRE = "require"
     FIXTURE = "fixture"
     SKIP_OPTIONAL = "skip"
+
 
 # Template directories to render (Req 4.5)
 _TEMPLATE_DIRS = [
@@ -333,8 +339,7 @@ def _stage_validate(
     if platform.upper() not in SUPPORTED_PLATFORMS:
         raise PipelineError(
             "validate",
-            f"Unsupported platform '{platform}'. "
-            f"Supported: {sorted(SUPPORTED_PLATFORMS)}",
+            f"Unsupported platform '{platform}'. Supported: {sorted(SUPPORTED_PLATFORMS)}",
         )
 
     # Check EXPDIR immutability guard (Req 3.5)
@@ -347,8 +352,7 @@ def _stage_validate(
             snapshot_id = "unknown"
         raise PipelineError(
             "validate",
-            f"EXPDIR already published with Snapshot_ID {snapshot_id}. "
-            f"Cannot overwrite a sealed deployment.",
+            f"EXPDIR already published with Snapshot_ID {snapshot_id}. Cannot overwrite a sealed deployment.",
         )
 
     # Verify version string is non-empty
@@ -433,9 +437,7 @@ def _check_version_gate(dev_root: Path, *, enforce_versions: bool) -> None:
         raise PipelineError("validate", "; ".join(errors))
 
 
-def _parse_pinned_for_packages(
-    requirements_path: Path, packages: tuple[str, ...]
-) -> dict[str, str]:
+def _parse_pinned_for_packages(requirements_path: Path, packages: tuple[str, ...]) -> dict[str, str]:
     """Return the pinned versions for the named packages from requirements.
 
     Args:
@@ -545,12 +547,10 @@ def build_context(
     expdir = Path(expdir)
 
     if not config_path.exists():
-        raise FileNotFoundError(
-            f"Workflow configuration not found: {config_path}"
-        )
+        raise FileNotFoundError(f"Workflow configuration not found: {config_path}")
 
     # Load the Workflow_Configuration YAML
-    with open(config_path, "r") as f:
+    with open(config_path) as f:
         config_data = yaml.safe_load(f)
 
     if config_data is None:
@@ -585,7 +585,7 @@ def build_context(
     ]
     for host_path in host_candidates:
         if host_path.is_file():
-            with open(host_path, "r") as hf:
+            with open(host_path) as hf:
                 loaded = yaml.safe_load(hf)
             if loaded and isinstance(loaded, dict):
                 host_vars = loaded
@@ -677,7 +677,7 @@ def _stage_build_context(
     return context
 
 
-def _load_name_resolver(dev_root: Path) -> "NameResolver":
+def _load_name_resolver(dev_root: Path) -> NameResolver:
     """Load PrefixRegistry and instantiate NameResolver.
 
     Called during Stage 2 (Build Context) to prepare the Name_Resolver
@@ -803,10 +803,7 @@ def _stage_render_templates(
             for src_file in sorted(src_dir.rglob("*.j2")):
                 # Check if this file is in a skip pattern directory
                 rel_to_src = src_file.relative_to(src_dir)
-                should_skip = any(
-                    str(rel_to_src).startswith(pattern)
-                    for pattern in skip_patterns
-                )
+                should_skip = any(str(rel_to_src).startswith(pattern) for pattern in skip_patterns)
                 if should_skip:
                     continue
 
@@ -821,19 +818,13 @@ def _stage_render_templates(
                         # Known app directories that are app-specific
                         config_dir = src_dir / "config"
                         if config_dir.is_dir():
-                            app_dirs = {
-                                d.name
-                                for d in config_dir.iterdir()
-                                if d.is_dir()
-                            }
+                            app_dirs = {d.name for d in config_dir.iterdir() if d.is_dir()}
                             if template_app_dir in app_dirs and template_app_dir != app:
                                 continue
 
                 # Skip analysis-specific configs not used by this workflow
                 if _should_skip_config(src_file.stem, active_jjobs):
-                    logger.debug(
-                        f"  Skipping {rel_to_src} (no matching J-Job in workflow)"
-                    )
+                    logger.debug(f"  Skipping {rel_to_src} (no matching J-Job in workflow)")
                     continue
 
                 # DAG reachability filter: when enabled, only render config
@@ -842,9 +833,7 @@ def _stage_render_templates(
                 # required by the application's task DAG.
                 if reachability_set is not None and rel_str.startswith("config/"):
                     if not reachability_set.contains_config(src_file.name):
-                        logger.debug(
-                            f"  Skipping {rel_to_src} (not in DAG reachability set)"
-                        )
+                        logger.debug(f"  Skipping {rel_to_src} (not in DAG reachability set)")
                         continue
 
                 # Compute destination path (strip .j2 suffix)
@@ -855,9 +844,7 @@ def _stage_render_templates(
                 rendered_files.append(dst_file)
                 count += 1
 
-            logger.info(
-                f"  ✓ Rendered {count} template(s) from {template_dir_name}/"
-            )
+            logger.info(f"  ✓ Rendered {count} template(s) from {template_dir_name}/")
         except Exception as e:
             raise PipelineError(
                 "render_templates",
@@ -878,9 +865,7 @@ def _stage_render_templates(
         model_renderer = ModelConfigRenderer(dev_root=dev_root)
         try:
             if reachability_set is not None:
-                logger.info(
-                    "  Using DAG-aware rendering (render_for_dag)"
-                )
+                logger.info("  Using DAG-aware rendering (render_for_dag)")
                 model_rendered_files = model_renderer.render_for_dag(
                     model_context=model_context,
                     expdir=expdir,
@@ -891,9 +876,7 @@ def _stage_render_templates(
                     model_context=model_context,
                     expdir=expdir,
                 )
-            logger.info(
-                f"  ✓ Rendered {len(model_rendered_files)} model config file(s)"
-            )
+            logger.info(f"  ✓ Rendered {len(model_rendered_files)} model config file(s)")
         except TemplateRenderError as e:
             raise PipelineError(
                 "render_templates",
@@ -903,9 +886,7 @@ def _stage_render_templates(
         # Verify no unresolved Jinja2 tokens remain in rendered model
         # inputs (Req 6.4). This check applies regardless of --dag-filter.
         model_renderer.verify_no_unresolved_tokens(model_rendered_files)
-        logger.info(
-            "  ✓ Zero-token verification passed for model inputs"
-        )
+        logger.info("  ✓ Zero-token verification passed for model inputs")
 
         # Add model config rendered paths to the overall rendered list
         for rf in model_rendered_files:
@@ -1015,7 +996,7 @@ def _stage_stage_files(
                 exclude_parts = exclude.split("/")
                 if rel_parts[: len(exclude_parts)] == tuple(exclude_parts):
                     # Check if it's in the allowlist
-                    dev_path = f"dev/{'/'.join(rel_parts[:len(exclude_parts)])}/"
+                    dev_path = f"dev/{'/'.join(rel_parts[: len(exclude_parts)])}/"
                     if dev_path not in allowlist_set:
                         excluded = True
                     break
@@ -1087,8 +1068,7 @@ def _stage_submodule_copy(
     if policy is SubmodulePolicy.FIXTURE and fixture_root is None:
         raise PipelineError(
             "stage_submodule_copy",
-            "FATAL ERROR: SubmodulePolicy.FIXTURE requires a fixture_root, "
-            "but none was provided.",
+            "FATAL ERROR: SubmodulePolicy.FIXTURE requires a fixture_root, but none was provided.",
         )
 
     copied_files: list[Path] = []
@@ -1162,40 +1142,33 @@ def _resolve_missing_submodule_source(
         if fixture_root is None:
             raise PipelineError(
                 "stage_submodule_copy",
-                "FATAL ERROR: SubmodulePolicy.FIXTURE requires a fixture_root, "
-                "but none was provided.",
+                "FATAL ERROR: SubmodulePolicy.FIXTURE requires a fixture_root, but none was provided.",
             )
         fixture_src = fixture_root / source_rel
         if fixture_src.exists():
-            logger.info(
-                "  ↪ Resolving '%s' from fixture '%s'", source_rel, fixture_src
-            )
+            logger.info("  ↪ Resolving '%s' from fixture '%s'", source_rel, fixture_src)
             return fixture_src
         raise PipelineError(
             "stage_submodule_copy",
-            f"FATAL ERROR: Submodule source not found: "
-            f"'{source_rel}' (no checkout and no fixture at '{fixture_src}').",
+            f"FATAL ERROR: Submodule source not found: '{source_rel}' (no checkout and no fixture at '{fixture_src}').",
         )
 
     if policy is SubmodulePolicy.SKIP_OPTIONAL:
         if source_rel in _OPTIONAL_SUBMODULE_SOURCES:
             logger.warning(
-                "  ⚠ Skipping optional submodule source '%s' (not present); "
-                "the produced EXPDIR is non-production.",
+                "  ⚠ Skipping optional submodule source '%s' (not present); the produced EXPDIR is non-production.",
                 source_rel,
             )
             return None
         raise PipelineError(
             "stage_submodule_copy",
-            f"Submodule source not found: '{src_dir}'. "
-            f"This source is not optional and cannot be skipped.",
+            f"Submodule source not found: '{src_dir}'. This source is not optional and cannot be skipped.",
         )
 
     # SubmodulePolicy.REQUIRE (production default): unchanged FATAL behavior.
     raise PipelineError(
         "stage_submodule_copy",
-        f"Submodule source not found: '{src_dir}'. "
-        f"Ensure the submodule is checked out.",
+        f"Submodule source not found: '{src_dir}'. Ensure the submodule is checked out.",
     )
 
 
@@ -1235,7 +1208,7 @@ def _stage_platform_conditioned(
     )
 
     # Render all platform-conditioned files
-    result = render_all_platform_conditioned(
+    render_all_platform_conditioned(
         project_root=project_root,
         expdir=expdir,
         platform=platform,
@@ -1258,6 +1231,7 @@ def _stage_platform_conditioned(
             platform_resource = app_dir / f"config.resources.{platform.upper()}"
             if platform_resource.exists():
                 from .platform_conditioner import render_platform_resources
+
                 render_platform_resources(
                     project_root=project_root,
                     expdir=expdir,
@@ -1378,13 +1352,10 @@ def _stage_generate_dag(
 
     # Validate the DAG is acyclic
     dag.validate_acyclic()
-    logger.info(
-        f"  ✓ DAG validated: {len(dag.nodes)} tasks, "
-        f"{len(dag.edges)} edges, no cycles"
-    )
+    logger.info(f"  ✓ DAG validated: {len(dag.nodes)} tasks, {len(dag.edges)} edges, no cycles")
 
     # Parse suite configuration for ecFlow emission
-    with open(config_path, "r") as f:
+    with open(config_path) as f:
         raw_config = yaml.safe_load(f) or {}
     suite_config = parse_suite_config(raw_config)
 
@@ -1407,10 +1378,7 @@ def _stage_generate_dag(
         )
         logger.info(f"  ✓ Generated {len(ecf_files)} .ecf script(s)")
     else:
-        logger.warning(
-            f"  ⚠ Template not found: {template_path}. "
-            f"Skipping .ecf script generation."
-        )
+        logger.warning(f"  ⚠ Template not found: {template_path}. Skipping .ecf script generation.")
 
     # Copy ecFlow include files if they exist
     include_src = dev_root / "workflow" / "ecflow" / "include"
@@ -1434,9 +1402,7 @@ def _stage_ee2_scan(expdir: Path) -> None:
     logger.info("Stage 6/8: EE2 compliance scan")
 
     # Only run the scan if the relevant directories exist
-    has_scannable = any(
-        (expdir / d).is_dir() for d in ("jobs", "scripts", "ush")
-    )
+    has_scannable = any((expdir / d).is_dir() for d in ("jobs", "scripts", "ush"))
 
     if not has_scannable:
         logger.info("  ⚠ No jobs/, scripts/, or ush/ directories to scan")
@@ -1555,11 +1521,7 @@ def _stage_seal(expdir: Path, context: dict[str, Any]) -> None:
         "deployed_at": datetime.now(timezone.utc).isoformat(),
         "platform": context.get("MACHINE", ""),
         "version": context.get("model_ver", ""),
-        "config": {
-            k: v
-            for k, v in context.items()
-            if k not in ("git_commit", "git_branch", "git_remote")
-        },
+        "config": {k: v for k, v in context.items() if k not in ("git_commit", "git_branch", "git_remote")},
     }
 
     provenance_path.write_text(
@@ -1732,7 +1694,7 @@ def run(
         # before a full deployment.
         if dag_filter:
             try:
-                with open(config_path, "r") as f:
+                with open(config_path) as f:
                     dry_run_config = yaml.safe_load(f) or {}
             except (yaml.YAMLError, OSError) as e:
                 raise PipelineError(
@@ -1787,9 +1749,7 @@ def run(
     expdir_path.mkdir(parents=True, exist_ok=True)
 
     # --- Stage 2: Build Context ---
-    context = _stage_build_context(
-        config_path, platform, version, expdir_path, dev_root
-    )
+    context = _stage_build_context(config_path, platform, version, expdir_path, dev_root)
 
     # --- Stage 2 (cont.): Load PrefixRegistry and NameResolver (Req 2.7, 5.3, 5.4) ---
     name_resolver = _load_name_resolver(dev_root)
@@ -1823,14 +1783,15 @@ def run(
     # When reachability is available, render_for_dag() is used for model
     # inputs; otherwise render_all() is used.
     rendered_files, model_rendered_files = _stage_render_templates(
-        dev_root, expdir_path, context, platform,
+        dev_root,
+        expdir_path,
+        context,
+        platform,
         reachability_set=reachability,
     )
 
     # --- Stage 4: Stage Files ---
-    staged_files = _stage_stage_files(
-        dev_root, expdir_path, allowlist, context, reachability=reachability
-    )
+    staged_files = _stage_stage_files(dev_root, expdir_path, allowlist, context, reachability=reachability)
 
     # --- Stage 4 (cont.): J-Job rename-on-copy and unconditional artifacts ---
     # When DAG filtering is enabled, use the resolution_map from the
@@ -1840,25 +1801,18 @@ def run(
     from .file_stager import FileStager
 
     project_root = dev_root.parent
-    file_stager = FileStager(
-        project_root=project_root, expdir=expdir_path, use_uwtools=False
-    )
+    file_stager = FileStager(project_root=project_root, expdir=expdir_path, use_uwtools=False)
 
     if dag_filter and reachability is not None:
         # Build resolution_map from DAGReachabilitySet.jjob_source_map
         # using the NameResolver to get full ResolvedName objects
         resolution_map = name_resolver.resolve_all(reachability.jjobs)
         jjob_staging_result = file_stager.stage_jjobs_with_rename(resolution_map)
-        logger.info(
-            f"  ✓ Staged {jjob_staging_result.files_copied} J-Job(s) with "
-            f"application naming"
-        )
+        logger.info(f"  ✓ Staged {jjob_staging_result.files_copied} J-Job(s) with application naming")
 
     # Stage unconditional artifacts regardless of --dag-filter (Req 9.5)
     unconditional_result = file_stager.stage_unconditional_artifacts()
-    logger.info(
-        f"  ✓ Staged {unconditional_result.files_copied} unconditional artifact(s)"
-    )
+    logger.info(f"  ✓ Staged {unconditional_result.files_copied} unconditional artifact(s)")
 
     # --- Stage 4c: Submodule Copy (Req 13.3, 13.4, 13.5, 6.1, 6.2) ---
     project_root = dev_root.parent
@@ -1871,9 +1825,7 @@ def run(
     staged_files.extend(submodule_files)
 
     # --- Stage 4b: Platform-Conditioned Rendering (Req 12.2, 12.3) ---
-    _stage_platform_conditioned(
-        dev_root, expdir_path, platform, context, config_path
-    )
+    _stage_platform_conditioned(dev_root, expdir_path, platform, context, config_path)
 
     # --- Stage 4c: Config Conditioning (Req 5.1, 13.3) ---
     # Runs ALWAYS regardless of --dag-filter flag
@@ -1894,7 +1846,7 @@ def run(
         _log_size_reduction(dev_root, reachability)
 
     # --- Stage 5: Generate DAG ---
-    def_path = _stage_generate_dag(config_path, expdir_path, platform, dev_root)
+    _stage_generate_dag(config_path, expdir_path, platform, dev_root)
 
     # --- Stage 6: EE2 Compliance Scan ---
     if not skip_ee2_scan:
@@ -1975,8 +1927,7 @@ def _find_dev_root(config_path: Path) -> Path:
 
     raise PipelineError(
         "validate",
-        f"Cannot determine dev/ root from config path: {config_path}. "
-        f"Ensure the config file is within the repository tree.",
+        f"Cannot determine dev/ root from config path: {config_path}. Ensure the config file is within the repository tree.",
     )
 
 
@@ -2039,6 +1990,7 @@ def _get_current_user() -> str:
 def _get_hostname() -> str:
     """Get the current hostname."""
     import socket
+
     try:
         return socket.getfqdn()
     except Exception:

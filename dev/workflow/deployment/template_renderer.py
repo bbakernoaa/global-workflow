@@ -28,7 +28,7 @@ from jinja2 import (
 
 # Pattern matching shell variables: ${VAR_NAME}
 # These must be preserved verbatim for runtime shell expansion.
-_SHELL_VAR_PATTERN = re.compile(r'\$\{[A-Z_][A-Z0-9_]*\}')
+_SHELL_VAR_PATTERN = re.compile(r"\$\{[A-Z_][A-Z0-9_]*\}")
 
 # Unique placeholder prefix used to protect shell variables from Jinja2
 _SHELL_VAR_PLACEHOLDER = "__SHELL_VAR_PRESERVE__"
@@ -163,7 +163,7 @@ class TemplateRenderer:
         dev_root: str | Path,
         app: str = "gfs",
         strict: bool = True,
-    ) -> "TemplateRenderer":
+    ) -> TemplateRenderer:
         """Factory method that builds the standard deployment searchpath.
 
         Constructs the searchpath as specified in the design:
@@ -250,8 +250,7 @@ class TemplateRenderer:
             ) from e
         except TemplateNotFound as e:
             raise TemplateRenderError(
-                f"Included/extended template not found: '{e.name}'. "
-                f"Searchpath: {self.searchpath}",
+                f"Included/extended template not found: '{e.name}'. Searchpath: {self.searchpath}",
                 file=str(src),
             ) from e
 
@@ -378,7 +377,7 @@ class TemplateRenderer:
         for token in ("{{", "{%", "{#"):
             idx = content.find(token)
             if idx != -1:
-                line_num = content[:idx].count('\n') + 1
+                line_num = content[:idx].count("\n") + 1
                 raise TemplateRenderError(
                     f"Unresolved Jinja2 token '{token}' found after rendering",
                     file=str(path),
@@ -434,11 +433,11 @@ def _find_undefined_line(template_text: str, var_name: str) -> int | None:
     """
     # Search for the variable in Jinja2 expression contexts
     patterns = [
-        re.compile(rf'\{{\{{\s*{re.escape(var_name)}\b'),  # {{ var_name
-        re.compile(rf'\{{% .*\b{re.escape(var_name)}\b'),  # {% ... var_name
+        re.compile(rf"\{{\{{\s*{re.escape(var_name)}\b"),  # {{ var_name
+        re.compile(rf"\{{% .*\b{re.escape(var_name)}\b"),  # {% ... var_name
     ]
     for pattern in patterns:
         match = pattern.search(template_text)
         if match:
-            return template_text[:match.start()].count('\n') + 1
+            return template_text[: match.start()].count("\n") + 1
     return None

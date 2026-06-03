@@ -16,14 +16,14 @@ rm -f ./jobcard
 # Clean up any existing DATAROOT to avoid data clashes on repeated runs
 # Extract STMP from config.base (same technique as generate_workflows.sh)
 if [[ -f "${CASEDIR}/config.base" ]]; then
-    _dataroot=$(
-        PDY=0 cyc=0 source "${CASEDIR}/config.base" > /dev/null 2>&1 || true
-        echo "${STMP:-}/RUNDIRS/${TEST_NAME}"
-    )
-    if [[ -n "${_dataroot}" && -d "${_dataroot}" ]]; then
-        echo "Removing existing DATAROOT: ${_dataroot}"
-        rm -rf "${_dataroot}"
-    fi
+  _dataroot=$(
+    PDY=0 cyc=0 source "${CASEDIR}/config.base" > /dev/null 2>&1 || true
+    echo "${STMP:-}/RUNDIRS/${TEST_NAME}"
+  )
+  if [[ -n "${_dataroot}" && -d "${_dataroot}" ]]; then
+    echo "Removing existing DATAROOT: ${_dataroot}"
+    rm -rf "${_dataroot}"
+  fi
 fi
 
 # Use ecFlow-based job submission for testing
@@ -35,20 +35,20 @@ source "${HOMEglobal}/dev/ci/platforms/config.${MACHINE_ID}"
 # Generate job submission script from ecFlow definition
 def_file="${CASEDIR}/ecf/defs/${TEST_NAME}.def"
 if [[ -f "${def_file}" ]]; then
-    # Extract job card from ecFlow definition for the specified task
-    ecflow_client --port "${ECF_PORT:-3141}" --load "${def_file}" 2>/dev/null || true
-    ecflow_client --port "${ECF_PORT:-3141}" --begin "${TEST_NAME}" 2>/dev/null || true
-    # Generate submission script from the ecf script
-    ecf_script="${CASEDIR}/ecf/scripts/${JOB}.ecf"
-    if [[ -f "${ecf_script}" ]]; then
-        cp "${ecf_script}" "${TEST_NAME}.sub"
-    else
-        echo "ERROR: ecFlow script not found at ${ecf_script}."
-        exit 1
-    fi
-else
-    echo "ERROR: ecFlow definition file not found at ${def_file}."
+  # Extract job card from ecFlow definition for the specified task
+  ecflow_client --port "${ECF_PORT:-3141}" --load "${def_file}" 2> /dev/null || true
+  ecflow_client --port "${ECF_PORT:-3141}" --begin "${TEST_NAME}" 2> /dev/null || true
+  # Generate submission script from the ecf script
+  ecf_script="${CASEDIR}/ecf/scripts/${JOB}.ecf"
+  if [[ -f "${ecf_script}" ]]; then
+    cp "${ecf_script}" "${TEST_NAME}.sub"
+  else
+    echo "ERROR: ecFlow script not found at ${ecf_script}."
     exit 1
+  fi
+else
+  echo "ERROR: ecFlow definition file not found at ${def_file}."
+  exit 1
 fi
 
 #TODO - Generalize for batch system (hard coded to slurm)
@@ -61,38 +61,38 @@ lack_of_job_count=0
 LACK_OF_JOB_LIMIT=5
 
 while true; do
-    job_status=$(sacct -j "${job_id}" --format=State --noheader -n | head -1 | tr -cd '[:alpha:]' | xargs) || true
-    if [[ -n "${job_status}" ]]; then
-        echo "Job ${job_id} found in sacct."
-        break
-    fi
-    echo "Job ${job_id} not in sacct yet, attempt ${lack_of_job_count}/${LACK_OF_JOB_LIMIT}."
-    lack_of_job_count=$((lack_of_job_count + 1))
-    if [[ "${lack_of_job_count}" -ge "${LACK_OF_JOB_LIMIT}" ]]; then
-        echo "Job ${job_id} not found after ${lack_of_job_count} attempts. Exiting."
-        exit 1
-    fi
-    sleep 30
+  job_status=$(sacct -j "${job_id}" --format=State --noheader -n | head -1 | tr -cd '[:alpha:]' | xargs) || true
+  if [[ -n "${job_status}" ]]; then
+    echo "Job ${job_id} found in sacct."
+    break
+  fi
+  echo "Job ${job_id} not in sacct yet, attempt ${lack_of_job_count}/${LACK_OF_JOB_LIMIT}."
+  lack_of_job_count=$((lack_of_job_count + 1))
+  if [[ "${lack_of_job_count}" -ge "${LACK_OF_JOB_LIMIT}" ]]; then
+    echo "Job ${job_id} not found after ${lack_of_job_count} attempts. Exiting."
+    exit 1
+  fi
+  sleep 30
 done
 
 # Second loop: monitor job status until completion or failure
 timeout=0
 TIMEOUT=120
 while true; do
-    job_status=$(sacct -j "${job_id}" --format=State --noheader -n | head -1 | tr -cd '[:alpha:]' | xargs) || true
-    if [[ "${job_status}" == "COMPLETED" ]]; then
-        echo "Job ${job_id} completed successfully."
-        break
-    elif [[ "${job_status}" =~ ^(FAILED|CANCELLED|TIMEOUT)$ ]]; then
-        echo "Job ${job_id} failed with status: ${job_status}."
-        exit 1
-    else
-        echo "Job ${job_id} is still running with status: ${job_status}."
-        sleep 60
-        timeout=$((timeout + 1))
-        if [[ "${timeout}" -gt "${TIMEOUT}" ]]; then
-            echo "Job ${job_id} has been running for more than ${TIMEOUT} minutes. Exiting."
-            exit 1
-        fi
+  job_status=$(sacct -j "${job_id}" --format=State --noheader -n | head -1 | tr -cd '[:alpha:]' | xargs) || true
+  if [[ "${job_status}" == "COMPLETED" ]]; then
+    echo "Job ${job_id} completed successfully."
+    break
+  elif [[ "${job_status}" =~ ^(FAILED|CANCELLED|TIMEOUT)$ ]]; then
+    echo "Job ${job_id} failed with status: ${job_status}."
+    exit 1
+  else
+    echo "Job ${job_id} is still running with status: ${job_status}."
+    sleep 60
+    timeout=$((timeout + 1))
+    if [[ "${timeout}" -gt "${TIMEOUT}" ]]; then
+      echo "Job ${job_id} has been running for more than ${TIMEOUT} minutes. Exiting."
+      exit 1
     fi
+  fi
 done

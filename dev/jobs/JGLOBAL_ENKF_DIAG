@@ -52,7 +52,7 @@ export DIAG_COMPRESS="NO"
 ${ANALDIAGSH:-${SCRglobal}/exglobal_diag.sh} && true
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Failed to generate GSI diagnostics from the atmospheric ensemble analysis"
+  err_exit "Failed to generate GSI diagnostics from the atmospheric ensemble analysis"
 fi
 
 ##############################################
@@ -63,7 +63,7 @@ fi
 # Final processing
 ##############################################
 if [[ -e "${pgmout}" ]]; then
-    cat "${pgmout}"
+  cat "${pgmout}"
 fi
 
 ##########################################
@@ -71,7 +71,7 @@ fi
 ##########################################
 cd "${DATAROOT}" || true
 if [[ "${KEEPDATA}" == "NO" ]]; then
-    rm -rf "${DATA}"
+  rm -rf "${DATA}"
 fi
 
 exit 0

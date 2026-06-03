@@ -39,12 +39,15 @@ Logging
 -------
 All public operational functions are decorated with @logit (TODO) to log entry, exit, and return values.
 """
+
 import os
 from logging import getLogger
+
 from wxflow import AttrDict, to_YMD, to_YMDH
+
 # from wxflow import logit  # Uncomment if logit decorator is available
 
-logger = getLogger(__name__.split('.')[-1])
+logger = getLogger(__name__.split(".")[-1])
 
 
 class ArchiveVrfyVars:
@@ -119,20 +122,39 @@ class ArchiveVrfyVars:
         general_dict = {}
 
         # Update resolution keys to be 3 digits if they are part of config_dict
-        for key in ['OCNRES', 'ICERES']:
+        for key in ["OCNRES", "ICERES"]:
             if key in config_dict:
                 config_dict[key] = f"{config_dict[key]:03d}"
 
         # Configuration keys to extract (if present)
-        config_keys = ['current_cycle', 'RUN', 'PSLOT', 'ROTDIR', 'PARMglobal',
-                       'ARCDIR', 'MODE', 'DO_JEDIATMENS', 'DO_FIT2OBS', 'DO_JEDIATMVAR',
-                       'DO_JEDISNOWDA', 'DO_AERO_ANL', 'DO_PREP_OBS_AERO', 'NET',
-                       'FHOUT_GFS', 'FHMAX_HF_GFS', 'FHMAX_FITS', 'FHMAX', 'FHOUT',
-                       'FHMAX_GFS', 'DO_GSISOILDA', 'DO_LAND_IAU']
+        config_keys = [
+            "current_cycle",
+            "RUN",
+            "PSLOT",
+            "ROTDIR",
+            "PARMglobal",
+            "ARCDIR",
+            "MODE",
+            "DO_JEDIATMENS",
+            "DO_FIT2OBS",
+            "DO_JEDIATMVAR",
+            "DO_JEDISNOWDA",
+            "DO_AERO_ANL",
+            "DO_PREP_OBS_AERO",
+            "NET",
+            "FHOUT_GFS",
+            "FHMAX_HF_GFS",
+            "FHMAX_FITS",
+            "FHMAX",
+            "FHOUT",
+            "FHMAX_GFS",
+            "DO_GSISOILDA",
+            "DO_LAND_IAU",
+        ]
 
         # Add FHMIN_GFS only if RUN does not contain 'enkf'
-        if 'enkf' not in config_dict.get('RUN', ''):
-            config_keys.append('FHMIN_GFS')
+        if "enkf" not in config_dict.get("RUN", ""):
+            config_keys.append("FHMIN_GFS")
 
         # Extract keys if they exist in config_dict
         for key in config_keys:
@@ -178,12 +200,7 @@ class ArchiveVrfyVars:
         # Archive directory (used by all systems)
         VFYARC = os.path.join(config_dict.ROTDIR, "vrfyarch")
 
-        cycle_vars = {
-            'cycle_HH': cycle_HH,
-            'cycle_YMDH': cycle_YMDH,
-            'cycle_YMD': cycle_YMD,
-            'VFYARC': VFYARC
-        }
+        cycle_vars = {"cycle_HH": cycle_HH, "cycle_YMDH": cycle_YMDH, "cycle_YMD": cycle_YMD, "VFYARC": VFYARC}
 
         logger.debug(f"Calculated cycle variables: {cycle_vars}")
         return cycle_vars

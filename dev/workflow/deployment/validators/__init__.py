@@ -6,18 +6,18 @@ returning a list of error messages. An empty list indicates valid content.
 Traces to: Requirement 7 (Template Rendering Validation)
 """
 
-from .model_configure import ModelConfigureValidator
-from .namelist import NamelistValidator
 from .diag_table import DiagTableValidator
 from .esmf_config import ESMFConfigValidator
 from .field_table import FieldTableValidator
+from .model_configure import ModelConfigureValidator
 from .mom6_parameter import MOM6ParameterValidator
+from .namelist import NamelistValidator
 
 __all__ = [
-    "ModelConfigureValidator",
-    "NamelistValidator",
     "DiagTableValidator",
     "ESMFConfigValidator",
     "FieldTableValidator",
     "MOM6ParameterValidator",
+    "ModelConfigureValidator",
+    "NamelistValidator",
 ]

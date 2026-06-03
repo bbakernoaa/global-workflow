@@ -16,15 +16,13 @@ Traces to: Requirements 1.2, 2.1, 2.3, 2.4, 12.5
 
 from __future__ import annotations
 
-import os
 from collections import OrderedDict
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
 
-from .template_renderer import TemplateRenderer, TemplateRenderError
-from .workflow_config import DAG, MeterDef, TaskNode
-
+from .template_renderer import TemplateRenderer
+from .workflow_config import DAG, TaskNode
 
 # ---------------------------------------------------------------------------
 # Data structures for inter-cycle and scheduling attributes
@@ -160,8 +158,7 @@ class DefFileWriter:
         """Write an event declaration."""
         self._emit(f"event {name}")
 
-    def write_meter(self, name: str, min_val: int, max_val: int,
-                    threshold: Optional[int] = None) -> None:
+    def write_meter(self, name: str, min_val: int, max_val: int, threshold: Optional[int] = None) -> None:
         """Write a meter declaration."""
         if threshold is not None:
             self._emit(f"meter {name} {min_val} {max_val} {threshold}")
@@ -176,8 +173,7 @@ class DefFileWriter:
         else:
             self._emit(f"edit {name} '{value}'")
 
-    def write_repeat_date(self, variable: str, start: str, end: str,
-                          step: int = 1) -> None:
+    def write_repeat_date(self, variable: str, start: str, end: str, step: int = 1) -> None:
         """Write a repeat date construct for inter-cycle dependencies."""
         self._emit(f"repeat date {variable} {start} {end} {step}")
 
@@ -336,9 +332,7 @@ def _emit_task(writer: DefFileWriter, node: TaskNode) -> None:
 
     # Meters
     for meter in node.meters:
-        writer.write_meter(
-            meter.name, meter.min_value, meter.max_value, meter.threshold
-        )
+        writer.write_meter(meter.name, meter.min_value, meter.max_value, meter.threshold)
 
     # Variables (as ecFlow 'edit' statements)
     for var_name, var_value in sorted(node.variables.items()):
@@ -534,7 +528,7 @@ def parse_def_tasks(def_text: str) -> set[tuple[str, str]]:
         stripped = line.strip()
 
         if stripped.startswith("family "):
-            family_name = stripped[len("family "):].strip()
+            family_name = stripped[len("family ") :].strip()
             family_stack.append(family_name)
 
         elif stripped == "endfamily":
@@ -542,7 +536,7 @@ def parse_def_tasks(def_text: str) -> set[tuple[str, str]]:
                 family_stack.pop()
 
         elif stripped.startswith("task "):
-            task_name = stripped[len("task "):].strip()
+            task_name = stripped[len("task ") :].strip()
             family_path = "/".join(family_stack)
             tasks.add((family_path, task_name))
 
@@ -626,9 +620,7 @@ def generate_ecf_scripts(
     """
     template_file = Path(template_path)
     if not template_file.exists():
-        raise FileNotFoundError(
-            f"Template file not found: {template_path}"
-        )
+        raise FileNotFoundError(f"Template file not found: {template_path}")
 
     output_base = Path(output_dir)
     generated_files: list[Path] = []

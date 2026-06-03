@@ -3,6 +3,7 @@
 import os
 
 from pygfs.task.fetch import Fetch
+
 from wxflow import AttrDict, Logger, cast_strdict_as_dtypedict, logit
 
 # initialize root logger
@@ -11,24 +12,37 @@ logger = Logger(level=os.environ.get("LOGGING_LEVEL", "DEBUG"), colored_log=True
 
 @logit(logger)
 def main():
-
     config = cast_strdict_as_dtypedict(os.environ)
 
     fetch_tmpl_list = []
     if "FETCH_YAML_TMPL_LIST" in config.keys():
         fetch_tmpl_list = config["FETCH_YAML_TMPL_LIST"]
     else:
-        fetch_tmpl_list.append(config['FETCH_YAML_TMPL'])
+        fetch_tmpl_list.append(config["FETCH_YAML_TMPL"])
 
     # Loop over all templates and create a Fetch object for each
     for fetch_yaml_tmpl in fetch_tmpl_list:
-        config['FETCH_YAML_TMPL'] = fetch_yaml_tmpl
+        config["FETCH_YAML_TMPL"] = fetch_yaml_tmpl
         # Instantiate the Fetch object
         fetch = Fetch(config)
 
         # Pull out all the configuration keys needed to run the fetch step
-        keys = ['current_cycle', 'previous_cycle', 'RUN', 'PDY', 'PARMglobal', 'PSLOT', 'ROTDIR',
-                'FETCH_YAML_TMPL', 'FETCHDIR', 'ntiles', 'DATA', 'DATAROOT', 'waveGRD', 'gdas_version']
+        keys = [
+            "current_cycle",
+            "previous_cycle",
+            "RUN",
+            "PDY",
+            "PARMglobal",
+            "PSLOT",
+            "ROTDIR",
+            "FETCH_YAML_TMPL",
+            "FETCHDIR",
+            "ntiles",
+            "DATA",
+            "DATAROOT",
+            "waveGRD",
+            "gdas_version",
+        ]
 
         fetch_dict = AttrDict()
         for key in keys:
@@ -44,5 +58,5 @@ def main():
         fetch.execute_pull_data(fetchdir_set)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

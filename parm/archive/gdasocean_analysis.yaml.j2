@@ -22,8 +22,8 @@ gdasocean_analysis:
         - '{{ COMIN_CONF }}/{{ head }}soca_ensb.yaml'
         - '{{ COMIN_CONF }}/{{ head }}soca_ensweights.yaml'
         {% endif %}
-       
-        # extra marine ensemble statistics (off by default) 
+
+        # extra marine ensemble statistics (off by default)
         {% if ARCH_MARINE_ENS and NMEM_ENS > 2 %}
         - '{{ COMIN_OCEAN_BMATRIX }}/{{ head }}ens_weights.nc'
         - '{{ COMIN_OCEAN_BMATRIX }}/{{ head }}bkgerr_ens_stddev.nc'

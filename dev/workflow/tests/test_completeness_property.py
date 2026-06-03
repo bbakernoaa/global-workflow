@@ -20,14 +20,13 @@ import sys
 import tempfile
 from pathlib import Path
 
-from hypothesis import given, settings, HealthCheck, assume
+from hypothesis import HealthCheck, assume, given, settings
 from hypothesis import strategies as st
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from deployment.completeness_verifier import CompletenessVerifier, CompletenessResult
+from deployment.completeness_verifier import CompletenessVerifier
 from deployment.pipeline import PipelineError
-
 
 # ---------------------------------------------------------------------------
 # Hypothesis Strategies for generating random EXPDIRs
@@ -232,15 +231,11 @@ def _create_expdir(
         # Add jjob_header with config references
         configs_str = " ".join(config_refs.get(jjob, []))
         if configs_str:
-            lines.append(
-                f'source "${{HOMEglobal}}/ush/jjob_header.sh" -e "task" -c "{configs_str}"\n'
-            )
+            lines.append(f'source "${{HOMEglobal}}/ush/jjob_header.sh" -e "task" -c "{configs_str}"\n')
 
         # Add ex-script references using the assignment pattern
         for ex_script in ex_script_refs.get(jjob, []):
-            lines.append(
-                f': "${{TASKSH:=${{SCRglobal}}/{ex_script}}}"\n'
-            )
+            lines.append(f': "${{TASKSH:=${{SCRglobal}}/{ex_script}}}"\n')
 
         lines.append('"${TASKSH}" && true\n')
         (jobs_dir / jjob).write_text("".join(lines))
@@ -277,9 +272,7 @@ def _create_expdir(
         if cfg_base in missing_cfg:
             continue
         # Write both config.<base>.j2 variant
-        (config_dir / f"config.{cfg_base}.j2").write_text(
-            f"#!/bin/bash\n# config for {cfg_base}\n"
-        )
+        (config_dir / f"config.{cfg_base}.j2").write_text(f"#!/bin/bash\n# config for {cfg_base}\n")
 
     return expdir
 
@@ -377,16 +370,14 @@ def test_completeness_verifier_detects_all_gaps(expdir_spec):
         )
 
         # Compute expected missing deps independently
-        expected_missing_ex, expected_missing_ush, expected_missing_cfg = (
-            _compute_expected_missing(
-                jjob_names,
-                ex_script_refs,
-                ush_script_refs,
-                config_refs,
-                missing_ex,
-                missing_ush,
-                missing_cfg,
-            )
+        expected_missing_ex, expected_missing_ush, expected_missing_cfg = _compute_expected_missing(
+            jjob_names,
+            ex_script_refs,
+            ush_script_refs,
+            config_refs,
+            missing_ex,
+            missing_ush,
+            missing_cfg,
         )
 
         # The verifier should raise PipelineError when gaps exist
@@ -491,12 +482,6 @@ def test_completeness_verifier_passes_when_complete(expdir_spec):
             f"  missing_ush_scripts: {result.missing_ush_scripts}\n"
             f"  missing_configs: {result.missing_configs}"
         )
-        assert result.missing_ex_scripts == [], (
-            f"Expected no missing ex-scripts but got: {result.missing_ex_scripts}"
-        )
-        assert result.missing_ush_scripts == [], (
-            f"Expected no missing ush-scripts but got: {result.missing_ush_scripts}"
-        )
-        assert result.missing_configs == [], (
-            f"Expected no missing configs but got: {result.missing_configs}"
-        )
+        assert result.missing_ex_scripts == [], f"Expected no missing ex-scripts but got: {result.missing_ex_scripts}"
+        assert result.missing_ush_scripts == [], f"Expected no missing ush-scripts but got: {result.missing_ush_scripts}"
+        assert result.missing_configs == [], f"Expected no missing configs but got: {result.missing_configs}"

@@ -1,24 +1,22 @@
 #!/usr/bin/env python3
 
-import os
+import copy
 import logging
+import os
+import re
 import shutil
+from datetime import datetime, timezone
 from time import sleep
 from typing import Any, Dict, List
-import re
-import copy
-from datetime import datetime, timezone
 
-from wxflow import (AttrDict, Task, to_YMDH, logit, parse_yaml, Jinja, which, ProcessError, to_datetime,
-                    CommandNotFoundError)
+from wxflow import AttrDict, CommandNotFoundError, Jinja, ProcessError, Task, logit, parse_yaml, to_datetime, to_YMDH, which
 
-logger = logging.getLogger(__name__.split('.')[-1])
-logging.basicConfig(encoding='utf-8', level=logging.DEBUG, format='%(asctime)s %(message)s')
+logger = logging.getLogger(__name__.split(".")[-1])
+logging.basicConfig(encoding="utf-8", level=logging.DEBUG, format="%(asctime)s %(message)s")
 
 
 class GlobusHpss(Task):
-    """Task to send tarballs (created by the archive task) to HPSS via Globus
-    """
+    """Task to send tarballs (created by the archive task) to HPSS via Globus"""
 
     def __init__(self, config: Dict[str, Any]) -> None:
         """Constructor for the GlobusHpss task
@@ -61,27 +59,28 @@ class GlobusHpss(Task):
         self.globus_rm.add_default_arg(["rm", "--notify", "failed", "-f", "-r"])
         # Transfer file, notify on failure, preserve modification times, only
         # output task ID
-        self.globus_xfr.add_default_arg(["transfer", "--notify", "failed",
-                                         "--preserve-mtime", "--sync-level", "mtime",
-                                         "--jmespath", "task_id", "--format=UNIX"])
+        self.globus_xfr.add_default_arg(
+            ["transfer", "--notify", "failed", "--preserve-mtime", "--sync-level", "mtime", "--jmespath", "task_id", "--format=UNIX"]
+        )
 
         # Make a directory on a target system via globus
         self.globus_mkdir.add_default_arg(["mkdir", "--format=UNIX"])
 
         # Wait on a task ID to finish and output the status of the transfer when complete
-        self.globus_wait.add_default_arg(["task", "wait", "--jmespath", "status",
-                                          "--format=UNIX", "--timeout", "120"])
+        self.globus_wait.add_default_arg(["task", "wait", "--jmespath", "status", "--format=UNIX", "--timeout", "120"])
 
         self.CLIENT_GLOBUS_UUID = self.task_config.CLIENT_GLOBUS_UUID
         self.SERVER_GLOBUS_UUID = self.task_config.SERVER_GLOBUS_UUID
         self.server_home = self.task_config.SERVER_HOME
         self.server_name = self.task_config.SERVER_NAME
 
-        local_dict = AttrDict({
-            'sven_dropbox': (f"{self.task_config.SVEN_DROPBOX_ROOT}"),
-            'hpss_target_dir': f"{self.task_config.ATARDIR}/{cycle_YMDH}",
-            'server_home': f"{self.server_home}"
-        })
+        local_dict = AttrDict(
+            {
+                "sven_dropbox": (f"{self.task_config.SVEN_DROPBOX_ROOT}"),
+                "hpss_target_dir": f"{self.task_config.ATARDIR}/{cycle_YMDH}",
+                "server_home": f"{self.server_home}",
+            }
+        )
 
         self.task_config = AttrDict(**self.task_config, **local_dict)
 
@@ -144,15 +143,12 @@ class GlobusHpss(Task):
         rstprod_backup_set = []
         for archive_name in backup_set:
             if backup_set[archive_name]["has_rstprod"]:
-                rstprod_backup_set.append(backup_set[archive_name]['target'])
+                rstprod_backup_set.append(backup_set[archive_name]["target"])
             else:
-                standard_backup_set.append(backup_set[archive_name]['target'])
+                standard_backup_set.append(backup_set[archive_name]["target"])
 
         # Start parsing scripts and storing in the output dictionary
-        transfer_sets = {
-            "standard": {"locations": standard_backup_set},
-            "rstprod": {"locations": rstprod_backup_set}
-        }
+        transfer_sets = {"standard": {"locations": standard_backup_set}, "rstprod": {"locations": rstprod_backup_set}}
 
         # Write a script with the location of the dropbox on the client
         dm_conf = f'export dropbox="{globus_dict.sven_dropbox}"'
@@ -253,11 +249,10 @@ class GlobusHpss(Task):
                 sven_output = self.forsven(output=str)
                 logger.debug(sven_output)
             except ProcessError as pe:
-                raise ProcessError("FATAL ERROR Sven failed to package the request "
-                                   f"for {location}") from pe
+                raise ProcessError(f"FATAL ERROR Sven failed to package the request for {location}") from pe
 
             # Parse Sven's output to get the name of the return status file
-            match = re.search("\"(status_.*)\" in your dropbox", sven_output)
+            match = re.search('"(status_.*)" in your dropbox', sven_output)
             status_file = match.group(1)
             transfer_set["xfer_ids"].append(status_file.replace("status_", ""))
             transfer_set["status_files"].append(os.path.join(self.task_config.sven_dropbox, status_file))
@@ -272,11 +267,11 @@ class GlobusHpss(Task):
             # Now transfer and rename the script
             server_run_script = f"{transfer_set['server_job_dir']}/run_doorman.sh"
             logger.debug(f"Transfer run_doorman.sh to {self.server_name}:{server_run_script}")
-            self._wait_on_task_id(self.globus_xfr(
-                f"{self.CLIENT_GLOBUS_UUID}:{self.wd}/run_doorman.sh",
-                f"{self.SERVER_GLOBUS_UUID}:{server_run_script}",
-                output=str, error=str
-            ))
+            self._wait_on_task_id(
+                self.globus_xfr(
+                    f"{self.CLIENT_GLOBUS_UUID}:{self.wd}/run_doorman.sh", f"{self.SERVER_GLOBUS_UUID}:{server_run_script}", output=str, error=str
+                )
+            )
 
             logger.debug("Successfully transferred the doorman script")
         except (ProcessError, ConnectionError) as pe:
@@ -323,11 +318,14 @@ class GlobusHpss(Task):
 
             # Retrieve the log file (if it exists) from the server and check if it failed
             try:
-                self._wait_on_task_id(self.globus_xfr(
-                    f"{self.SERVER_GLOBUS_UUID}:{transfer_set['server_job_dir']}/run_doorman.log",
-                    f"{self.CLIENT_GLOBUS_UUID}:{self.wd}/run_doorman.log",
-                    output=str, error=str
-                ))
+                self._wait_on_task_id(
+                    self.globus_xfr(
+                        f"{self.SERVER_GLOBUS_UUID}:{transfer_set['server_job_dir']}/run_doorman.log",
+                        f"{self.CLIENT_GLOBUS_UUID}:{self.wd}/run_doorman.log",
+                        output=str,
+                        error=str,
+                    )
+                )
 
             except (ProcessError, ConnectionError):
                 check_log_count += 1
@@ -359,7 +357,7 @@ class GlobusHpss(Task):
 
         # Write out the log file if it is present
         if log_read:
-            logger.debug('\n'.join(doorman_lines))
+            logger.debug("\n".join(doorman_lines))
 
         # Check for a failed transfer and/or timeouts
         if transfer_failed or not all(transfer_set["successes"]):
@@ -379,29 +377,33 @@ class GlobusHpss(Task):
         pslot = self.task_config.PSLOT
 
         try:
-            self._wait_on_task_id(self.globus_xfr(
-                f"{self.CLIENT_GLOBUS_UUID}:{self.wd}/{req_file}",
-                f"{self.SERVER_GLOBUS_UUID}:{self.server_home}/{req_file}",
-                output=str.split, error=str.split
-            ))
+            self._wait_on_task_id(
+                self.globus_xfr(
+                    f"{self.CLIENT_GLOBUS_UUID}:{self.wd}/{req_file}",
+                    f"{self.SERVER_GLOBUS_UUID}:{self.server_home}/{req_file}",
+                    output=str.split,
+                    error=str.split,
+                )
+            )
 
         except (ProcessError, ConnectionError):
             raise ProcessError("FATAL ERROR Failed to request a mkdir on the server!")
 
         try:
-            self._wait_on_task_id(self.globus_mkdir(
-                f"{self.CLIENT_GLOBUS_UUID}:{self.wd}", suppress_errors=True
-            ))
+            self._wait_on_task_id(self.globus_mkdir(f"{self.CLIENT_GLOBUS_UUID}:{self.wd}", suppress_errors=True))
         except ProcessError:
             logger.info("Globus reported that it could not create the directory.  This is likely because it already exists.  Continuing.")
 
         try:
             # If globus was unable to mkdir for another reason, this will fail.
-            self._wait_on_task_id(self.globus_xfr(
-                f"{self.CLIENT_GLOBUS_UUID}:{self.wd}/init_xfer.sh",
-                f"{self.SERVER_GLOBUS_UUID}:{self.server_home}/init_xfer_{pslot}.sh",
-                output=str, error=str
-            ))
+            self._wait_on_task_id(
+                self.globus_xfr(
+                    f"{self.CLIENT_GLOBUS_UUID}:{self.wd}/init_xfer.sh",
+                    f"{self.SERVER_GLOBUS_UUID}:{self.server_home}/init_xfer_{pslot}.sh",
+                    output=str,
+                    error=str,
+                )
+            )
         except (ProcessError, ConnectionError):
             raise ProcessError("FATAL ERROR Failed send the driver script to the server!")
 
@@ -410,19 +412,21 @@ class GlobusHpss(Task):
 
         # Check that the server initialized successfully
         try:
-            self._wait_on_task_id(self.globus_xfr(
-                f"{self.SERVER_GLOBUS_UUID}:{self.server_home}/{pslot}_crontab_active.log",
-                f"{self.CLIENT_GLOBUS_UUID}:{self.wd}/crontab.log",
-                output=str, error=str
-            ))
+            self._wait_on_task_id(
+                self.globus_xfr(
+                    f"{self.SERVER_GLOBUS_UUID}:{self.server_home}/{pslot}_crontab_active.log",
+                    f"{self.CLIENT_GLOBUS_UUID}:{self.wd}/crontab.log",
+                    output=str,
+                    error=str,
+                )
+            )
         except (ProcessError, ConnectionError) as pe:
             raise ProcessError(
-                "FATAL ERROR failed to retrieve the server log file!\n"
-                f"Check that the crontab is active on {self.server_name}."
+                f"FATAL ERROR failed to retrieve the server log file!\nCheck that the crontab is active on {self.server_name}."
             ) from pe
 
         # Check the date in the log
-        with open("crontab.log", "r") as crontab_f:
+        with open("crontab.log") as crontab_f:
             cron_date = crontab_f.read()
 
         cron_datetime = to_datetime(cron_date)
@@ -438,7 +442,6 @@ class GlobusHpss(Task):
 
     @logit(logger)
     def _wait_on_task_id(self, task_id, suppress_errors=False):
-
         # The task_id usually has a newline character at the end.  Strip that to begin.
         task_id = task_id.strip()
 
@@ -459,11 +462,14 @@ class GlobusHpss(Task):
                 rmdir_f.write(f"{job_dir}")
 
             try:
-                self._wait_on_task_id(self.globus_xfr(
-                    f"{self.CLIENT_GLOBUS_UUID}:{self.wd}/{req_file}",
-                    f"{self.SERVER_GLOBUS_UUID}:{self.server_home}/{req_file}",
-                    output=str, error=str
-                ))
+                self._wait_on_task_id(
+                    self.globus_xfr(
+                        f"{self.CLIENT_GLOBUS_UUID}:{self.wd}/{req_file}",
+                        f"{self.SERVER_GLOBUS_UUID}:{self.server_home}/{req_file}",
+                        output=str,
+                        error=str,
+                    )
+                )
             except (ProcessError, ConnectionError):
                 raise ProcessError("FATAL ERROR Failed to request an rmdir command on the server!")
 
@@ -473,11 +479,14 @@ class GlobusHpss(Task):
 
             # If it was successful, then the request should be gone
             try:
-                self._wait_on_task_id(self.globus_xfr(
-                    f"{self.SERVER_GLOBUS_UUID}:{self.server_home}/{req_file}",
-                    f"{self.CLIENT_GLOBUS_UUID}:{self.wd}/{req_file}",
-                    output=str, error=str
-                ))
+                self._wait_on_task_id(
+                    self.globus_xfr(
+                        f"{self.SERVER_GLOBUS_UUID}:{self.server_home}/{req_file}",
+                        f"{self.CLIENT_GLOBUS_UUID}:{self.wd}/{req_file}",
+                        output=str,
+                        error=str,
+                    )
+                )
                 raise RuntimeError(f"FATAL ERROR Failed to delete the run directory on {self.server_name}")
             except (ProcessError, ConnectionError):
                 pass

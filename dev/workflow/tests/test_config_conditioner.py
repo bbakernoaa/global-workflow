@@ -17,13 +17,12 @@ import subprocess
 import textwrap
 
 import pytest
-
-from deployment.config_conditioner import ConfigConditioner, ConditionerResult
-
+from deployment.config_conditioner import ConfigConditioner
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def conditioner_gfs():
@@ -40,18 +39,21 @@ def conditioner_gdas():
 @pytest.fixture
 def conditioner_multi():
     """Conditioner with multiple deploy-time variables."""
-    return ConfigConditioner(deploy_time_vars={
-        "RUN": "gfs",
-        "CASE": "C384",
-        "MACHINE": "HERA",
-        "DO_WAVE": "YES",
-        "DO_OCN": "NO",
-    })
+    return ConfigConditioner(
+        deploy_time_vars={
+            "RUN": "gfs",
+            "CASE": "C384",
+            "MACHINE": "HERA",
+            "DO_WAVE": "YES",
+            "DO_OCN": "NO",
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
 # If-block resolution with deploy-time variables
 # ---------------------------------------------------------------------------
+
 
 class TestIfBlockResolution:
     """Test that deploy-time if-blocks are resolved correctly."""
@@ -151,6 +153,7 @@ class TestIfBlockResolution:
 # Runtime conditional preservation
 # ---------------------------------------------------------------------------
 
+
 class TestRuntimeConditionalPreservation:
     """Test that runtime conditionals are preserved unchanged."""
 
@@ -214,6 +217,7 @@ class TestRuntimeConditionalPreservation:
 # Mixed deploy-time + runtime conditional preservation
 # ---------------------------------------------------------------------------
 
+
 class TestMixedConditionalPreservation:
     """Test that mixed deploy-time + runtime conditionals are preserved."""
 
@@ -261,6 +265,7 @@ class TestMixedConditionalPreservation:
 # Resolution comment verification
 # ---------------------------------------------------------------------------
 
+
 class TestResolutionComments:
     """Test that eliminated branches get proper resolution comments."""
 
@@ -298,8 +303,8 @@ class TestResolutionComments:
         result = conditioner_gfs.condition_file(content)
 
         # Comment should be indented with 4 spaces (same as 'if' line)
-        lines = result.output.split('\n')
-        comment_lines = [l for l in lines if "# Resolved:" in l]
+        lines = result.output.split("\n")
+        comment_lines = [ln for ln in lines if "# Resolved:" in ln]
         assert len(comment_lines) >= 1
         assert comment_lines[0].startswith("    # Resolved:")
 
@@ -307,6 +312,7 @@ class TestResolutionComments:
 # ---------------------------------------------------------------------------
 # bash -n validation
 # ---------------------------------------------------------------------------
+
 
 class TestBashSyntaxValidation:
     """Test that conditioned output passes bash -n validation."""
@@ -427,6 +433,7 @@ class TestBashSyntaxValidation:
 # Nested conditionals
 # ---------------------------------------------------------------------------
 
+
 class TestNestedConditionals:
     """Test that nested conditionals are handled correctly."""
 
@@ -530,6 +537,7 @@ class TestNestedConditionals:
 # ---------------------------------------------------------------------------
 # Integration: combined if + case blocks
 # ---------------------------------------------------------------------------
+
 
 class TestIntegrationIfAndCase:
     """Test files with both if-blocks and case-blocks."""

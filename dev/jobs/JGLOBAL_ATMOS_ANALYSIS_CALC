@@ -46,7 +46,7 @@ declare -rx COMIN_ATMOS_ANALYSIS="${ROTDIR}/${RUN}.${PDY}/${cyc}/analysis/atmos"
 declare -rx COMIN_ATMOS_RESTART="${ROTDIR}/${RUN}.${PDY}/${cyc}/model/atmos/restart"
 
 if [[ "${RUN}" == "gcdas" ]]; then
-    declare -rx COMIN_CHEM_ANALYSIS="${ROTDIR}/${RUN}.${PDY}/${cyc}/analysis/chem"
+  declare -rx COMIN_CHEM_ANALYSIS="${ROTDIR}/${RUN}.${PDY}/${cyc}/analysis/chem"
 fi
 
 declare -rx COMIN_OBS_PREV="${ROTDIR}/${GDUMP}.${gPDY}/${gcyc}/obs"
@@ -54,8 +54,8 @@ declare -rx COMIN_ATMOS_HISTORY_PREV="${ROTDIR}/${GDUMP}.${gPDY}/${gcyc}/model/a
 
 export ATMGES="${COMIN_ATMOS_HISTORY_PREV}/${GPREFIX}atm.f006.nc"
 if [[ ! -f "${ATMGES}" ]]; then
-    export err=1
-    err_exit "FILE MISSING: ATMGES == ${ATMGES}"
+  export err=1
+  err_exit "FILE MISSING: ATMGES == ${ATMGES}"
 fi
 
 # Get LEVS
@@ -63,7 +63,7 @@ export LEVS
 LEVS=$(${NCLEN} "${ATMGES}" pfull) && true
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Failed to get LEVS from ${ATMGES}"
+  err_exit "Failed to get LEVS from ${ATMGES}"
 fi
 
 export DOGAUSFCANL=${DOGAUSFCANL:-"YES"}
@@ -74,7 +74,7 @@ export DOGAUSFCANL=${DOGAUSFCANL:-"YES"}
 ${ANALCALCSH:-${SCRglobal}/exglobal_atmos_analysis_calc.sh} && true
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Failed to generate gaussian gridded analysis for ${RUN} ${PDY}${cyc}"
+  err_exit "Failed to generate gaussian gridded analysis for ${RUN} ${PDY}${cyc}"
 fi
 
 ##############################################
@@ -85,7 +85,7 @@ fi
 # Final processing
 ##############################################
 if [[ -e "${pgmout}" ]]; then
-    cat "${pgmout}"
+  cat "${pgmout}"
 fi
 
 ##########################################
@@ -93,7 +93,7 @@ fi
 ##########################################
 cd "${DATAROOT}" || true
 if [[ "${KEEPDATA}" == "NO" ]]; then
-    rm -rf "${DATA}"
+  rm -rf "${DATA}"
 fi
 
 exit 0

@@ -22,27 +22,27 @@ REGRIDSH=${REGRIDSH:-"${USHglobal}/regrid_gsiSfcIncr_to_tile.sh"}
 
 if [[ "${DO_GSISOILDA}" == "YES" ]]; then
 
-    # Collect the dates in the window to update surface restarts
-    soilinc_fhrs=("${assim_freq}") # increment file at middle of window
-    LFHR="${assim_freq}"
-    if [[ "${DOIAU:-}" == "YES" ]]; then # Update surface restarts at beginning of window
-        half_window=$((assim_freq / 2))
-        soilinc_fhrs+=("${half_window}")
-        LFHR=-1
-    fi
+  # Collect the dates in the window to update surface restarts
+  soilinc_fhrs=("${assim_freq}") # increment file at middle of window
+  LFHR="${assim_freq}"
+  if [[ "${DOIAU:-}" == "YES" ]]; then # Update surface restarts at beginning of window
+    half_window=$((assim_freq / 2))
+    soilinc_fhrs+=("${half_window}")
+    LFHR=-1
+  fi
 
-    export COMIN_SOIL_ANALYSIS_MEM="${COMIN_ATMOS_ENKF_ANALYSIS_STAT}"
-    export COMOUT_ATMOS_ANALYSIS_MEM="${COMIN_ATMOS_ANALYSIS}"
-    export CASE_IN="${CASE_ENS}"
-    export CASE_OUT="${CASE}"
-    export OCNRES_OUT="${OCNRES}"
-    export LFHR
+  export COMIN_SOIL_ANALYSIS_MEM="${COMIN_ATMOS_ENKF_ANALYSIS_STAT}"
+  export COMOUT_ATMOS_ANALYSIS_MEM="${COMIN_ATMOS_ANALYSIS}"
+  export CASE_IN="${CASE_ENS}"
+  export CASE_OUT="${CASE}"
+  export OCNRES_OUT="${OCNRES}"
+  export LFHR
 
-    "${REGRIDSH}"
-    export err=$?
-    if [[ ${err} -ne 0 ]]; then
-        err_exit "Soil increment file was not regridded correctly!"
-    fi
+  "${REGRIDSH}"
+  export err=$?
+  if [[ ${err} -ne 0 ]]; then
+    err_exit "Soil increment file was not regridded correctly!"
+  fi
 
 fi
 

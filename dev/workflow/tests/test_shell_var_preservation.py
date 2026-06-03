@@ -18,8 +18,6 @@ import sys
 import tempfile
 from pathlib import Path
 
-import pytest
-
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from deployment.template_renderer import (
@@ -51,10 +49,7 @@ class TestShellVariablePreservation:
     def test_shell_vars_preserved_jinja2_resolved(self):
         """Mixed template: Jinja2 vars resolved, shell vars preserved verbatim."""
         template = (
-            "export NET={{ NET }}\n"
-            "export RUN={{ RUN }}\n"
-            "export COMOUT=${COMOUT}/${NET}.${PDY}/${cyc}/atmos\n"
-            "export DATA=${DATAROOT}/${jobid}\n"
+            "export NET={{ NET }}\nexport RUN={{ RUN }}\nexport COMOUT=${COMOUT}/${NET}.${PDY}/${cyc}/atmos\nexport DATA=${DATAROOT}/${jobid}\n"
         )
 
         result = self.renderer.render_string(template)
@@ -74,11 +69,7 @@ class TestShellVariablePreservation:
 
     def test_shell_vars_only_template(self):
         """Template with only shell variables — all preserved verbatim."""
-        template = (
-            "cd ${DATA}\n"
-            "cp ${COMOUT}/file.nc ${DATA}/input.nc\n"
-            "export pgmout=${DATA}/${pgmout:-/dev/null}\n"
-        )
+        template = "cd ${DATA}\ncp ${COMOUT}/file.nc ${DATA}/input.nc\nexport pgmout=${DATA}/${pgmout:-/dev/null}\n"
 
         result = self.renderer.render_string(template)
 
@@ -105,12 +96,7 @@ class TestShellVariablePreservation:
 
     def test_shell_var_pattern_uppercase_with_underscores(self):
         """Shell vars matching [A-Z_][A-Z0-9_]* pattern are preserved."""
-        template = (
-            "a=${HOME_DIR}\n"
-            "b=${DATA_ROOT_2}\n"
-            "c=${_PRIVATE}\n"
-            "d=${A}\n"
-        )
+        template = "a=${HOME_DIR}\nb=${DATA_ROOT_2}\nc=${_PRIVATE}\nd=${A}\n"
 
         result = self.renderer.render_string(template)
 
@@ -134,10 +120,7 @@ class TestShellVariablePreservation:
     def test_render_file_preserves_shell_vars(self):
         """render_file() also preserves shell variables in the output file."""
         template_content = (
-            "#!/bin/bash\n"
-            "export HOMEgfs={{ HOMEgfs }}\n"
-            "export COMOUT=${COMOUT}/${NET}.${PDY}/${cyc}/atmos\n"
-            "export DATA=${DATAROOT}/${jobid}\n"
+            "#!/bin/bash\nexport HOMEgfs={{ HOMEgfs }}\nexport COMOUT=${COMOUT}/${NET}.${PDY}/${cyc}/atmos\nexport DATA=${DATAROOT}/${jobid}\n"
         )
 
         src = Path(self.tmpdir) / "test_template.sh"

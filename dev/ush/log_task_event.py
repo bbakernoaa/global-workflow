@@ -32,9 +32,7 @@ from pathlib import Path
 from typing import List, Optional
 
 # Valid lifecycle states emitted by the Universal_Wrapper
-VALID_STATES = frozenset({
-    "init", "start", "succeeded", "failed", "aborted", "complete"
-})
+VALID_STATES = frozenset({"init", "start", "succeeded", "failed", "aborted", "complete"})
 
 CREATE_TABLE_SQL = """\
 CREATE TABLE IF NOT EXISTS task_events (
@@ -127,18 +125,20 @@ def init_database(db_path: str) -> sqlite3.Connection:
     return conn
 
 
-def insert_event(conn: sqlite3.Connection,
-                 snapshot_id: str,
-                 git_commit: str,
-                 cycle: str,
-                 family_path: str,
-                 task_name: str,
-                 attempt: int,
-                 scheduler_job_id: str,
-                 state: str,
-                 exit_status: Optional[int],
-                 timestamp: str,
-                 duration_seconds: Optional[int]) -> int:
+def insert_event(
+    conn: sqlite3.Connection,
+    snapshot_id: str,
+    git_commit: str,
+    cycle: str,
+    family_path: str,
+    task_name: str,
+    attempt: int,
+    scheduler_job_id: str,
+    state: str,
+    exit_status: Optional[int],
+    timestamp: str,
+    duration_seconds: Optional[int],
+) -> int:
     """Insert a task lifecycle event into the database.
 
     Parameters
@@ -174,11 +174,10 @@ def insert_event(conn: sqlite3.Connection,
         Row ID of the inserted record.
     """
     cursor = conn.cursor()
-    cursor.execute(INSERT_EVENT_SQL, (
-        snapshot_id, git_commit, cycle, family_path, task_name,
-        attempt, scheduler_job_id, state, exit_status, timestamp,
-        duration_seconds
-    ))
+    cursor.execute(
+        INSERT_EVENT_SQL,
+        (snapshot_id, git_commit, cycle, family_path, task_name, attempt, scheduler_job_id, state, exit_status, timestamp, duration_seconds),
+    )
     conn.commit()
     return cursor.lastrowid
 
@@ -197,41 +196,16 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
         Parsed arguments.
     """
     parser = argparse.ArgumentParser(
-        description="Log task lifecycle events to the workflow state database.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        description="Log task lifecycle events to the workflow state database.", formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    parser.add_argument(
-        "--task", required=True,
-        help="Task name (e.g., 'anal', 'fcst')"
-    )
-    parser.add_argument(
-        "--cycle", required=True,
-        help="Forecast cycle identifier (e.g., '2025011500')"
-    )
-    parser.add_argument(
-        "--jobid", required=True,
-        help="Scheduler job ID"
-    )
-    parser.add_argument(
-        "--attempt", required=True, type=int,
-        help="Attempt number (1-based)"
-    )
-    parser.add_argument(
-        "--state", required=True, choices=sorted(VALID_STATES),
-        help="Task lifecycle state"
-    )
-    parser.add_argument(
-        "--exit-status", type=int, default=None,
-        help="Exit status code (optional, typically set for succeeded/failed)"
-    )
-    parser.add_argument(
-        "--duration", type=int, default=None,
-        help="Task duration in seconds (optional)"
-    )
-    parser.add_argument(
-        "--db-path", default=None,
-        help="Path to SQLite database (default: $EXPDIR/workflow/state.db)"
-    )
+    parser.add_argument("--task", required=True, help="Task name (e.g., 'anal', 'fcst')")
+    parser.add_argument("--cycle", required=True, help="Forecast cycle identifier (e.g., '2025011500')")
+    parser.add_argument("--jobid", required=True, help="Scheduler job ID")
+    parser.add_argument("--attempt", required=True, type=int, help="Attempt number (1-based)")
+    parser.add_argument("--state", required=True, choices=sorted(VALID_STATES), help="Task lifecycle state")
+    parser.add_argument("--exit-status", type=int, default=None, help="Exit status code (optional, typically set for succeeded/failed)")
+    parser.add_argument("--duration", type=int, default=None, help="Task duration in seconds (optional)")
+    parser.add_argument("--db-path", default=None, help="Path to SQLite database (default: $EXPDIR/workflow/state.db)")
 
     args = parser.parse_args(argv)
     return args
@@ -257,8 +231,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     if db_path is None:
         db_path = get_default_db_path()
     if not db_path:
-        print("FATAL ERROR: --db-path not specified and EXPDIR not set",
-              file=sys.stderr)
+        print("FATAL ERROR: --db-path not specified and EXPDIR not set", file=sys.stderr)
         return 1
 
     # Get snapshot_id and git_commit from environment
@@ -285,7 +258,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             state=args.state,
             exit_status=args.exit_status,
             timestamp=timestamp,
-            duration_seconds=args.duration
+            duration_seconds=args.duration,
         )
         conn.close()
     except sqlite3.Error as e:

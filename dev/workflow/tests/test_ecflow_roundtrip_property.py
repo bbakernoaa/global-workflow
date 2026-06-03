@@ -25,14 +25,13 @@ import os
 import sys
 import tempfile
 
-from hypothesis import given, settings, HealthCheck
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from deployment.dag_generator import generate_def_text, parse_def_tasks
 from deployment.workflow_config import DAG, MeterDef, TaskNode
-
 
 # ---------------------------------------------------------------------------
 # Hypothesis Strategies for generating valid DAG objects
@@ -76,10 +75,13 @@ def _task_node_strategy(draw, family_path: str):
     variables = {}
     if has_vars:
         var_key = draw(_identifier).upper()
-        var_val = draw(st.text(
-            alphabet="abcdefghijklmnopqrstuvwxyz0123456789",
-            min_size=1, max_size=8,
-        ))
+        var_val = draw(
+            st.text(
+                alphabet="abcdefghijklmnopqrstuvwxyz0123456789",
+                min_size=1,
+                max_size=8,
+            )
+        )
         variables[var_key] = var_val
 
     return TaskNode(
@@ -178,28 +180,22 @@ def test_ecflow_roundtrip_property(dag: DAG):
     def_text = generate_def_text(dag)
 
     # Step 2-3: Write to file and read back
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".def", delete=False
-    ) as tmp:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".def", delete=False) as tmp:
         tmp.write(def_text)
         tmp_path = tmp.name
 
     try:
-        with open(tmp_path, "r") as f:
+        with open(tmp_path) as f:
             read_back_text = f.read()
 
         # Verify the write/read cycle preserves the text exactly
-        assert def_text == read_back_text, (
-            "File write/read cycle altered the .def text content"
-        )
+        assert def_text == read_back_text, "File write/read cycle altered the .def text content"
 
         # Step 4: Parse tasks from the read-back text
         parsed_tasks = parse_def_tasks(read_back_text)
 
         # Step 5: Build expected task set from the original DAG
-        expected_tasks = {
-            (node.family_path, node.name) for node in dag.nodes.values()
-        }
+        expected_tasks = {(node.family_path, node.name) for node in dag.nodes.values()}
 
         # Assert structural equality of task sets
         assert parsed_tasks == expected_tasks, (

@@ -35,21 +35,21 @@
 
 # Ensure required variables are set
 if [[ -z "${COMOUT:-}" ]]; then
-    echo "FATAL ERROR: COMOUT is not set"
-    export err=1
-    err_exit "atomic_publish: COMOUT is not set"
+  echo "FATAL ERROR: COMOUT is not set"
+  export err=1
+  err_exit "atomic_publish: COMOUT is not set"
 fi
 
 if [[ -z "${jobid:-}" ]]; then
-    echo "FATAL ERROR: jobid is not set"
-    export err=1
-    err_exit "atomic_publish: jobid is not set"
+  echo "FATAL ERROR: jobid is not set"
+  export err=1
+  err_exit "atomic_publish: jobid is not set"
 fi
 
 if [[ $# -eq 0 ]]; then
-    echo "FATAL ERROR: No files specified for atomic publish"
-    export err=1
-    err_exit "atomic_publish: No files specified for publish"
+  echo "FATAL ERROR: No files specified for atomic publish"
+  export err=1
+  err_exit "atomic_publish: No files specified for publish"
 fi
 
 ###############################################################################
@@ -64,33 +64,33 @@ fi
 #   0 on success, non-zero on failure
 ###############################################################################
 atomic_stage() {
-    local staging_dir="${COMOUT}/.staging/${jobid}"
+  local staging_dir="${COMOUT}/.staging/${jobid}"
 
-    # Create staging directory
-    mkdir -p "${staging_dir}"
-    export err=$?
-    if [[ ${err} -ne 0 ]]; then
-        err_exit "atomic_publish: Failed to create staging directory ${staging_dir}"
+  # Create staging directory
+  mkdir -p "${staging_dir}"
+  export err=$?
+  if [[ ${err} -ne 0 ]]; then
+    err_exit "atomic_publish: Failed to create staging directory ${staging_dir}"
+  fi
+
+  # Stage each file using cpfs (EE2 inter-filesystem copy)
+  local src
+  for src in "$@"; do
+    if [[ ! -f "${src}" ]]; then
+      export err=1
+      err_exit "atomic_publish: Source file does not exist: ${src}"
     fi
 
-    # Stage each file using cpfs (EE2 inter-filesystem copy)
-    local src
-    for src in "$@"; do
-        if [[ ! -f "${src}" ]]; then
-            export err=1
-            err_exit "atomic_publish: Source file does not exist: ${src}"
-        fi
+    local basename
+    basename=$(basename "${src}")
+    cpfs "${src}" "${staging_dir}/${basename}"
+    export err=$?
+    if [[ ${err} -ne 0 ]]; then
+      err_exit "atomic_publish: cpfs failed to stage ${src} to ${staging_dir}/${basename}"
+    fi
+  done
 
-        local basename
-        basename=$(basename "${src}")
-        cpfs "${src}" "${staging_dir}/${basename}"
-        export err=$?
-        if [[ ${err} -ne 0 ]]; then
-            err_exit "atomic_publish: cpfs failed to stage ${src} to ${staging_dir}/${basename}"
-        fi
-    done
-
-    return 0
+  return 0
 }
 
 ###############################################################################
@@ -104,40 +104,40 @@ atomic_stage() {
 #   0 on success, non-zero on failure (calls err_exit on failure)
 ###############################################################################
 atomic_verify() {
-    local staging_dir="${COMOUT}/.staging/${jobid}"
-    local hash_check="${ATOMIC_PUBLISH_HASH_CHECK:-NO}"
+  local staging_dir="${COMOUT}/.staging/${jobid}"
+  local hash_check="${ATOMIC_PUBLISH_HASH_CHECK:-NO}"
 
-    local src
-    for src in "$@"; do
-        local basename
-        basename=$(basename "${src}")
-        local staged_file="${staging_dir}/${basename}"
+  local src
+  for src in "$@"; do
+    local basename
+    basename=$(basename "${src}")
+    local staged_file="${staging_dir}/${basename}"
 
-        # Verify file exists
-        if [[ ! -f "${staged_file}" ]]; then
-            export err=1
-            err_exit "atomic_publish: Staged file missing: ${staged_file}"
-        fi
+    # Verify file exists
+    if [[ ! -f "${staged_file}" ]]; then
+      export err=1
+      err_exit "atomic_publish: Staged file missing: ${staged_file}"
+    fi
 
-        # Verify file is non-empty
-        if [[ ! -s "${staged_file}" ]]; then
-            export err=1
-            err_exit "atomic_publish: Staged file is empty: ${staged_file}"
-        fi
+    # Verify file is non-empty
+    if [[ ! -s "${staged_file}" ]]; then
+      export err=1
+      err_exit "atomic_publish: Staged file is empty: ${staged_file}"
+    fi
 
-        # Optional SHA-256 hash verification
-        if [[ "${hash_check^^}" == "YES" ]]; then
-            local src_hash staged_hash
-            src_hash=$(sha256sum "${src}" | awk '{print $1}')
-            staged_hash=$(sha256sum "${staged_file}" | awk '{print $1}')
-            if [[ "${src_hash}" != "${staged_hash}" ]]; then
-                export err=1
-                err_exit "atomic_publish: Hash mismatch for ${basename} (source: ${src_hash}, staged: ${staged_hash})"
-            fi
-        fi
-    done
+    # Optional SHA-256 hash verification
+    if [[ "${hash_check^^}" == "YES" ]]; then
+      local src_hash staged_hash
+      src_hash=$(sha256sum "${src}" | awk '{print $1}')
+      staged_hash=$(sha256sum "${staged_file}" | awk '{print $1}')
+      if [[ "${src_hash}" != "${staged_hash}" ]]; then
+        export err=1
+        err_exit "atomic_publish: Hash mismatch for ${basename} (source: ${src_hash}, staged: ${staged_hash})"
+      fi
+    fi
+  done
 
-    return 0
+  return 0
 }
 
 ###############################################################################
@@ -152,26 +152,26 @@ atomic_verify() {
 #   0 on success, non-zero on failure
 ###############################################################################
 atomic_move() {
-    local staging_dir="${COMOUT}/.staging/${jobid}"
+  local staging_dir="${COMOUT}/.staging/${jobid}"
 
-    local src
-    for src in "$@"; do
-        local basename
-        basename=$(basename "${src}")
-        local staged_file="${staging_dir}/${basename}"
-        local final_file="${COMOUT}/${basename}"
+  local src
+  for src in "$@"; do
+    local basename
+    basename=$(basename "${src}")
+    local staged_file="${staging_dir}/${basename}"
+    local final_file="${COMOUT}/${basename}"
 
-        mv "${staged_file}" "${final_file}"
-        export err=$?
-        if [[ ${err} -ne 0 ]]; then
-            err_exit "atomic_publish: Failed to move ${staged_file} to ${final_file}"
-        fi
-    done
+    mv "${staged_file}" "${final_file}"
+    export err=$?
+    if [[ ${err} -ne 0 ]]; then
+      err_exit "atomic_publish: Failed to move ${staged_file} to ${final_file}"
+    fi
+  done
 
-    # Clean up the staging directory
-    rmdir "${staging_dir}" 2>/dev/null || true
+  # Clean up the staging directory
+  rmdir "${staging_dir}" 2> /dev/null || true
 
-    return 0
+  return 0
 }
 
 ###############################################################################
@@ -184,31 +184,31 @@ atomic_move() {
 #   $@ - List of source file paths (basenames used for final names)
 ###############################################################################
 atomic_alert() {
-    if [[ "${SENDDBN^^}" != "YES" ]]; then
-        return 0
-    fi
-
-    local alert_type="${DBN_ALERT_TYPE:-}"
-    local job_name="${job:-}"
-    local dbn_root="${DBNROOT:-}"
-
-    if [[ -z "${dbn_root}" || -z "${alert_type}" ]]; then
-        return 0
-    fi
-
-    local src
-    for src in "$@"; do
-        local basename
-        basename=$(basename "${src}")
-        local final_file="${COMOUT}/${basename}"
-
-        # Only alert if file is confirmed at final location
-        if [[ -f "${final_file}" ]]; then
-            "${dbn_root}/bin/dbn_alert" MODEL "${alert_type}" "${job_name}" "${final_file}"
-        fi
-    done
-
+  if [[ "${SENDDBN^^}" != "YES" ]]; then
     return 0
+  fi
+
+  local alert_type="${DBN_ALERT_TYPE:-}"
+  local job_name="${job:-}"
+  local dbn_root="${DBNROOT:-}"
+
+  if [[ -z "${dbn_root}" || -z "${alert_type}" ]]; then
+    return 0
+  fi
+
+  local src
+  for src in "$@"; do
+    local basename
+    basename=$(basename "${src}")
+    local final_file="${COMOUT}/${basename}"
+
+    # Only alert if file is confirmed at final location
+    if [[ -f "${final_file}" ]]; then
+      "${dbn_root}/bin/dbn_alert" MODEL "${alert_type}" "${job_name}" "${final_file}"
+    fi
+  done
+
+  return 0
 }
 
 ###############################################################################
@@ -226,24 +226,24 @@ atomic_alert() {
 #   $@ - List of source file paths to publish
 ###############################################################################
 atomic_publish() {
-    local files=("$@")
+  local files=("$@")
 
-    # Stage all files
-    atomic_stage "${files[@]}"
+  # Stage all files
+  atomic_stage "${files[@]}"
 
-    # Verify all staged files
-    atomic_verify "${files[@]}"
+  # Verify all staged files
+  atomic_verify "${files[@]}"
 
-    # Move to final location (atomic within same filesystem)
-    atomic_move "${files[@]}"
+  # Move to final location (atomic within same filesystem)
+  atomic_move "${files[@]}"
 
-    # Send alerts only after files are at final location
-    atomic_alert "${files[@]}"
+  # Send alerts only after files are at final location
+  atomic_alert "${files[@]}"
 
-    return 0
+  return 0
 }
 
 # Execute if called with arguments (not just sourced)
 if [[ $# -gt 0 ]]; then
-    atomic_publish "$@"
+  atomic_publish "$@"
 fi

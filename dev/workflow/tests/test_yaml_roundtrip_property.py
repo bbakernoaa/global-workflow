@@ -18,13 +18,12 @@ import tempfile
 from pathlib import Path
 
 import yaml
-from hypothesis import given, settings, HealthCheck
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from deployment.template_renderer import save_as_yaml
-
 
 # ---------------------------------------------------------------------------
 # Hypothesis Strategies for generating valid YAML-safe configuration dicts
@@ -131,8 +130,4 @@ def test_yaml_roundtrip_property(cfg: dict):
         loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
 
         # Assert round-trip equality
-        assert loaded == cfg, (
-            f"YAML round-trip failed.\n"
-            f"Original: {cfg!r}\n"
-            f"Loaded:   {loaded!r}"
-        )
+        assert loaded == cfg, f"YAML round-trip failed.\nOriginal: {cfg!r}\nLoaded:   {loaded!r}"

@@ -4,7 +4,8 @@ import os
 
 from pygfs.task.archive import Archive
 from pygfs.utils.archive_vrfy_vars import ArchiveVrfyVars
-from wxflow import AttrDict, Logger, cast_strdict_as_dtypedict, chdir, logit
+
+from wxflow import Logger, cast_strdict_as_dtypedict, chdir, logit
 
 # initialize root logger
 logger = Logger(level=os.environ.get("LOGGING_LEVEL", "DEBUG"), colored_log=True)
@@ -12,7 +13,6 @@ logger = Logger(level=os.environ.get("LOGGING_LEVEL", "DEBUG"), colored_log=True
 
 @logit(logger)
 def main():
-
     config = cast_strdict_as_dtypedict(os.environ)
 
     # Instantiate the Archive task object
@@ -26,10 +26,9 @@ def main():
     arcdir_set = archive.configure_vrfy(arch_dict)
 
     with chdir(config.ROTDIR):
-
         # Populate the product archive (ARCDIR)
         archive.execute_store_products(arcdir_set)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

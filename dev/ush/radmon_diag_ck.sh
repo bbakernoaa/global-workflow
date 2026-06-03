@@ -7,16 +7,16 @@
 #
 
 function usage {
-    echo "Usage:  radmon_diag_ck.sh -rad radstat --sat satype --out output "
-    echo ""
-    echo "            -r,--rad radstat file (required)"
-    echo "              File name or path to radstat file."
-    echo ""
-    echo "            -s,--sat satype file (required)"
-    echo "              File name or path to satype file."
-    echo ""
-    echo "            -o,--out output file name (required)"
-    echo "              File name for missing diag file report."
+  echo "Usage:  radmon_diag_ck.sh -rad radstat --sat satype --out output "
+  echo ""
+  echo "            -r,--rad radstat file (required)"
+  echo "              File name or path to radstat file."
+  echo ""
+  echo "            -s,--sat satype file (required)"
+  echo "              File name or path to satype file."
+  echo ""
+  echo "            -o,--out output file name (required)"
+  echo "              File name for missing diag file report."
 }
 
 echo "--> radmon_diag_ck.sh"
@@ -26,34 +26,34 @@ echo "--> radmon_diag_ck.sh"
 #
 nargs=$#
 if [[ ${nargs} -ne 6 ]]; then
-    usage
-    exit 1
+  usage
+  exit 1
 fi
 
 while [[ $# -ge 1 ]]; do
-    key="$1"
-    echo "${key}"
+  key="$1"
+  echo "${key}"
 
-    case ${key} in
-        -r | --rad)
-            radstat_file="$2"
-            shift # past argument
-            ;;
-        -s | --sat)
-            satype_file="$2"
-            shift # past argument
-            ;;
-        -o | --out)
-            output_file="$2"
-            shift # past argument
-            ;;
-        *)
-            #unspecified key
-            echo " unsupported key = ${key}"
-            ;;
-    esac
+  case ${key} in
+    -r | --rad)
+      radstat_file="$2"
+      shift # past argument
+      ;;
+    -s | --sat)
+      satype_file="$2"
+      shift # past argument
+      ;;
+    -o | --out)
+      output_file="$2"
+      shift # past argument
+      ;;
+    *)
+      #unspecified key
+      echo " unsupported key = ${key}"
+      ;;
+  esac
 
-    shift
+  shift
 done
 
 #   set -ax
@@ -80,11 +80,11 @@ readarray -t satype_contents < "${satype_file}"
 #    report anything missing
 #
 for sat in "${satype_contents[@]}"; do
-    content_count=$(echo "${radstat_contents}" | grep -c "${sat}")
+  content_count=$(echo "${radstat_contents}" | grep -c "${sat}")
 
-    if [[ "${content_count}" -le 0 ]]; then
-        missing_diag="${missing_diag} ${sat}"
-    fi
+  if [[ "${content_count}" -le 0 ]]; then
+    missing_diag="${missing_diag} ${sat}"
+  fi
 
 done
 
@@ -112,29 +112,29 @@ declare -A file_sizes
 # Field $6 of verbose tar output is the filename, field $3 is the size
 # Caution: this method is not robust if the filename contains spaces
 while IFS='|' read -r name size; do
-    file_sizes[${name}]=${size}
+  file_sizes[${name}]=${size}
 done < <(tar -vtf "${radstat_file}" --wildcards '*_ges*' | awk '$3 ~ /^[0-9]+$/ { print $6 "|" $3 }')
 
 for file_name in "${!file_sizes[@]}"; do
-    file_size="${file_sizes["${file_name}"]}"
+  file_size="${file_sizes["${file_name}"]}"
 
-    if ((file_size <= 1000)); then
-        tar -xf "${radstat_file}" "${file_name}"
-        gunzip "${file_name}"
-        uz_file_name="${file_name%.*}"
-        uz_file_size=$(stat -c "%s" "${uz_file_name}")
+  if ((file_size <= 1000)); then
+    tar -xf "${radstat_file}" "${file_name}"
+    gunzip "${file_name}"
+    uz_file_name="${file_name%.*}"
+    uz_file_size=$(stat -c "%s" "${uz_file_name}")
 
-        if ((uz_file_size <= 0)); then
-            # Remove leading diag_
-            sat=${uz_file_name#diag_}
-            # Remove trailing _ges*
-            sat=${sat%_ges*}
+    if ((uz_file_size <= 0)); then
+      # Remove leading diag_
+      sat=${uz_file_name#diag_}
+      # Remove trailing _ges*
+      sat=${sat%_ges*}
 
-            zero_len_diag="${zero_len_diag} ${sat}"
-        fi
-
-        rm -f "${uz_file_name}"
+      zero_len_diag="${zero_len_diag} ${sat}"
     fi
+
+    rm -f "${uz_file_name}"
+  fi
 
 done
 
@@ -146,15 +146,15 @@ echo ""
 #  Write results to $output_file
 #
 if [[ ${#zero_len_diag} -gt 0 ]]; then
-    for zld in ${zero_len_diag}; do
-        echo "  Zero Length diagnostic file:    ${zld}" >> "${output_file}"
-    done
+  for zld in ${zero_len_diag}; do
+    echo "  Zero Length diagnostic file:    ${zld}" >> "${output_file}"
+  done
 fi
 
 if [[ ${#missing_diag} -gt 0 ]]; then
-    for md in ${missing_diag}; do
-        echo "  Missing diagnostic file    :    ${md}" >> "${output_file}"
-    done
+  for md in ${missing_diag}; do
+    echo "  Missing diagnostic file    :    ${md}" >> "${output_file}"
+  done
 fi
 
 echo "<-- radmon_diag_ck.sh"

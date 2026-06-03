@@ -28,7 +28,7 @@ from deployment.pipeline import PipelineError, SubmodulePolicy, run
 
 # Committed Submodule_Fixture tree (Req 6.2, 6.7). Resolved relative to this
 # test file so it works regardless of the current working directory.
-FIXTURE_ROOT = (Path(__file__).resolve().parent / "fixtures" / "submodules")
+FIXTURE_ROOT = Path(__file__).resolve().parent / "fixtures" / "submodules"
 
 
 # ---------------------------------------------------------------------------
@@ -104,9 +104,7 @@ def minimal_dev_tree(tmp_path):
                         "trigger": "gfs/atmos/stage/stage_ic == complete",
                         "jjob": "JGLOBAL_FORECAST",
                         "events": ["forecast_hour"],
-                        "meters": [
-                            {"name": "forecast_hour", "min": 0, "max": 120}
-                        ],
+                        "meters": [{"name": "forecast_hour", "min": 0, "max": 120}],
                     }
                 ],
             },
@@ -146,20 +144,12 @@ def minimal_dev_tree(tmp_path):
 ${EXPDIR}/ush/universal_wrapper.sh {{ task.jjob }}
 %include <tail.h>
 """
-    (dev_root / "workflow" / "ecflow" / "templates" / "task.ecf.j2").write_text(
-        template
-    )
+    (dev_root / "workflow" / "ecflow" / "templates" / "task.ecf.j2").write_text(template)
 
     # Create ecFlow include files
-    (dev_root / "workflow" / "ecflow" / "include" / "head.h").write_text(
-        "# head.h - ecFlow header\n"
-    )
-    (dev_root / "workflow" / "ecflow" / "include" / "tail.h").write_text(
-        "# tail.h - ecFlow tail\n"
-    )
-    (dev_root / "workflow" / "ecflow" / "include" / "envsetup.h").write_text(
-        "# envsetup.h - environment setup\n"
-    )
+    (dev_root / "workflow" / "ecflow" / "include" / "head.h").write_text("# head.h - ecFlow header\n")
+    (dev_root / "workflow" / "ecflow" / "include" / "tail.h").write_text("# tail.h - ecFlow tail\n")
+    (dev_root / "workflow" / "ecflow" / "include" / "envsetup.h").write_text("# envsetup.h - environment setup\n")
 
     # Create sample J-Jobs (EE2 compliant)
     jjob_template = (
@@ -177,26 +167,17 @@ ${EXPDIR}/ush/universal_wrapper.sh {{ task.jjob }}
         "export jobid=${{job}}.$$\n"
         "exit 0\n"
     )
-    for jjob_name in ["JGLOBAL_FORECAST", "JGLOBAL_STAGE_IC",
-                      "JGFS_ATMOS_POST", "JGLOBAL_ARCHIVE"]:
-        (dev_root / "jobs" / jjob_name).write_text(
-            jjob_template.format(name=jjob_name)
-        )
+    for jjob_name in ["JGLOBAL_FORECAST", "JGLOBAL_STAGE_IC", "JGFS_ATMOS_POST", "JGLOBAL_ARCHIVE"]:
+        (dev_root / "jobs" / jjob_name).write_text(jjob_template.format(name=jjob_name))
 
     # Create a sample ex-script
-    (dev_root / "scripts" / "exglobal_forecast.sh").write_text(
-        "#!/bin/bash\n# Ex-script: exglobal_forecast.sh\nexit 0\n"
-    )
+    (dev_root / "scripts" / "exglobal_forecast.sh").write_text("#!/bin/bash\n# Ex-script: exglobal_forecast.sh\nexit 0\n")
 
     # Create a sample ush utility
-    (dev_root / "ush" / "detect_machine.sh").write_text(
-        "#!/bin/bash\n# detect_machine.sh\nexport MACHINE=HERA\n"
-    )
+    (dev_root / "ush" / "detect_machine.sh").write_text("#!/bin/bash\n# detect_machine.sh\nexport MACHINE=HERA\n")
 
     # Create a versions file
-    (dev_root / "versions" / "run.ver").write_text(
-        "export gfs_ver=v17.0.0\n"
-    )
+    (dev_root / "versions" / "run.ver").write_text("export gfs_ver=v17.0.0\n")
 
     # Create a .git directory to mark repo root
     (tmp_path / ".git").mkdir()
@@ -258,10 +239,7 @@ class TestImmutabilityFilePermissions:
         for filepath in sealed_expdir.rglob("*"):
             if filepath.is_file() and not filepath.is_symlink():
                 mode = stat.S_IMODE(filepath.stat().st_mode)
-                assert mode == 0o444, (
-                    f"File '{filepath.relative_to(sealed_expdir)}' has mode "
-                    f"{oct(mode)}, expected 0o444"
-                )
+                assert mode == 0o444, f"File '{filepath.relative_to(sealed_expdir)}' has mode {oct(mode)}, expected 0o444"
 
     def test_all_directories_are_mode_0555(self, sealed_expdir):
         """Every directory in the sealed EXPDIR must have mode 0555.
@@ -270,18 +248,13 @@ class TestImmutabilityFilePermissions:
         """
         # Check the EXPDIR root itself
         root_mode = stat.S_IMODE(sealed_expdir.stat().st_mode)
-        assert root_mode == 0o555, (
-            f"EXPDIR root has mode {oct(root_mode)}, expected 0o555"
-        )
+        assert root_mode == 0o555, f"EXPDIR root has mode {oct(root_mode)}, expected 0o555"
 
         # Check all subdirectories
         for dirpath in sealed_expdir.rglob("*"):
             if dirpath.is_dir():
                 mode = stat.S_IMODE(dirpath.stat().st_mode)
-                assert mode == 0o555, (
-                    f"Directory '{dirpath.relative_to(sealed_expdir)}' has mode "
-                    f"{oct(mode)}, expected 0o555"
-                )
+                assert mode == 0o555, f"Directory '{dirpath.relative_to(sealed_expdir)}' has mode {oct(mode)}, expected 0o555"
 
 
 class TestImmutabilityWriteAttempts:
@@ -311,9 +284,7 @@ class TestImmutabilityWriteAttempts:
             with open(target, "a") as f:
                 f.write("appended content")
 
-    def test_create_new_file_in_sealed_dir_raises_permission_error(
-        self, sealed_expdir
-    ):
+    def test_create_new_file_in_sealed_dir_raises_permission_error(self, sealed_expdir):
         """Attempting to create a new file in a sealed directory must raise
         PermissionError.
 
@@ -324,9 +295,7 @@ class TestImmutabilityWriteAttempts:
         with pytest.raises(PermissionError):
             new_file.write_text("should not be created")
 
-    def test_create_new_file_in_subdirectory_raises_permission_error(
-        self, sealed_expdir
-    ):
+    def test_create_new_file_in_subdirectory_raises_permission_error(self, sealed_expdir):
         """Attempting to create a new file in a sealed subdirectory must
         raise PermissionError.
 
@@ -351,9 +320,7 @@ class TestImmutabilityWriteAttempts:
         with pytest.raises(PermissionError):
             target.unlink()
 
-    def test_delete_file_via_os_remove_raises_permission_error(
-        self, sealed_expdir
-    ):
+    def test_delete_file_via_os_remove_raises_permission_error(self, sealed_expdir):
         """Attempting to delete a file via os.remove must raise
         PermissionError (directory is not writable).
 
@@ -384,9 +351,7 @@ class TestImmutabilityWriteAttempts:
 class TestImmutabilityRedeployGuard:
     """Verify the pipeline refuses to re-deploy to an already-sealed EXPDIR."""
 
-    def test_redeploy_to_sealed_expdir_raises_pipeline_error(
-        self, minimal_dev_tree
-    ):
+    def test_redeploy_to_sealed_expdir_raises_pipeline_error(self, minimal_dev_tree):
         """The pipeline must refuse to deploy to an EXPDIR that already
         contains a manifest (immutability guard).
 
@@ -455,7 +420,4 @@ class TestImmutabilityRedeployGuard:
             )
 
         # The error message should contain the existing snapshot_id
-        assert snapshot_id in str(exc_info.value), (
-            f"Error message should reference existing Snapshot_ID "
-            f"'{snapshot_id}', got: {exc_info.value}"
-        )
+        assert snapshot_id in str(exc_info.value), f"Error message should reference existing Snapshot_ID '{snapshot_id}', got: {exc_info.value}"

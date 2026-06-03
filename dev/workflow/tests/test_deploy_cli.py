@@ -26,7 +26,6 @@ from deploy import (
 )
 from deployment.pipeline import SUPPORTED_PLATFORMS
 
-
 # ---------------------------------------------------------------------------
 # Argument parsing tests
 # ---------------------------------------------------------------------------
@@ -40,12 +39,18 @@ class TestBuildParser:
         parser = _build_parser()
 
         # All required args present
-        args = parser.parse_args([
-            "--config", "dev/parm/workflow/gfs_cycled.yaml",
-            "--platform", "HERA",
-            "--expdir", "/tmp/expdir",
-            "--version", "v17.0.0",
-        ])
+        args = parser.parse_args(
+            [
+                "--config",
+                "dev/parm/workflow/gfs_cycled.yaml",
+                "--platform",
+                "HERA",
+                "--expdir",
+                "/tmp/expdir",
+                "--version",
+                "v17.0.0",
+            ]
+        )
         assert args.config == "dev/parm/workflow/gfs_cycled.yaml"
         assert args.platform == "HERA"
         assert args.expdir == "/tmp/expdir"
@@ -78,47 +83,72 @@ class TestBuildParser:
     def test_dry_run_default_false(self):
         """--dry-run defaults to False."""
         parser = _build_parser()
-        args = parser.parse_args([
-            "--config", "c.yaml",
-            "--platform", "HERA",
-            "--expdir", "/tmp",
-            "--version", "v1",
-        ])
+        args = parser.parse_args(
+            [
+                "--config",
+                "c.yaml",
+                "--platform",
+                "HERA",
+                "--expdir",
+                "/tmp",
+                "--version",
+                "v1",
+            ]
+        )
         assert args.dry_run is False
 
     def test_dry_run_flag(self):
         """--dry-run sets dry_run to True."""
         parser = _build_parser()
-        args = parser.parse_args([
-            "--config", "c.yaml",
-            "--platform", "HERA",
-            "--expdir", "/tmp",
-            "--version", "v1",
-            "--dry-run",
-        ])
+        args = parser.parse_args(
+            [
+                "--config",
+                "c.yaml",
+                "--platform",
+                "HERA",
+                "--expdir",
+                "/tmp",
+                "--version",
+                "v1",
+                "--dry-run",
+            ]
+        )
         assert args.dry_run is True
 
     def test_allowlist_default_none(self):
         """--allowlist defaults to None."""
         parser = _build_parser()
-        args = parser.parse_args([
-            "--config", "c.yaml",
-            "--platform", "HERA",
-            "--expdir", "/tmp",
-            "--version", "v1",
-        ])
+        args = parser.parse_args(
+            [
+                "--config",
+                "c.yaml",
+                "--platform",
+                "HERA",
+                "--expdir",
+                "/tmp",
+                "--version",
+                "v1",
+            ]
+        )
         assert args.allowlist is None
 
     def test_allowlist_value(self):
         """--allowlist accepts a comma-separated string."""
         parser = _build_parser()
-        args = parser.parse_args([
-            "--config", "c.yaml",
-            "--platform", "HERA",
-            "--expdir", "/tmp",
-            "--version", "v1",
-            "--allowlist", "dev/ctests/,dev/ci/",
-        ])
+        args = parser.parse_args(
+            [
+                "--config",
+                "c.yaml",
+                "--platform",
+                "HERA",
+                "--expdir",
+                "/tmp",
+                "--version",
+                "v1",
+                "--allowlist",
+                "dev/ctests/,dev/ci/",
+            ]
+        )
         assert args.allowlist == "dev/ctests/,dev/ci/"
 
 
@@ -166,12 +196,18 @@ class TestRocotoDeprecation:
     def test_rocoto_config_path_rejected(self):
         """Config path containing 'rocoto' triggers FATAL ERROR."""
         parser = _build_parser()
-        args = parser.parse_args([
-            "--config", "dev/workflow/rocoto/gfs_workflow.xml",
-            "--platform", "HERA",
-            "--expdir", "/tmp/expdir",
-            "--version", "v1.0.0",
-        ])
+        args = parser.parse_args(
+            [
+                "--config",
+                "dev/workflow/rocoto/gfs_workflow.xml",
+                "--platform",
+                "HERA",
+                "--expdir",
+                "/tmp/expdir",
+                "--version",
+                "v1.0.0",
+            ]
+        )
         with pytest.raises(SystemExit) as exc_info:
             _check_rocoto_invocation(args)
         assert exc_info.value.code == 1
@@ -179,12 +215,18 @@ class TestRocotoDeprecation:
     def test_rocoto_in_path_case_insensitive(self):
         """Rocoto detection is case-insensitive."""
         parser = _build_parser()
-        args = parser.parse_args([
-            "--config", "dev/workflow/ROCOTO/gfs.xml",
-            "--platform", "HERA",
-            "--expdir", "/tmp/expdir",
-            "--version", "v1.0.0",
-        ])
+        args = parser.parse_args(
+            [
+                "--config",
+                "dev/workflow/ROCOTO/gfs.xml",
+                "--platform",
+                "HERA",
+                "--expdir",
+                "/tmp/expdir",
+                "--version",
+                "v1.0.0",
+            ]
+        )
         with pytest.raises(SystemExit) as exc_info:
             _check_rocoto_invocation(args)
         assert exc_info.value.code == 1
@@ -192,12 +234,18 @@ class TestRocotoDeprecation:
     def test_non_rocoto_config_passes(self):
         """Normal config path does not trigger Rocoto guard."""
         parser = _build_parser()
-        args = parser.parse_args([
-            "--config", "dev/parm/workflow/gfs_cycled.yaml",
-            "--platform", "HERA",
-            "--expdir", "/tmp/expdir",
-            "--version", "v1.0.0",
-        ])
+        args = parser.parse_args(
+            [
+                "--config",
+                "dev/parm/workflow/gfs_cycled.yaml",
+                "--platform",
+                "HERA",
+                "--expdir",
+                "/tmp/expdir",
+                "--version",
+                "v1.0.0",
+            ]
+        )
         # Should not raise
         _check_rocoto_invocation(args)
 
@@ -272,13 +320,19 @@ class TestMain:
 
         expdir = tmp_path / "expdir"
 
-        result = main([
-            "--config", str(config_path),
-            "--platform", "HERA",
-            "--expdir", str(expdir),
-            "--version", "v1.0.0",
-            "--dry-run",
-        ])
+        result = main(
+            [
+                "--config",
+                str(config_path),
+                "--platform",
+                "HERA",
+                "--expdir",
+                str(expdir),
+                "--version",
+                "v1.0.0",
+                "--dry-run",
+            ]
+        )
 
         assert result == 0
 
@@ -288,34 +342,52 @@ class TestMain:
         config_path.write_text("suite:\n  name: test\n")
 
         with pytest.raises(SystemExit) as exc_info:
-            main([
-                "--config", str(config_path),
-                "--platform", "BADPLATFORM",
-                "--expdir", str(tmp_path / "expdir"),
-                "--version", "v1.0.0",
-            ])
+            main(
+                [
+                    "--config",
+                    str(config_path),
+                    "--platform",
+                    "BADPLATFORM",
+                    "--expdir",
+                    str(tmp_path / "expdir"),
+                    "--version",
+                    "v1.0.0",
+                ]
+            )
         assert exc_info.value.code == 1
 
     def test_rocoto_config_returns_nonzero(self):
         """main() exits non-zero for Rocoto config path."""
         with pytest.raises(SystemExit) as exc_info:
-            main([
-                "--config", "dev/workflow/rocoto/gfs.xml",
-                "--platform", "HERA",
-                "--expdir", "/tmp/expdir",
-                "--version", "v1.0.0",
-            ])
+            main(
+                [
+                    "--config",
+                    "dev/workflow/rocoto/gfs.xml",
+                    "--platform",
+                    "HERA",
+                    "--expdir",
+                    "/tmp/expdir",
+                    "--version",
+                    "v1.0.0",
+                ]
+            )
         assert exc_info.value.code == 1
 
     def test_pipeline_error_returns_1(self, tmp_path):
         """main() returns 1 when pipeline raises PipelineError."""
         # Config file doesn't exist — pipeline will raise PipelineError
-        result = main([
-            "--config", str(tmp_path / "nonexistent.yaml"),
-            "--platform", "HERA",
-            "--expdir", str(tmp_path / "expdir"),
-            "--version", "v1.0.0",
-        ])
+        result = main(
+            [
+                "--config",
+                str(tmp_path / "nonexistent.yaml"),
+                "--platform",
+                "HERA",
+                "--expdir",
+                str(tmp_path / "expdir"),
+                "--version",
+                "v1.0.0",
+            ]
+        )
 
         assert result == 1
 
@@ -346,14 +418,21 @@ class TestMain:
 
         with patch("deploy.run") as mock_run:
             mock_run.return_value = {"dry_run": True, "snapshot_id": None}
-            main([
-                "--config", str(config_path),
-                "--platform", "HERA",
-                "--expdir", str(expdir),
-                "--version", "v1.0.0",
-                "--allowlist", "dev/ctests/,dev/ci/",
-                "--dry-run",
-            ])
+            main(
+                [
+                    "--config",
+                    str(config_path),
+                    "--platform",
+                    "HERA",
+                    "--expdir",
+                    str(expdir),
+                    "--version",
+                    "v1.0.0",
+                    "--allowlist",
+                    "dev/ctests/,dev/ci/",
+                    "--dry-run",
+                ]
+            )
 
             mock_run.assert_called_once()
             call_kwargs = mock_run.call_args

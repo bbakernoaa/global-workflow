@@ -4,7 +4,8 @@ import os
 
 from pygfs.task.archive import Archive
 from pygfs.utils.archive_tar_vars import ArchiveTarVars
-from wxflow import AttrDict, Logger, cast_strdict_as_dtypedict, logit, chdir
+
+from wxflow import Logger, cast_strdict_as_dtypedict, chdir, logit
 
 # initialize root logger
 logger = Logger(level=os.environ.get("LOGGING_LEVEL", "DEBUG"), colored_log=True)
@@ -12,14 +13,13 @@ logger = Logger(level=os.environ.get("LOGGING_LEVEL", "DEBUG"), colored_log=True
 
 @logit(logger)
 def main():
-
     config = cast_strdict_as_dtypedict(os.environ)
 
     # Instantiate the Archive object
     archive = Archive(config)
 
     # update these keys to be 3 digits if they are part of archive.task_config.keys
-    for key in ['OCNRES', 'ICERES']:
+    for key in ["OCNRES", "ICERES"]:
         try:
             archive.task_config[key] = f"{archive.task_config[key]:03d}"
         except KeyError:
@@ -47,5 +47,5 @@ def main():
     logger.info(f"Returned to working directory {os.getcwd()}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

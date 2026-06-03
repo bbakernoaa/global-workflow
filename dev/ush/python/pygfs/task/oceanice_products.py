@@ -2,37 +2,26 @@
 
 import os
 from logging import getLogger
-from typing import Dict, Any
 from pprint import pformat
+from typing import Any, Dict
+
 import xarray as xr
 
-from wxflow import (AttrDict,
-                    parse_j2yaml,
-                    FileHandler,
-                    Jinja,
-                    logit,
-                    Task,
-                    add_to_datetime, to_timedelta,
-                    WorkflowException,
-                    Executable, which)
+from wxflow import AttrDict, Executable, FileHandler, Jinja, Task, WorkflowException, add_to_datetime, logit, parse_j2yaml, to_timedelta, which
 
-logger = getLogger(__name__.split('.')[-1])
+logger = getLogger(__name__.split(".")[-1])
 
 
 class OceanIceProducts(Task):
-    """Ocean Ice Products Task
-    """
+    """Ocean Ice Products Task"""
 
-    VALID_COMPONENTS = ['ocean', 'ice']
-    COMPONENT_RES_MAP = {'ocean': 'OCNRES', 'ice': 'ICERES'}
-    VALID_PRODUCT_GRIDS = {'mx025': ['1p00', '0p25'],
-                           'mx050': ['1p00', '0p50'],
-                           'mx100': ['1p00'],
-                           'mx500': ['5p00']}
+    VALID_COMPONENTS = ["ocean", "ice"]
+    COMPONENT_RES_MAP = {"ocean": "OCNRES", "ice": "ICERES"}
+    VALID_PRODUCT_GRIDS = {"mx025": ["1p00", "0p25"], "mx050": ["1p00", "0p50"], "mx100": ["1p00"], "mx500": ["5p00"]}
 
     # These could be read from the yaml file
-    TRIPOLE_DIMS_MAP = {'mx025': [1440, 1080], 'mx050': [720, 526], 'mx100': [360, 320], 'mx500': [72, 35]}
-    LATLON_DIMS_MAP = {'0p25': [1440, 721], '0p50': [720, 361], '1p00': [360, 181], '5p00': [72, 36]}
+    TRIPOLE_DIMS_MAP = {"mx025": [1440, 1080], "mx050": [720, 526], "mx100": [360, 320], "mx500": [72, 35]}
+    LATLON_DIMS_MAP = {"0p25": [1440, 721], "0p50": [720, 361], "1p00": [360, 181], "5p00": [72, 36]}
 
     def __init__(self, config: Dict[str, Any]) -> None:
         """Constructor for the Ocean/Ice Productstask
@@ -49,18 +38,20 @@ class OceanIceProducts(Task):
         super().__init__(config)
 
         if self.task_config.COMPONENT not in self.VALID_COMPONENTS:
-            raise NotImplementedError(f'{self.task_config.COMPONENT} is not a valid model component.\n' +
-                                      'Valid model components are:\n' +
-                                      f'{", ".join(self.VALID_COMPONENTS)}')
+            raise NotImplementedError(
+                f"{self.task_config.COMPONENT} is not a valid model component.\n"
+                + "Valid model components are:\n"
+                + f"{', '.join(self.VALID_COMPONENTS)}"
+            )
 
         model_grid = f"mx{self.task_config[self.COMPONENT_RES_MAP[self.task_config.COMPONENT]]:03d}"
 
         valid_datetime = add_to_datetime(self.task_config.current_cycle, to_timedelta(f"{self.task_config.FORECAST_HOUR}H"))
 
         forecast_hour = self.task_config.FORECAST_HOUR
-        if self.task_config.COMPONENT == 'ice':
+        if self.task_config.COMPONENT == "ice":
             interval = self.task_config.FHOUT_ICE_GFS
-        if self.task_config.COMPONENT == 'ocean':
+        if self.task_config.COMPONENT == "ocean":
             interval = self.task_config.FHOUT_OCN_GFS
 
         # TODO: This is a bit of a hack, but it works for now
@@ -69,13 +60,15 @@ class OceanIceProducts(Task):
 
         # Extend task_config with localdict
         localdict = AttrDict(
-            {'component': self.task_config.COMPONENT,
-             'forecast_hour': forecast_hour,
-             'valid_datetime': valid_datetime,
-             'avg_period': avg_period,
-             'model_grid': model_grid,
-             'interval': interval,
-             'product_grids': self.VALID_PRODUCT_GRIDS[model_grid]}
+            {
+                "component": self.task_config.COMPONENT,
+                "forecast_hour": forecast_hour,
+                "valid_datetime": valid_datetime,
+                "avg_period": avg_period,
+                "model_grid": model_grid,
+                "interval": interval,
+                "product_grids": self.VALID_PRODUCT_GRIDS[model_grid],
+            }
         )
         self.task_config = AttrDict(**self.task_config, **localdict)
 
@@ -130,8 +123,8 @@ class OceanIceProducts(Task):
         localconf.DATA = config.DATA
         localconf.component = config.component
 
-        localconf.source_tripole_dims = ', '.join(map(str, OceanIceProducts.TRIPOLE_DIMS_MAP[config.model_grid]))
-        localconf.target_latlon_dims = ', '.join(map(str, OceanIceProducts.LATLON_DIMS_MAP[product_grid]))
+        localconf.source_tripole_dims = ", ".join(map(str, OceanIceProducts.TRIPOLE_DIMS_MAP[config.model_grid]))
+        localconf.target_latlon_dims = ", ".join(map(str, OceanIceProducts.LATLON_DIMS_MAP[product_grid]))
 
         localconf.maskvar = config.oceanice_yaml[config.component].namelist.maskvar
         localconf.sinvar = config.oceanice_yaml[config.component].namelist.sinvar
@@ -283,16 +276,16 @@ class OceanIceProducts(Task):
         try:
             # open the netcdf file
             ds = xr.open_dataset(input_file)
-            if config.component == 'ice':
+            if config.component == "ice":
                 # subset the variables
                 ds_subset = ds[varlist]
                 # remove coords that were carried from original file but not used
-                ds_subset = ds_subset.drop_vars('ELON', errors='ignore')
-                ds_subset = ds_subset.drop_vars('ELAT', errors='ignore')
-                ds_subset = ds_subset.drop_vars('NLON', errors='ignore')
-                ds_subset = ds_subset.drop_vars('NLAT', errors='ignore')
+                ds_subset = ds_subset.drop_vars("ELON", errors="ignore")
+                ds_subset = ds_subset.drop_vars("ELAT", errors="ignore")
+                ds_subset = ds_subset.drop_vars("NLON", errors="ignore")
+                ds_subset = ds_subset.drop_vars("NLAT", errors="ignore")
 
-            if config.component == 'ocean':
+            if config.component == "ocean":
                 # subset ocean variables for z_levels in products
                 levels = config.oceanice_yaml.ocean.namelist.ocean_levels
                 ds_subset = ds[varlist].sel(z_l=levels)
@@ -314,9 +307,9 @@ class OceanIceProducts(Task):
             logger.exception(f"FATAL ERROR: Input file not found: {input_file}")
             raise FileNotFoundError(f"File not found: {input_file}")
 
-        except IOError as err:
+        except OSError as err:
             logger.exception(f"FATAL ERROR: IOError occurred during netCDF subset: {input_file}")
-            raise IOError(f"An I/O error occurred: {err}")
+            raise OSError(f"An I/O error occurred: {err}")
 
         except Exception as err:
             logger.exception(f"FATAL ERROR: Error occurred during netCDF subset: {input_file}")
@@ -345,5 +338,5 @@ class OceanIceProducts(Task):
 
         # Copy "component" specific generated data to COM/ directory
         data_out = config.oceanice_yaml[config.component].data_out
-        logger.info(f"Copy processed data to COM/ directory")
+        logger.info("Copy processed data to COM/ directory")
         FileHandler(data_out).sync()

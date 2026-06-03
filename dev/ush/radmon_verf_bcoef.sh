@@ -61,7 +61,7 @@
 
 netcdf_boolean=".false."
 if [[ "${RADMON_NETCDF}" -eq 1 ]]; then
-    netcdf_boolean=".true."
+  netcdf_boolean=".true."
 fi
 echo " RADMON_NETCDF, netcdf_boolean = ${RADMON_NETCDF}, ${netcdf_boolean}"
 
@@ -80,9 +80,9 @@ USE_ANL=${USE_ANL:-0}
 bcoef_exec=radmon_bcoef.x
 
 if [[ "${USE_ANL}" -eq 1 ]]; then
-    gesanl="ges anl"
+  gesanl="ges anl"
 else
-    gesanl="ges"
+  gesanl="ges"
 fi
 
 #--------------------------------------------------------------------
@@ -106,36 +106,36 @@ npredr=5
 
 for type in ${SATYPE}; do
 
-    if [[ ! -s "${type}" ]]; then
-        echo "ZERO SIZED:  ${type}"
-        continue
+  if [[ ! -s "${type}" ]]; then
+    echo "ZERO SIZED:  ${type}"
+    continue
+  fi
+
+  for dtype in ${gesanl}; do
+
+    source prep_step
+
+    if [[ "${dtype}" == "anl" ]]; then
+      data_file="${type}_anl.${PDY}${cyc}.ieee_d"
+      ctl_file="${type}_anl.ctl"
+      bcoef_ctl="bcoef.${ctl_file}"
+    else
+      data_file="${type}.${PDY}${cyc}.ieee_d"
+      ctl_file="${type}.ctl"
+      bcoef_ctl="bcoef.${ctl_file}"
     fi
 
-    for dtype in ${gesanl}; do
+    if [[ "${REGIONAL_RR}" -eq 1 ]]; then
+      bcoef_file="${rgnHH}.bcoef.${data_file}.${rgnTM}"
+    else
+      bcoef_file="bcoef.${data_file}"
+    fi
 
-        source prep_step
+    if [[ -f input ]]; then
+      rm -f input
+    fi
 
-        if [[ "${dtype}" == "anl" ]]; then
-            data_file="${type}_anl.${PDY}${cyc}.ieee_d"
-            ctl_file="${type}_anl.ctl"
-            bcoef_ctl="bcoef.${ctl_file}"
-        else
-            data_file="${type}.${PDY}${cyc}.ieee_d"
-            ctl_file="${type}.ctl"
-            bcoef_ctl="bcoef.${ctl_file}"
-        fi
-
-        if [[ "${REGIONAL_RR}" -eq 1 ]]; then
-            bcoef_file="${rgnHH}.bcoef.${data_file}.${rgnTM}"
-        else
-            bcoef_file="bcoef.${data_file}"
-        fi
-
-        if [[ -f input ]]; then
-            rm -f input
-        fi
-
-        cat << EOF > input
+    cat << EOF > input
  &INPUT
   satname='${type}',
   npredr=${npredr},
@@ -152,44 +152,44 @@ for type in ${SATYPE}; do
   netcdf=${netcdf_boolean},
  /
 EOF
-        startmsg
-        "./${bcoef_exec}" < input >> "${pgmout}" 2>> errfile
-        export err=$?
-        if [[ "${err}" -ne 0 ]]; then
-            echo "FATAL ERROR: ${bcoef_exec} failed for instrument ${type} and datatype ${dtype}"
-            exit "${err}"
-        fi
+    startmsg
+    "./${bcoef_exec}" < input >> "${pgmout}" 2>> errfile
+    export err=$?
+    if [[ "${err}" -ne 0 ]]; then
+      echo "FATAL ERROR: ${bcoef_exec} failed for instrument ${type} and datatype ${dtype}"
+      exit "${err}"
+    fi
 
-        #-------------------------------------------------------------------
-        #  move data, control, and stdout files to $TANKverf_rad and compress
-        #
+    #-------------------------------------------------------------------
+    #  move data, control, and stdout files to $TANKverf_rad and compress
+    #
 
-        if [[ -s "${bcoef_file}" ]]; then
-            ${COMPRESS} "${bcoef_file}"
-        fi
+    if [[ -s "${bcoef_file}" ]]; then
+      ${COMPRESS} "${bcoef_file}"
+    fi
 
-        if [[ -s "${bcoef_ctl}" ]]; then
-            ${COMPRESS} "${bcoef_ctl}"
-        fi
+    if [[ -s "${bcoef_ctl}" ]]; then
+      ${COMPRESS} "${bcoef_ctl}"
+    fi
 
-    done # dtype in $gesanl loop
-done     # type in $SATYPE loop
+  done # dtype in $gesanl loop
+done   # type in $SATYPE loop
 
 "${USHglobal}/rstprod.sh"
 
 if compgen -G "bcoef*.ieee_d*" > /dev/null || compgen -G "bcoef*.ctl*" > /dev/null; then
-    tar_file=radmon_bcoef.tar
-    tar -cf "${tar_file}" bcoef*.ieee_d* bcoef*.ctl*
-    ${COMPRESS} "${tar_file}"
-    mv "${tar_file}.${Z}" "${TANKverf_rad}"
+  tar_file=radmon_bcoef.tar
+  tar -cf "${tar_file}" bcoef*.ieee_d* bcoef*.ctl*
+  ${COMPRESS} "${tar_file}"
+  mv "${tar_file}.${Z}" "${TANKverf_rad}"
 
-    if [[ ${RAD_AREA} = "rgn" ]]; then
-        cwd=$(pwd)
-        cd "${TANKverf_rad}" || exit 1
-        tar -xf "${tar_file}.${Z}"
-        rm -f "${tar_file}.${Z}"
-        cd "${cwd}" || exit 1
-    fi
+  if [[ ${RAD_AREA} = "rgn" ]]; then
+    cwd=$(pwd)
+    cd "${TANKverf_rad}" || exit 1
+    tar -xf "${tar_file}.${Z}"
+    rm -f "${tar_file}.${Z}"
+    cd "${cwd}" || exit 1
+  fi
 fi
 
 ################################################################################

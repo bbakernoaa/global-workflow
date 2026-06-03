@@ -24,13 +24,13 @@ export PYTHONPATH
 # Construct COM paths
 # shellcheck disable=SC2309
 if [[ 10#${ENSMEM:--1} -ge 0 ]]; then
-    memdir=$(printf "mem%03d" $((10#${ENSMEM})))
-    COMIN="${ROTDIR}/${RUN}.${PDY}/${cyc}/${memdir}"
-    COMIN_ensstat="${ROTDIR}/${RUN}.${PDY}/${cyc}/ensstat"
-    COMOUT="${ROTDIR}/${RUN}.${PDY}/${cyc}/${memdir}"
+  memdir=$(printf "mem%03d" $((10#${ENSMEM})))
+  COMIN="${ROTDIR}/${RUN}.${PDY}/${cyc}/${memdir}"
+  COMIN_ensstat="${ROTDIR}/${RUN}.${PDY}/${cyc}/ensstat"
+  COMOUT="${ROTDIR}/${RUN}.${PDY}/${cyc}/${memdir}"
 else
-    COMIN="${ROTDIR}/${RUN}.${PDY}/${cyc}"
-    COMOUT="${ROTDIR}/${RUN}.${PDY}/${cyc}"
+  COMIN="${ROTDIR}/${RUN}.${PDY}/${cyc}"
+  COMOUT="${ROTDIR}/${RUN}.${PDY}/${cyc}"
 fi
 
 declare -rx COMIN_ATMOS_ANALYSIS="${COMIN}/analysis/atmos"
@@ -43,12 +43,12 @@ declare -rx COMIN_OBS="${COMIN}/obs"
 declare -rx COMOUT_ATMOS_TRACK="${COMOUT}/products/atmos/cyclone/tracks"
 
 for grid in "0p25" "0p50" "1p00"; do
-    declare -rx "COMIN_ATMOS_GRIB_${grid}"="${COMIN}/products/atmos/grib2/${grid}"
+  declare -rx "COMIN_ATMOS_GRIB_${grid}"="${COMIN}/products/atmos/grib2/${grid}"
 done
 
 # GEFS-specific: Ensemble statistics path
 if [[ "${RUN}" == "gefs" ]]; then
-    declare -rx COMIN_ATMOS_ENSSTAT_1p00="${COMIN_ensstat}/products/atmos/grib2/1p00"
+  declare -rx COMIN_ATMOS_ENSSTAT_1p00="${COMIN_ensstat}/products/atmos/grib2/1p00"
 fi
 
 ###############################################################
@@ -58,7 +58,7 @@ fi
 ${GLOBALARCHIVESH:-${SCRglobal}/exglobal_archive_vrfy.py}
 err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Failed to run archive verification"
+  err_exit "Failed to run archive verification"
 fi
 
 ##############################################
@@ -69,18 +69,18 @@ fi
 # Final processing
 ##############################################
 if [[ -e "${pgmout}" ]]; then
-    cat "${pgmout}"
+  cat "${pgmout}"
 fi
 
 ##########################################
 # Remove the Temporary working directory
 ##########################################
 cd "${DATAROOT}" || (
-    echo "${DATAROOT} does not exist. ABORT!"
-    exit 1
+  echo "${DATAROOT} does not exist. ABORT!"
+  exit 1
 )
 if [[ "${KEEPDATA}" == "NO" ]]; then
-    rm -rf "${DATA}"
+  rm -rf "${DATA}"
 fi
 
 exit 0

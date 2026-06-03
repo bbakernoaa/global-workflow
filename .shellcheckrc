@@ -6,6 +6,9 @@ external-sources=false
 # Disable variable referenced but not assigned
 disable=SC2154
 
+# Disable variable assigned but not used (common in sourced scripts)
+disable=SC2034
+
 # Disable following non-constant source
 disable=SC1090
 

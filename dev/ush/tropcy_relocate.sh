@@ -172,23 +172,23 @@
 #  -----------------------------------------------------
 
 if [[ $# -ne 1 ]]; then
-    err0=1
+  err0=1
 else
-    run_date=$1
-    if [[ "${#run_date}" -ne '10' ]]; then
-        err0=1
-    else
-        cycle="t${run_date:8:2}z"
-        err0=0
-    fi
+  run_date=$1
+  if [[ "${#run_date}" -ne '10' ]]; then
+    err0=1
+  else
+    cycle="t${run_date:8:2}z"
+    err0=0
+  fi
 fi
 
 if [[ "${err0}" -ne 0 ]]; then
-    #  problem with obtaining date record so exit
-    export err="${err0}"
-    msg="FATAL ERROR: problem with obtaining date record"
-    echo "${msg}"
-    exit "${err}"
+  #  problem with obtaining date record so exit
+  export err="${err0}"
+  msg="FATAL ERROR: problem with obtaining date record"
+  echo "${msg}"
+  exit "${err}"
 fi
 
 modhr=$((cyc % 3))
@@ -206,9 +206,9 @@ EOF
 
 envir_getges=${envir_getges:-${envir}}
 if [[ "${modhr}" -eq 0 ]]; then
-    network_getges=${network_getges:-global}
+  network_getges=${network_getges:-global}
 else
-    network_getges=${network_getges:-gfs}
+  network_getges=${network_getges:-gfs}
 fi
 
 GRIBVERSION=${GRIBVERSION:-"grib2"}
@@ -231,21 +231,21 @@ echo "Attempt to perform tropical cyclone relocation for ${run_date}"
 
 if [[ "${modhr}" -ne 0 ]]; then
 
-    #  if center date/time for relocation processing isn't a multiple of 3-hrs, exit
-    #  -----------------------------------------------------------------------------
-    echo "FATAL ERROR: cannot perform tropical cyclone processing because cycle hour is not a multiple of 3-hrs"
-    exit 9
+  #  if center date/time for relocation processing isn't a multiple of 3-hrs, exit
+  #  -----------------------------------------------------------------------------
+  echo "FATAL ERROR: cannot perform tropical cyclone processing because cycle hour is not a multiple of 3-hrs"
+  exit 9
 fi
 
 for fhr in 6 12; do
-    if [[ ! -s "tcvitals.m${fhr}" ]]; then # This should never exist, right ????
+  if [[ ! -s "tcvitals.m${fhr}" ]]; then # This should never exist, right ????
 
-        #  create a null tcvitals file for 06 or 12 hours ago
-        #  use getges to overwrite with any found
+    #  create a null tcvitals file for 06 or 12 hours ago
+    #  use getges to overwrite with any found
 
-        rm -f "tcvitals.m${fhr}"
-        touch "tcvitals.m${fhr}"
-        cat << EOF
+    rm -f "tcvitals.m${fhr}"
+    touch "tcvitals.m${fhr}"
+    cat << EOF
 
 VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
        Get TCVITALS file valid for -${fhr} hrs relative to center
@@ -253,14 +253,14 @@ VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
 EOF
-        "${USHglobal}/getges.sh" -e "${envir_getges}" -n "${network_getges}" \
-            -v "${run_date}" -f "${fhr}" -t tcvges "tcvitals.m${fhr}"
-        cat << EOF
+    "${USHglobal}/getges.sh" -e "${envir_getges}" -n "${network_getges}" \
+      -v "${run_date}" -f "${fhr}" -t tcvges "tcvitals.m${fhr}"
+    cat << EOF
 
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
 EOF
-    fi
+  fi
 done
 
 #  Next line needed to assure that only an analysis file will have the
@@ -268,38 +268,38 @@ done
 
 export CMODEL=gdas
 if [[ "${GRIBVERSION}" == "grib1" ]]; then
-    export gribver=1
-    pgpref=pgbg
+  export gribver=1
+  pgpref=pgbg
 else
-    export gribver=2 # default
-    pgpref=pg2g
+  export gribver=2 # default
+  pgpref=pg2g
 fi
 
 for fhr in $(seq -6 "${BKGFREQ}" 3); do
 
-    if [[ "${fhr}" -lt 0 ]]; then
-        tpref="m$((-fhr))"
-    elif [[ ${fhr} -eq 0 ]]; then
-        tpref=es
-    elif [[ ${fhr} -gt 0 ]]; then
-        tpref="p${fhr}"
-    fi
+  if [[ "${fhr}" -lt 0 ]]; then
+    tpref="m$((-fhr))"
+  elif [[ ${fhr} -eq 0 ]]; then
+    tpref=es
+  elif [[ ${fhr} -gt 0 ]]; then
+    tpref="p${fhr}"
+  fi
 
-    sges="sg${tpref}prep"
-    if [[ "${fhr}" -lt -3 ]]; then
-        sges=NULL
-    fi
-    echo "${sges}"
-    #   stype=sigg${tpref}
-    stype="natg${tpref}"
-    if [[ "${RUN}" == cdas1 ]]; then
-        stype="sigg${tpref}" ## for cfs
-    fi
-    pges="pg${tpref}prep"
-    ptype="${pgpref}${tpref}"
+  sges="sg${tpref}prep"
+  if [[ "${fhr}" -lt -3 ]]; then
+    sges=NULL
+  fi
+  echo "${sges}"
+  #   stype=sigg${tpref}
+  stype="natg${tpref}"
+  if [[ "${RUN}" == cdas1 ]]; then
+    stype="sigg${tpref}" ## for cfs
+  fi
+  pges="pg${tpref}prep"
+  ptype="${pgpref}${tpref}"
 
-    if [[ "${sges}" != NULL && ! -s "${sges}" ]]; then
-        cat << EOF
+  if [[ "${sges}" != NULL && ! -s "${sges}" ]]; then
+    cat << EOF
 
 VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
      Get global sigma GUESS valid for ${fhr} hrs relative to center
@@ -307,41 +307,41 @@ VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
 EOF
-        "${USHglobal}/getges.sh" -e "${envir_getges}" -n "${network_getges}" \
-            -v "${run_date}" -t "${stype}" "${sges}"
-        errges=$?
-        if [[ "${errges}" -ne 0 ]]; then
-            #  problem obtaining global sigma first guess so exit
-            echo "FATAL ERROR: problem obtaining global sigma guess valid ${fhr} hrs relative to center relocation date/time"
-            exit "${errges}"
-        fi
+    "${USHglobal}/getges.sh" -e "${envir_getges}" -n "${network_getges}" \
+      -v "${run_date}" -t "${stype}" "${sges}"
+    errges=$?
+    if [[ "${errges}" -ne 0 ]]; then
+      #  problem obtaining global sigma first guess so exit
+      echo "FATAL ERROR: problem obtaining global sigma guess valid ${fhr} hrs relative to center relocation date/time"
+      exit "${errges}"
+    fi
 
-        #  For center time sigma guess file obtained via getges, store pathname from
-        #   getges into ${COMOUT_OBS}/${RUN}.${cycle}.sgesprep_pre-relocate_pathname.$tmmark and, for now,
-        #   also in ${COMOUT_OBS}/${RUN}.${cycle}.sgesprep_pathname.$tmmark - if relocation processing stops
-        #   due to an error or due to no input tcvitals records found, then the center
-        #   time sigma guess will not be modified and this getges file will be read in
-        #   subsequent PREP processing; if relocation processing continues and the
-        #   center sigma guess is modified, then ${COMOUT_OBS}/${RUN}.${cycle}.sgesprep_pathname.$tmmark will
-        #   be removed later in this script {the subsequent PREP step will correctly
-        #   update ${COMOUT_OBS}/${RUN}.${cycle}.sgesprep_pathname.$tmmark to point to the sgesprep file
-        #   updated here by the relocation}
-        #  ----------------------------------------------------------------------------
+    #  For center time sigma guess file obtained via getges, store pathname from
+    #   getges into ${COMOUT_OBS}/${RUN}.${cycle}.sgesprep_pre-relocate_pathname.$tmmark and, for now,
+    #   also in ${COMOUT_OBS}/${RUN}.${cycle}.sgesprep_pathname.$tmmark - if relocation processing stops
+    #   due to an error or due to no input tcvitals records found, then the center
+    #   time sigma guess will not be modified and this getges file will be read in
+    #   subsequent PREP processing; if relocation processing continues and the
+    #   center sigma guess is modified, then ${COMOUT_OBS}/${RUN}.${cycle}.sgesprep_pathname.$tmmark will
+    #   be removed later in this script {the subsequent PREP step will correctly
+    #   update ${COMOUT_OBS}/${RUN}.${cycle}.sgesprep_pathname.$tmmark to point to the sgesprep file
+    #   updated here by the relocation}
+    #  ----------------------------------------------------------------------------
 
-        if [[ ${fhr} -eq 0 ]]; then
-            "${USHglobal}/getges.sh" -e "${envir_getges}" -n "${network_getges}" -v "${run_date}" \
-                -t "${stype}" > "${COMOUT_OBS}/${RUN}.${cycle}.sgesprep_pre-relocate_pathname.${tmmark}"
-            cpfs "${COMOUT_OBS}/${RUN}.${cycle}.sgesprep_pre-relocate_pathname.${tmmark}" \
-                "${COMOUT_OBS}/${RUN}.${cycle}.sgesprep_pathname.${tmmark}"
-        fi
-        cat << EOF
+    if [[ ${fhr} -eq 0 ]]; then
+      "${USHglobal}/getges.sh" -e "${envir_getges}" -n "${network_getges}" -v "${run_date}" \
+        -t "${stype}" > "${COMOUT_OBS}/${RUN}.${cycle}.sgesprep_pre-relocate_pathname.${tmmark}"
+      cpfs "${COMOUT_OBS}/${RUN}.${cycle}.sgesprep_pre-relocate_pathname.${tmmark}" \
+        "${COMOUT_OBS}/${RUN}.${cycle}.sgesprep_pathname.${tmmark}"
+    fi
+    cat << EOF
 
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
 EOF
-    fi
-    if [[ ! -s "${pges}" ]]; then
-        cat << EOF
+  fi
+  if [[ ! -s "${pges}" ]]; then
+    cat << EOF
 
 VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
   Get global pressure grib GUESS valid for ${fhr} hrs relative to center
@@ -349,26 +349,26 @@ VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
 EOF
-        "${USHglobal}/getges.sh" -e "${envir_getges}" -n "${network_getges}" \
-            -v "${run_date}" -t "${ptype}" "${pges}"
-        errges=$?
-        if [[ "${errges}" -ne 0 ]]; then
-            #  problem obtaining global pressure grib guess so exit
-            echo "FATAL ERROR: problem obtaining global pressure grib guess valid ${fhr} hrs relative to center relocation date/time;"
-            exit "${errges}"
-        fi
-        cat << EOF
+    "${USHglobal}/getges.sh" -e "${envir_getges}" -n "${network_getges}" \
+      -v "${run_date}" -t "${ptype}" "${pges}"
+    errges=$?
+    if [[ "${errges}" -ne 0 ]]; then
+      #  problem obtaining global pressure grib guess so exit
+      echo "FATAL ERROR: problem obtaining global pressure grib guess valid ${fhr} hrs relative to center relocation date/time;"
+      exit "${errges}"
+    fi
+    cat << EOF
 
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
 EOF
-    fi
+  fi
 done
 
 if [[ -f "${tstsp}syndata.tcvitals.${tmmark}" ]]; then
-    cpreq "${tstsp}syndata.tcvitals.${tmmark}" tcvitals.now
+  cpreq "${tstsp}syndata.tcvitals.${tmmark}" tcvitals.now
 else
-    cpreq "${COMOUT_OBS}/${RUN}.${cycle}.syndata.tcvitals.${tmmark}" "tcvitals.now"
+  cpreq "${COMOUT_OBS}/${RUN}.${cycle}.syndata.tcvitals.${tmmark}" "tcvitals.now"
 fi
 
 if [[ -s tcvitals.m12 ]]; then cat tcvitals.m12 > VITL; fi
@@ -390,170 +390,170 @@ errgrep=$?
 rm -f tcvitals
 touch tcvitals
 if [[ "${errgrep}" -ne 0 ]]; then
-    echo "NO TCVITAL RECORDS FOUND FOR ${run_date} - EXIT TROPICAL CYCLONE \
+  echo "NO TCVITAL RECORDS FOUND FOR ${run_date} - EXIT TROPICAL CYCLONE \
 RELOCATION PROCESSING"
 
-    # The existence of ${COMOUT_OBS}/${RUN}.${cycle}.tropcy_relocation_status.$tmmark file will tell the
-    #  subsequent PREP processing that RELOCATION processing occurred, echo
-    #  "NO RECORDS to process" into it to further tell PREP processing that records
-    #   were not processed by relocation and the global sigma guess was NOT
-    #   modified by tropical cyclone relocation (because no tcvitals records were
-    #   found)
-    #   Note:  When tropical cyclone relocation does run to completion and the
-    #          global sigma guess is modified, the parent script to this will echo
-    #          "RECORDS PROCESSED" into ${COMOUT_OBS}/${RUN}.${cycle}.tropcy_relocation_status.$tmmark
-    #          assuming it doesn't already exist (meaning "NO RECORDS to process"
-    #          was NOT echoed into it here)
-    # ----------------------------------------------------------------------------
+  # The existence of ${COMOUT_OBS}/${RUN}.${cycle}.tropcy_relocation_status.$tmmark file will tell the
+  #  subsequent PREP processing that RELOCATION processing occurred, echo
+  #  "NO RECORDS to process" into it to further tell PREP processing that records
+  #   were not processed by relocation and the global sigma guess was NOT
+  #   modified by tropical cyclone relocation (because no tcvitals records were
+  #   found)
+  #   Note:  When tropical cyclone relocation does run to completion and the
+  #          global sigma guess is modified, the parent script to this will echo
+  #          "RECORDS PROCESSED" into ${COMOUT_OBS}/${RUN}.${cycle}.tropcy_relocation_status.$tmmark
+  #          assuming it doesn't already exist (meaning "NO RECORDS to process"
+  #          was NOT echoed into it here)
+  # ----------------------------------------------------------------------------
 
-    echo "NO RECORDS to process" > "${COMOUT_OBS}/${RUN}.${cycle}.tropcy_relocation_status.${tmmark}"
-    if [[ ! -s "${COMOUT_OBS}/${RUN}.${cycle}.tcvitals.relocate.${tmmark}" ]]; then
-        touch "${COMOUT_OBS}/${RUN}.${cycle}.tcvitals.relocate.${tmmark}"
-    fi
+  echo "NO RECORDS to process" > "${COMOUT_OBS}/${RUN}.${cycle}.tropcy_relocation_status.${tmmark}"
+  if [[ ! -s "${COMOUT_OBS}/${RUN}.${cycle}.tcvitals.relocate.${tmmark}" ]]; then
+    touch "${COMOUT_OBS}/${RUN}.${cycle}.tcvitals.relocate.${tmmark}"
+  fi
 else
 
-    cat VITL >> tcvitals
-    grep "${PDY} ${cyc}" VITL > tcvitals.now1
+  cat VITL >> tcvitals
+  grep "${PDY} ${cyc}" VITL > tcvitals.now1
 
-    #  create model forecast track location file
-    #   $DATA/$RUN.$cycle.relocate.model_track.tm00
-    #  --------------------------------------------
+  #  create model forecast track location file
+  #   $DATA/$RUN.$cycle.relocate.model_track.tm00
+  #  --------------------------------------------
 
-    "${USHglobal}/tropcy_relocate_extrkr.sh"
-    err=$?
-    if [[ "${err}" -ne 0 ]]; then
+  "${USHglobal}/tropcy_relocate_extrkr.sh"
+  err=$?
+  if [[ "${err}" -ne 0 ]]; then
 
-        #  problem: script tropcy_relocate_extrkr.sh failed
-        #  ------------------------------------------------
-        echo "FATAL ERROR: ${USHglobal}/tropcy_relocate_extrkr.sh failed"
-        exit "${err}"
+    #  problem: script tropcy_relocate_extrkr.sh failed
+    #  ------------------------------------------------
+    echo "FATAL ERROR: ${USHglobal}/tropcy_relocate_extrkr.sh failed"
+    exit "${err}"
+  fi
+
+  #  relocate model tropical cyclone vortices in ges sigma files
+  #  -----------------------------------------------------------
+
+  rm -f fort.*
+
+  ${NLN} "${DATA}/tcvitals.now1" fort.11
+  ${NLN} "${DATA}/model_track.all" fort.30
+  ${NLN} "${DATA}/rel_inform1" fort.62
+  ${NLN} "${DATA}/tcvitals.relocate0" fort.65
+
+  i1=20
+  i2=53
+  for ((fhr = -3; fhr <= 3; fhr += BKGFREQ)); do
+    if [[ "${fhr}" -lt 0 ]]; then
+      tpref="m$((-fhr))"
+    elif [[ "${fhr}" -eq 0 ]]; then
+      tpref=es
+    elif [[ "${fhr}" -gt 0 ]]; then
+      tpref="p${fhr}"
     fi
 
-    #  relocate model tropical cyclone vortices in ges sigma files
-    #  -----------------------------------------------------------
+    ${NLN} "${DATA}/sg${tpref}prep" "fort.${i1}"
+    ${NLN} "${DATA}/sg${tpref}prep.relocate" "fort.${i2}"
 
-    rm -f fort.*
+    i1=$((i1 + 1))
+    i2=$((i2 + BKGFREQ))
 
-    ${NLN} "${DATA}/tcvitals.now1" fort.11
-    ${NLN} "${DATA}/model_track.all" fort.30
-    ${NLN} "${DATA}/rel_inform1" fort.62
-    ${NLN} "${DATA}/tcvitals.relocate0" fort.65
+  done
 
-    i1=20
-    i2=53
-    for ((fhr = -3; fhr <= 3; fhr += BKGFREQ)); do
-        if [[ "${fhr}" -lt 0 ]]; then
-            tpref="m$((-fhr))"
-        elif [[ "${fhr}" -eq 0 ]]; then
-            tpref=es
-        elif [[ "${fhr}" -gt 0 ]]; then
-            tpref="p${fhr}"
-        fi
+  #  if LATB or LONB is unset or <= 0, the sigma header values are used
+  #  ------------------------------------------------------------------
 
-        ${NLN} "${DATA}/sg${tpref}prep" "fort.${i1}"
-        ${NLN} "${DATA}/sg${tpref}prep.relocate" "fort.${i2}"
+  if [[ -z "${LONB}" ]]; then LONB=0; fi
+  if [[ -z "${LATB}" ]]; then LATB=0; fi
 
-        i1=$((i1 + 1))
-        i2=$((i2 + BKGFREQ))
+  i1=0
+  for ((gesfhr = 3; gesfhr <= 0; gesfhr += BKGFREQ)); do
+    echo "${gesfhr} ${LONB} ${LATB} ${BKGFREQ}" > "parm.${i1}"
+    i1=$((i1 + 1))
+  done
 
-    done
+  #  setup and run the mpi relocation code
+  #  -------------------------------------
 
-    #  if LATB or LONB is unset or <= 0, the sigma header values are used
-    #  ------------------------------------------------------------------
+  export MP_EUILIB=us
+  export MP_EUIDEVICE=sn_all
+  export MP_USE_BULK_XFER=yes
+  export RELOX_threads=${RELOX_threads:-16}
+  export KMP_STACKSIZE=1024m
+  export OMP_NUM_THREADS=${RELOX_threads}
+  export MP_TASK_AFFINITY=core:${RELOX_threads}
 
-    if [[ -z "${LONB}" ]]; then LONB=0; fi
-    if [[ -z "${LATB}" ]]; then LATB=0; fi
+  ${APRNRELOC:-mpirun.lsf} "${RELOX}" > stdo.prints
+  errSTATUS=$?
 
-    i1=0
-    for ((gesfhr = 3; gesfhr <= 0; gesfhr += BKGFREQ)); do
-        echo "${gesfhr} ${LONB} ${LATB} ${BKGFREQ}" > "parm.${i1}"
-        i1=$((i1 + 1))
-    done
+  #  copy relocation print output here and there
+  #  -------------------------------------------
 
-    #  setup and run the mpi relocation code
-    #  -------------------------------------
+  cat "${DATA}/stdo.prints"
+  cat "${DATA}/stdo.[0-9]"*
+  cat "${DATA}/stdo.prints" >> relocate.out
+  cat "${DATA}/stdo.[0-9]"* >> relocate.out
 
-    export MP_EUILIB=us
-    export MP_EUIDEVICE=sn_all
-    export MP_USE_BULK_XFER=yes
-    export RELOX_threads=${RELOX_threads:-16}
-    export KMP_STACKSIZE=1024m
-    export OMP_NUM_THREADS=${RELOX_threads}
-    export MP_TASK_AFFINITY=core:${RELOX_threads}
+  #  check for success
+  #  -----------------
 
-    ${APRNRELOC:-mpirun.lsf} "${RELOX}" > stdo.prints
-    errSTATUS=$?
+  echo
+  if [[ "${errSTATUS}" -gt '0' ]]; then
+    export err="${errSTATUS}"
+    exit "${err}"
+  fi
 
-    #  copy relocation print output here and there
-    #  -------------------------------------------
+  #  further check for success
+  #  -------------------------
 
-    cat "${DATA}/stdo.prints"
-    cat "${DATA}/stdo.[0-9]"*
-    cat "${DATA}/stdo.prints" >> relocate.out
-    cat "${DATA}/stdo.[0-9]"* >> relocate.out
-
-    #  check for success
-    #  -----------------
-
-    echo
-    if [[ "${errSTATUS}" -gt '0' ]]; then
-        export err="${errSTATUS}"
-        exit "${err}"
+  for ((fhr = -3; fhr <= 3; fhr += BKGFREQ)); do
+    if [[ "${fhr}" -lt 0 ]]; then
+      tpref="m$((-fhr))"
+    elif [[ "${fhr}" -eq 0 ]]; then
+      tpref=es
+    elif [[ "${fhr}" -gt 0 ]]; then
+      tpref="p${fhr}"
     fi
 
-    #  further check for success
-    #  -------------------------
+    sges="sg${tpref}prep"
 
-    for ((fhr = -3; fhr <= 3; fhr += BKGFREQ)); do
-        if [[ "${fhr}" -lt 0 ]]; then
-            tpref="m$((-fhr))"
-        elif [[ "${fhr}" -eq 0 ]]; then
-            tpref=es
-        elif [[ "${fhr}" -gt 0 ]]; then
-            tpref="p${fhr}"
-        fi
-
-        sges="sg${tpref}prep"
-
-        if [[ -s "${sges}.relocate" ]]; then
-            mv "${sges}.relocate" "${sges}"
-        else
-
-            #  problem: $sges.relocate does not exist
-            #  --------------------------------------
-
-            echo "FATAL ERROR: The file ${sges}.relocate does not exist"
-            exit 9
-        fi
-    done
-
-    if [[ -s tcvitals.relocate0 ]]; then
-        mv tcvitals.relocate0 tcvitals
+    if [[ -s "${sges}.relocate" ]]; then
+      mv "${sges}.relocate" "${sges}"
     else
-        rm -f tcvitals
-        touch tcvitals
+
+      #  problem: $sges.relocate does not exist
+      #  --------------------------------------
+
+      echo "FATAL ERROR: The file ${sges}.relocate does not exist"
+      exit 9
     fi
-    rm -f RELOCATE_GES cmd
+  done
 
-    cpfs "rel_inform1" "${COMOUT_OBS}/${RUN}.${cycle}.inform.relocate.${tmmark}"
-    cpfs "tcvitals" "${COMOUT_OBS}/${RUN}.${cycle}.tcvitals.relocate.${tmmark}"
-    if [[ "${SENDDBN}" == "YES" ]]; then
-        "${DBNROOT}/bin/dbn_alert" "MODEL" "${RUN^^}_TCI" "${job}" "${COMOUT_OBS}/${RUN}.${cycle}.inform.relocate.${tmmark}"
-        "${DBNROOT}/bin/dbn_alert" "MODEL" "${RUN^^}_TCI" "${job}" "${COMOUT_OBS}/${RUN}.${cycle}.tcvitals.relocate.${tmmark}"
-    fi
+  if [[ -s tcvitals.relocate0 ]]; then
+    mv tcvitals.relocate0 tcvitals
+  else
+    rm -f tcvitals
+    touch tcvitals
+  fi
+  rm -f RELOCATE_GES cmd
 
-    #  --------------------------------------------------------------------------
-    #   Since relocation processing has ended sucessfully (and the center sigma
-    #   guess has been modified), remove ${COMOUT_OBS}/${RUN}.${cycle}.sgesprep_pathname.$tmmark (which
-    #   had earlier had getges center sigma guess pathname written into it - in
-    #   case of error or no input tcvitals records found) - the subsequent PREP
-    #   step will correctly update ${COMOUT_OBS}/${RUN}.${cycle}.sgesprep_pathname.$tmmark to point to
-    #   the sgesprep file updated here by the relocation
-    #  --------------------------------------------------------------------------
+  cpfs "rel_inform1" "${COMOUT_OBS}/${RUN}.${cycle}.inform.relocate.${tmmark}"
+  cpfs "tcvitals" "${COMOUT_OBS}/${RUN}.${cycle}.tcvitals.relocate.${tmmark}"
+  if [[ "${SENDDBN}" == "YES" ]]; then
+    "${DBNROOT}/bin/dbn_alert" "MODEL" "${RUN^^}_TCI" "${job}" "${COMOUT_OBS}/${RUN}.${cycle}.inform.relocate.${tmmark}"
+    "${DBNROOT}/bin/dbn_alert" "MODEL" "${RUN^^}_TCI" "${job}" "${COMOUT_OBS}/${RUN}.${cycle}.tcvitals.relocate.${tmmark}"
+  fi
 
-    rm -f "${COMOUT_OBS}/${RUN}.${cycle}.sgesprep_pathname.${tmmark}"
+  #  --------------------------------------------------------------------------
+  #   Since relocation processing has ended sucessfully (and the center sigma
+  #   guess has been modified), remove ${COMOUT_OBS}/${RUN}.${cycle}.sgesprep_pathname.$tmmark (which
+  #   had earlier had getges center sigma guess pathname written into it - in
+  #   case of error or no input tcvitals records found) - the subsequent PREP
+  #   step will correctly update ${COMOUT_OBS}/${RUN}.${cycle}.sgesprep_pathname.$tmmark to point to
+  #   the sgesprep file updated here by the relocation
+  #  --------------------------------------------------------------------------
 
-    echo "TROPICAL CYCLONE RELOCATION PROCESSING SUCCESSFULLY COMPLETED FOR ${run_date}"
+  rm -f "${COMOUT_OBS}/${RUN}.${cycle}.sgesprep_pathname.${tmmark}"
+
+  echo "TROPICAL CYCLONE RELOCATION PROCESSING SUCCESSFULLY COMPLETED FOR ${run_date}"
 
 # end GFDL ges manipulation
 # -------------------------

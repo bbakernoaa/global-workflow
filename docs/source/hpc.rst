@@ -282,4 +282,3 @@ Did you generate your ssh-keys with a passphrase? If so, remake them without one
 Is your public key in the authorized_keys file? If not, add it::
 
    cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
-

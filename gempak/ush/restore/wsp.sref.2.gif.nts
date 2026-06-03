@@ -5,14 +5,14 @@ PANEL     0
 
 LATLON    28/12/1//5;10
 CLEAR     YES
-GLEVEL    10   
+GLEVEL    10
 GVCORD    HGHT
 SCALE     0
 FLINE     0;5;3;6;26;25;4;17;2;7;28
 CLRBAR    1|.8/2/2/sw
 LINE      1/1 /1 /0
-TEXT      .8/3/2/c/sw 
-CONTUR    
+TEXT      .8/3/2/c/sw
+CONTUR
 CINT      50;0;100
 TYPE      F
-FINT      1;3;9 ;15;30;60;90;100       
+FINT      1;3;9 ;15;30;60;90;100

@@ -37,25 +37,25 @@ pygfs_directory : str
 
 import os
 
-from .task.analysis import Analysis
-from .task.chem_fire_emission import ChemFireEmissions
-from .task.nexus_emission import NEXUSEmissions
-from .task.aero_analysis import AerosolAnalysis
-from .task.aero_bmatrix import AerosolBMatrix
-from .task.atm_analysis import AtmAnalysis
-from .task.atmens_analysis import AtmEnsAnalysis
-from .task.ensemble_recenter import EnsembleRecenter
-from .task.fv3_analysis_calc import FV3AnalysisCalc
-from .task.marine_bmat import MarineBMat
-from .task.offline_analysis import OfflineAnalysis
-from .task.snow_analysis import SnowAnalysis
-from .task.snowens_analysis import SnowEnsAnalysis
-from .task.upp import UPP
-from .task.oceanice_products import OceanIceProducts
-from .task.gfs_forecast import GFSForecast
-from .utils import marine_da_utils
-from .task.fetch import Fetch
-from .task.marine_recenter import MarineRecenter
+from .task.aero_analysis import AerosolAnalysis as AerosolAnalysis
+from .task.aero_bmatrix import AerosolBMatrix as AerosolBMatrix
+from .task.analysis import Analysis as Analysis
+from .task.atm_analysis import AtmAnalysis as AtmAnalysis
+from .task.atmens_analysis import AtmEnsAnalysis as AtmEnsAnalysis
+from .task.chem_fire_emission import ChemFireEmissions as ChemFireEmissions
+from .task.ensemble_recenter import EnsembleRecenter as EnsembleRecenter
+from .task.fetch import Fetch as Fetch
+from .task.fv3_analysis_calc import FV3AnalysisCalc as FV3AnalysisCalc
+from .task.gfs_forecast import GFSForecast as GFSForecast
+from .task.marine_bmat import MarineBMat as MarineBMat
+from .task.marine_recenter import MarineRecenter as MarineRecenter
+from .task.nexus_emission import NEXUSEmissions as NEXUSEmissions
+from .task.oceanice_products import OceanIceProducts as OceanIceProducts
+from .task.offline_analysis import OfflineAnalysis as OfflineAnalysis
+from .task.snow_analysis import SnowAnalysis as SnowAnalysis
+from .task.snowens_analysis import SnowEnsAnalysis as SnowEnsAnalysis
+from .task.upp import UPP as UPP
+from .utils import marine_da_utils as marine_da_utils
 
 __docformat__ = "restructuredtext"
 __version__ = "0.1.0"

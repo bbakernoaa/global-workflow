@@ -118,18 +118,18 @@ cpreq "${SIGLEVEL}" "./vcoord.txt"
 
 # Namelist uses booleans now
 if [[ "${DONST}" == "YES" ]]; then
-    do_nst=".true."
+  do_nst=".true."
 else
-    do_nst=".false."
+  do_nst=".false."
 fi
 
 # Add soil increments to gdas gaussian sfcanal if they are not added by gcycle (i.e., when landiau=true)
 LSOIL_INCR=${LSOIL_INCR:-2}
 if [[ "${DO_LAND_IAU:-.false.}" == ".true." ]]; then
-    for i in $(seq 1 6); do
-        sfc_inc="${COMIN_ATMOS_ANALYSIS}/increment.sfc.i006.tile${i}.nc"
-        cpreq "${sfc_inc}" "./sfc_inc.tile${i}.nc"
-    done
+  for i in $(seq 1 6); do
+    sfc_inc="${COMIN_ATMOS_ANALYSIS}/increment.sfc.i006.tile${i}.nc"
+    cpreq "${sfc_inc}" "./sfc_inc.tile${i}.nc"
+  done
 fi
 
 # Executable namelist
@@ -156,13 +156,13 @@ export OMP_NUM_THREADS=${OMP_NUM_THREADS_SFC:-1}
 ${APRUNSFC} "${GAUSFCANLEXE}"
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    echo "FATAL ERROR: ${GAUSFCANLEXE} returned non-zero exit status!"
-    exit "${err}"
+  echo "FATAL ERROR: ${GAUSFCANLEXE} returned non-zero exit status!"
+  exit "${err}"
 fi
 
 # output gaussian global surface analysis files
 if [[ -f "sfc.gaussian.analysis.file" ]]; then
-    cpfs "./sfc.gaussian.analysis.file" "${COMOUT_ATMOS_ANALYSIS}/${APREFIX}analysis.sfc.a006.nc"
+  cpfs "./sfc.gaussian.analysis.file" "${COMOUT_ATMOS_ANALYSIS}/${APREFIX}analysis.sfc.a006.nc"
 fi
 
 ################################################################################

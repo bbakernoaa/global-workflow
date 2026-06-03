@@ -2,15 +2,13 @@
 
 import os
 from logging import getLogger
-from pygfs.task.analysis import Analysis
-from pygfs.jedi import Jedi
 from typing import Dict
-from wxflow import (AttrDict, Executable, FileHandler,
-                    parse_j2yaml, parse_j2tmpl, save_as_yaml,
-                    to_timedelta, to_YMDH,
-                    logit)
 
-logger = getLogger(__name__.split('.')[-1])
+from pygfs.jedi import Jedi
+from pygfs.task.analysis import Analysis
+from wxflow import AttrDict, FileHandler, logit, parse_j2tmpl, parse_j2yaml
+
+logger = getLogger(__name__.split(".")[-1])
 
 
 class MarineLETKF(Analysis):
@@ -43,20 +41,22 @@ class MarineLETKF(Analysis):
         _enspert_relpath = os.path.relpath(self.task_config.DATAens, self.task_config.DATA)
 
         # Create a local dictionary that is repeatedly used across this class
-        self.task_config.update(AttrDict(
-            {
-                'PARMmarine': os.path.join(self.task_config.PARMglobal, 'gdas', 'marine'),
-                'ENSPERT_RELPATH': _enspert_relpath,
-                'letkf_app': 'true',
-                'DIST_HALO_SIZE': 3500000,
-            }
-        ))
+        self.task_config.update(
+            AttrDict(
+                {
+                    "PARMmarine": os.path.join(self.task_config.PARMglobal, "gdas", "marine"),
+                    "ENSPERT_RELPATH": _enspert_relpath,
+                    "letkf_app": "true",
+                    "DIST_HALO_SIZE": 3500000,
+                }
+            )
+        )
 
         # Extend task_config with content of config yaml for this task
         self.task_config.update(parse_j2yaml(self.task_config.TASK_CONFIG_YAML, self.task_config))
 
         # Construct dictionary of JEDI objects, one for each JEDI application need for the analysis
-        expected_keys = ['gridgen', 'letkf']
+        expected_keys = ["gridgen", "letkf"]
         self.jedi_dict = Jedi.get_jedi_dict(self.task_config.jedi_config, self.task_config, expected_keys)
 
     @logit(logger)
@@ -79,23 +79,21 @@ class MarineLETKF(Analysis):
         """
 
         # stage files from COM
-        logger.info(f"Staging files from COM and creating input/output directories")
+        logger.info("Staging files from COM and creating input/output directories")
         FileHandler(self.task_config.data_in).sync()
 
         # Stage observation files
-        logger.info(f"Staging observations")
-        self.jedi_dict['letkf'].stage_obsdatain(self.task_config.COMIN_OBS)
+        logger.info("Staging observations")
+        self.jedi_dict["letkf"].stage_obsdatain(self.task_config.COMIN_OBS)
 
         # prepare the ensemble MOM6 input.nml
-        logger.info(f"Preparing ensemble MOM6 input namelist")
-        parse_j2tmpl(os.path.join(self.task_config.PARMmarine, 'mom_input.nml.j2'),
-                     self.task_config,
-                     output_file="mom_input.nml")
+        logger.info("Preparing ensemble MOM6 input namelist")
+        parse_j2tmpl(os.path.join(self.task_config.PARMmarine, "mom_input.nml.j2"), self.task_config, output_file="mom_input.nml")
 
         # initialize JEDI applications
-        logger.info(f"Initializing JEDI applications")
-        self.jedi_dict['gridgen'].initialize()
-        self.jedi_dict['letkf'].initialize(clean_empty_obsspaces=True)
+        logger.info("Initializing JEDI applications")
+        self.jedi_dict["gridgen"].initialize()
+        self.jedi_dict["letkf"].initialize(clean_empty_obsspaces=True)
 
     @logit(logger)
     def execute(self) -> None:
@@ -110,8 +108,8 @@ class MarineLETKF(Analysis):
         None
         """
 
-        self.jedi_dict['gridgen'].execute()
-        self.jedi_dict['letkf'].execute()
+        self.jedi_dict["gridgen"].execute()
+        self.jedi_dict["letkf"].execute()
 
     @logit(logger)
     def finalize(self):
@@ -131,10 +129,9 @@ class MarineLETKF(Analysis):
         """
 
         # Save files from COM
-        logger.info(f"Saving files to COM")
+        logger.info("Saving files to COM")
         FileHandler(self.task_config.data_out).sync()
 
         # Archive, compress, and save diag files in COM directory
-        logger.info(f"Saving observation diag files to COM")
-        self.jedi_dict['letkf'].save_obsdataout(self.task_config.COMOUT_OCEAN_LETKF,
-                                                f"{self.task_config.APREFIX}marine_analysis.ioda_hofx.ens_mean")
+        logger.info("Saving observation diag files to COM")
+        self.jedi_dict["letkf"].save_obsdataout(self.task_config.COMOUT_OCEAN_LETKF, f"{self.task_config.APREFIX}marine_analysis.ioda_hofx.ens_mean")

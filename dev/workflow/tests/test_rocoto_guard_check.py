@@ -17,8 +17,6 @@ import sys
 import textwrap
 from pathlib import Path
 
-import pytest
-
 # Add the workflow directory to the path so we can import the package modules.
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -73,11 +71,11 @@ class TestCheckSetupWorkflowRocotoFree:
         target = _write(
             tmp_path,
             "lone.py",
-            '''
+            """
             def build_workflow():
                 workflow = rocoto_xml_factory.create()
                 return workflow
-            ''',
+            """,
         )
         violations = check_setup_workflow_rocoto_free(target)
         assert len(violations) == 1
@@ -89,12 +87,12 @@ class TestCheckSetupWorkflowRocotoFree:
         target = _write(
             tmp_path,
             "subparser.py",
-            '''
+            """
             def input_args(parser):
                 subparsers = parser.add_subparsers(dest='workflow')
                 rocoto_parser = subparsers.add_parser('rocoto')
                 return rocoto_parser
-            ''',
+            """,
         )
         violations = check_setup_workflow_rocoto_free(target)
         # Two lines mention rocoto outside the guard structure.
@@ -103,11 +101,14 @@ class TestCheckSetupWorkflowRocotoFree:
 
     def test_guard_cluster_plus_lone_reference_fails_only_on_lone(self, tmp_path):
         """A valid guard cluster does not mask a separate lone reference."""
-        source = GUARD_CLUSTER_SOURCE + '''
+        source = (
+            GUARD_CLUSTER_SOURCE
+            + """
 
     def stray():
         return rocoto_xml_factory.build()
-'''
+"""
+        )
         target = _write(tmp_path, "mixed.py", source)
         violations = check_setup_workflow_rocoto_free(target)
         assert len(violations) == 1
@@ -118,10 +119,10 @@ class TestCheckSetupWorkflowRocotoFree:
         target = _write(
             tmp_path,
             "clean.py",
-            '''
+            """
             def main():
                 return "ecflow only"
-            ''',
+            """,
         )
         assert check_setup_workflow_rocoto_free(target) == []
 
@@ -145,10 +146,10 @@ class TestCheckSetupWorkflowRocotoFree:
             target = _write(
                 tmp_path,
                 f"ref_{symbol}.py",
-                f'''
+                f"""
                 def wiring():
                     return {symbol}
-                ''',
+                """,
             )
             assert check_setup_workflow_rocoto_free(target) == [], symbol
 

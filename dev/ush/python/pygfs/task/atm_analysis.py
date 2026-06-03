@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 
 from logging import getLogger
-from pygfs.task.analysis import Analysis
-from pygfs.jedi import Jedi
 from typing import Any, Dict
-from wxflow import AttrDict, FileHandler, parse_j2yaml, logit
 
-logger = getLogger(__name__.split('.')[-1])
+from pygfs.jedi import Jedi
+from pygfs.task.analysis import Analysis
+from wxflow import AttrDict, FileHandler, logit, parse_j2yaml
+
+logger = getLogger(__name__.split(".")[-1])
 
 
 class AtmAnalysis(Analysis):
     """
     Class for JEDI-based global atm deterministic analysis tasks
     """
+
     def __init__(self, config: Dict[str, Any]):
         """Constructor global atm analysis task
 
@@ -42,28 +44,30 @@ class AtmAnalysis(Analysis):
             _BERROR_YAML = f"atmosphere_background_error_static_{self.task_config.STATICB_TYPE}"
 
         # Create a local dictionary that is repeatedly used across this class
-        self.task_config.update(AttrDict(
-            {
-                'npx_ges': _res + 1,
-                'npy_ges': _res + 1,
-                'npz_ges': self.task_config.LEVS - 1,
-                'npx_anl': _res_anl + 1,
-                'npy_anl': _res_anl + 1,
-                'npz_anl': self.task_config.LEVS - 1,
-                'npx_his': _res_his + 1,
-                'npy_his': _res_his + 1,
-                'npz_his': self.task_config.LEVS - 1,
-                'npz': self.task_config.LEVS - 1,
-                'BKG_TSTEP': "PT1H",  # Placeholder for 4D applications
-                'BERROR_YAML': _BERROR_YAML,
-            }
-        ))
+        self.task_config.update(
+            AttrDict(
+                {
+                    "npx_ges": _res + 1,
+                    "npy_ges": _res + 1,
+                    "npz_ges": self.task_config.LEVS - 1,
+                    "npx_anl": _res_anl + 1,
+                    "npy_anl": _res_anl + 1,
+                    "npz_anl": self.task_config.LEVS - 1,
+                    "npx_his": _res_his + 1,
+                    "npy_his": _res_his + 1,
+                    "npz_his": self.task_config.LEVS - 1,
+                    "npz": self.task_config.LEVS - 1,
+                    "BKG_TSTEP": "PT1H",  # Placeholder for 4D applications
+                    "BERROR_YAML": _BERROR_YAML,
+                }
+            )
+        )
 
         # Extend task_config with content of config yaml for this task
         self.task_config.update(parse_j2yaml(self.task_config.TASK_CONFIG_YAML, self.task_config))
 
         # Create dictionary of Jedi objects
-        expected_keys = ['atmanlvar', 'atmanlfv3inc']
+        expected_keys = ["atmanlvar", "atmanlfv3inc"]
         self.jedi_dict = Jedi.get_jedi_dict(self.task_config.jedi_config, self.task_config, expected_keys)
 
     @logit(logger)
@@ -87,21 +91,21 @@ class AtmAnalysis(Analysis):
         """
 
         # Stage files from COM
-        logger.info(f"Staging files from COM and creating output directories")
+        logger.info("Staging files from COM and creating output directories")
         FileHandler(self.task_config.data_in).sync()
 
         # Stage observation files
-        logger.info(f"Staging observation files")
-        self.jedi_dict['atmanlvar'].stage_obsdatain(f"{self.task_config.COMIN_OBS}/atmos")
+        logger.info("Staging observation files")
+        self.jedi_dict["atmanlvar"].stage_obsdatain(f"{self.task_config.COMIN_OBS}/atmos")
 
         # Stage bias correction files
-        logger.info(f"Staging bias correction files")
-        self.jedi_dict['atmanlvar'].stage_obsbiasin(self.task_config.COMIN_ATMOS_ANALYSIS_PREV)
+        logger.info("Staging bias correction files")
+        self.jedi_dict["atmanlvar"].stage_obsbiasin(self.task_config.COMIN_ATMOS_ANALYSIS_PREV)
 
         # Initialize JEDI variational application
-        logger.info(f"Initializing JEDI applications")
-        self.jedi_dict['atmanlvar'].initialize(clean_empty_obsspaces=True)
-        self.jedi_dict['atmanlfv3inc'].initialize()
+        logger.info("Initializing JEDI applications")
+        self.jedi_dict["atmanlvar"].initialize(clean_empty_obsspaces=True)
+        self.jedi_dict["atmanlfv3inc"].initialize()
 
     @logit(logger)
     def execute(self, jedi_dict_key: str) -> None:
@@ -139,15 +143,13 @@ class AtmAnalysis(Analysis):
         """
 
         # Archive, compress, and save diag files to COM directory
-        logger.info(f"Saving observation diag files to COM")
-        self.jedi_dict['atmanlvar'].save_obsdataout(self.task_config.COMOUT_ATMOS_ANALYSIS,
-                                                    f"{self.task_config.APREFIX}atmos_analysis.ioda_hofx")
+        logger.info("Saving observation diag files to COM")
+        self.jedi_dict["atmanlvar"].save_obsdataout(self.task_config.COMOUT_ATMOS_ANALYSIS, f"{self.task_config.APREFIX}atmos_analysis.ioda_hofx")
 
         # Tar radiative bias correction files to COM directory
-        logger.info(f"Saving radiative bias correction files to COM")
-        self.jedi_dict['atmanlvar'].save_obsbiasout(self.task_config.COMOUT_ATMOS_ANALYSIS,
-                                                    f"{self.task_config.APREFIX}varbc_params")
+        logger.info("Saving radiative bias correction files to COM")
+        self.jedi_dict["atmanlvar"].save_obsbiasout(self.task_config.COMOUT_ATMOS_ANALYSIS, f"{self.task_config.APREFIX}varbc_params")
 
         # Save files from COM
-        logger.info(f"Saving files to COM")
+        logger.info("Saving files to COM")
         FileHandler(self.task_config.data_out).sync()

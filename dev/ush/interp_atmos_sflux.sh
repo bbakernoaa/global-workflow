@@ -28,22 +28,22 @@ IFS=':' read -ra grids <<< "${grid_string}"
 
 output_grids=""
 for grid in "${grids[@]}"; do
-    gridopt="grid${grid}"
-    output_grids="${output_grids} -new_grid ${!gridopt} ${output_file_prefix}_${grid}"
+  gridopt="grid${grid}"
+  output_grids="${output_grids} -new_grid ${!gridopt} ${output_file_prefix}_${grid}"
 done
 
 #shellcheck disable=SC2086
 ${WGRIB2} "${input_file}" ${defaults} \
-    ${interp_winds} \
-    ${interp_bilinear} \
-    ${interp_neighbor} \
-    ${interp_budget} \
-    ${increased_bits} \
-    ${output_grids}
+  ${interp_winds} \
+  ${interp_bilinear} \
+  ${interp_neighbor} \
+  ${interp_budget} \
+  ${increased_bits} \
+  ${output_grids}
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    echo "FATAL ERROR: WGRIB2 failed to interpolate surface flux parameters to a new grib2 file"
-    exit "${err}"
+  echo "FATAL ERROR: WGRIB2 failed to interpolate surface flux parameters to a new grib2 file"
+  exit "${err}"
 fi
 
 exit 0

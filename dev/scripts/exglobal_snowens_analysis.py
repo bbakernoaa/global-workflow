@@ -6,15 +6,15 @@
 # to create an ensemble of snow analyses
 import os
 
-from wxflow import Logger, cast_strdict_as_dtypedict
 from pygfs.task.snowens_analysis import SnowEnsAnalysis
+
+from wxflow import Logger, cast_strdict_as_dtypedict
 
 # Initialize root logger
 logger = Logger(level=os.environ.get("LOGGING_LEVEL", "DEBUG"), colored_log=True)
 
 
-if __name__ == '__main__':
-
+if __name__ == "__main__":
     # Take configuration from environment and cast it as python dictionary
     config = cast_strdict_as_dtypedict(os.environ)
 
@@ -25,7 +25,7 @@ if __name__ == '__main__':
     snow_ens_anl.initialize()
 
     # Calculate ensemble mean
-    snow_ens_anl.execute('esnowanlensmean')
+    snow_ens_anl.execute("esnowanlensmean")
 
     # stage ensemble mean backgrounds
 
@@ -35,14 +35,14 @@ if __name__ == '__main__':
 
     # Process IMS snow cover (if applicable)
     if snow_ens_anl.task_config.DO_IMS_SCF:
-        snow_ens_anl.execute('scf_to_ioda')
+        snow_ens_anl.execute("scf_to_ioda")
 
     # Process GHCN (if applicable)
     if snow_ens_anl.task_config.DO_GHCN:
         snow_ens_anl.prepare_GHCN()
 
     # Execute JEDI snow analysis
-    snow_ens_anl.execute('snowanlvar')
+    snow_ens_anl.execute("snowanlvar")
 
     # Add increments
     snow_ens_anl.add_increments()

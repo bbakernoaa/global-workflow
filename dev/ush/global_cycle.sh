@@ -224,9 +224,9 @@ DO_SFCCYCLE=${DO_SFCCYCLE:-.true.}
 GCYCLE_DO_SOILINCR=${GCYCLE_DO_SOILINCR:-.false.}
 GCYCLE_DO_SNOWINCR=${GCYCLE_DO_SNOWINCR:-.false.}
 if [[ "${GCYCLE_DO_SOILINCR}" == ".true." ]] || [[ "${GCYCLE_DO_SNOWINCR}" == ".true." ]]; then
-    DO_LANDINCR=".true."
+  DO_LANDINCR=".true."
 else
-    DO_LANDINCR=".false."
+  DO_LANDINCR=".false."
 fi
 zsea1=${zsea1:-0}
 zsea2=${zsea2:-0}

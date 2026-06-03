@@ -47,7 +47,7 @@ $ AWIPS Data section (most actual observational sites)
 $ AWIPS code indicated prior and after each AWIPS section
 $
 $AGGA48
-$ Gulf of Alaska (AG) Spectral data (4) near S/SW Alaska Anchorage (8) 
+$ Gulf of Alaska (AG) Spectral data (4) near S/SW Alaska Anchorage (8)
   -148.02   56.31  '46001     '   5.0   DAT  NDBC     360
   -154.98   52.70  '46066     '   5.0   DAT  NDBC     360
   -146.83   60.22  '46061     '   5.0   DAT  NDBC      90
@@ -223,7 +223,7 @@ $  -157.756  21.477 '51210     ' 999.0   DAT  NDBC      11
 $AGHW40
 $
 $AGPW40
-$ Western Pacific (PW) spectra (4) in Pacific Ocean and Pacific Isles (0) 
+$ Western Pacific (PW) spectra (4) in Pacific Ocean and Pacific Isles (0)
    144.79   13.35  '52200     '  999.   DAT  SCRIPPS  360
    126.02   37.23  '22101     '   999.  DAT  SKOREA    100
    125.77   34.80  '22102     '   999.  DAT  SKOREA    100
@@ -368,7 +368,7 @@ $ Western Atlantic (NT) spectra (4) south from NC and Puerto Rico (2)
 $AGNT42
 $
 $AGNT41
-$  Western Atlantic (NT) spectra (4) NE states north of VA (1)  
+$  Western Atlantic (NT) spectra (4) NE states north of VA (1)
    -53.62   44.26  '44138     '   5.0   DAT  ENCAN    360
    -66.58   41.11  '44011     '   5.0   DAT  NDBC     360
    -58.00   43.00  '44141     '   5.0   DAT  ENCAN    360
@@ -433,7 +433,7 @@ $   -77.036  38.788 '44061     '   2.0   DAT  NDBC      80
 $AGNT41
 $
 $AGNT43
-$ Western Atlantic (NT) spectra (4) near South America (3) 
+$ Western Atlantic (NT) spectra (4) near South America (3)
    -48.13  -27.70  '31201     '  999.   DAT  SCRIPPS  180
    -34.567  -8.15  '31052     '  999.   DAT  PNBOIA   180
    -43.088 -23.031 '31260     '  999.   DAT  PNBOIA   180
@@ -444,7 +444,7 @@ $ Western Atlantic (NT) spectra (4) near South America (3)
 $AGNT43
 $
 $AGXT43
-$ Tropical Belt (XT) spectra (4) near South America (3) 
+$ Tropical Belt (XT) spectra (4) near South America (3)
    -53.08   14.55  '41040     '   5.0   DAT  NDBC     360
    -46.00   14.53  '41041     '   5.0   DAT  NDBC     360
    -57.90   15.90  '41100     '   5.0   DAT  METFR    360
@@ -597,7 +597,7 @@ $ Indian Ocean (I) spectra (4) non-descript (5)
 $AGIO45
 $
 $ END of AWIPS Section
-$ 
+$
 $ South America DAT
    -77.50    6.26  '32488     '  999.   DAT  DIMAR     45
    -77.74    3.52  '32487     '  999.   DAT  DIMAR     45

@@ -51,7 +51,7 @@ $ AWIPS Data section (most actual observational sites)
 $ AWIPS code indicated prior and after each AWIPS section
 $
 $AGGA48
-$ Gulf of Alaska (AG) Spectral data (4) near S/SW Alaska Anchorage (8) 
+$ Gulf of Alaska (AG) Spectral data (4) near S/SW Alaska Anchorage (8)
   -148.02   56.31  '46001     '   5.0   DAT  NDBC     360
   -154.98   52.70  '46066     '   5.0   DAT  NDBC     360
   -146.83   60.22  '46061     '   5.0   DAT  NDBC      90
@@ -256,7 +256,7 @@ $  -157.756  21.477 '51210     ' 999.0   DAT  NDBC      11
 $AGHW40
 $
 $AGPW40
-$ Western Pacific (PW) spectra (4) in Pacific Ocean and Pacific Isles (0) 
+$ Western Pacific (PW) spectra (4) in Pacific Ocean and Pacific Isles (0)
    147.50   16.00  'SAIPAN    '  999.   VBY  NCEP     360
    143.75   12.00  'GUAM      '  999.   VBY  NCEP     360
    166.50   19.50  'WAKE      '  999.   VBY  NCEP     360
@@ -353,7 +353,7 @@ $ Gulf of America (GX) spectra (4) south from NC and Puerto Rico (2)
    -90.46   27.50  '42041     '   5.0   DAT  NDBC      90
    -92.55   27.42  '42038     '   5.0   DAT  NDBC      90
    -94.05   22.01  '42055     '  10.0   DAT  NDBC     360
-   -84.275  27.348 '42099     ' 999.    DAT  SCRIPPS  100 
+   -84.275  27.348 '42099     ' 999.    DAT  SCRIPPS  100
    -86.00   23.00  'TPC26     '  999.   VBY  NCEP     360
    -87.55   30.06  '42012     '   5.0   DAT  NDBC      90
    -88.49   28.19  '42887     '  48.2   DAT  BP        90
@@ -481,7 +481,7 @@ $ Western Atlantic (NT) spectra (4) south from NC and Puerto Rico (2)
 $AGNT42
 $
 $AGNT41
-$  Western Atlantic (NT) spectra (4) NE states north of VA (1)  
+$  Western Atlantic (NT) spectra (4) NE states north of VA (1)
    -53.62   44.26  '44138     '   5.0   DAT  ENCAN    360
    -66.58   41.11  '44011     '   5.0   DAT  NDBC     360
    -58.00   43.00  '44141     '   5.0   DAT  ENCAN    360
@@ -553,7 +553,7 @@ $   -77.036  38.788 '44061     '   2.0   DAT  NDBC      80
 $AGNT41
 $
 $AGNT43
-$ Western Atlantic (NT) spectra (4) near South America (3) 
+$ Western Atlantic (NT) spectra (4) near South America (3)
    -48.13  -27.70  '31201     '  999.   DAT  SCRIPPS  180
    -48.75  -32.00  'RIO_GRANDE'  999.   VBY  NCEP     360
    -46.25  -28.00  'FLORIPA   '  999.   VBY  NCEP     360
@@ -571,7 +571,7 @@ $ Western Atlantic (NT) spectra (4) near South America (3)
 $AGNT43
 $
 $AGXT43
-$ Tropical Belt (XT) spectra (4) near South America (3) 
+$ Tropical Belt (XT) spectra (4) near South America (3)
    -53.08   14.55  '41040     '   5.0   DAT  NDBC     360
    -46.00   14.53  '41041     '   5.0   DAT  NDBC     360
    -57.90   15.90  '41100     '   5.0   DAT  METFR    360
@@ -583,7 +583,7 @@ $ Tropical Belt (XT) spectra (4) near South America (3)
    -36.25   -3.00  'FORTALEZA '  999.   VBY  NCEP     360
    -47.50    3.00  'AMAZON    '  999.   VBY  NCEP     360
    -30.00    1.00  'PETER_PAUL'  999.   VBY  NCEP     360
-   -5.783   35.9   'TANGER    '  999.   VBY  WMO      360 
+   -5.783   35.9   'TANGER    '  999.   VBY  WMO      360
    -9.6333 30.4167 'AGADIR    '  999.   VBY  WMO      360
    -7.617  33.7000 'CASABLANCA'  999.   VBY  WMO      360
     3.5     6.0    'LAGOS     '  999.   VBY  WMO      360
@@ -776,7 +776,7 @@ $ Indian Ocean (I) spectra (4) non-descript (5)
 $AGIO45
 $
 $ END of AWIPS Section
-$ 
+$
 $ Non-AWIPS sites, external (BPT) and internal (IBP) boundary points
 $
 $ Alaska
@@ -1058,8 +1058,8 @@ $ Boundary Points for Kenya , Madagascar and Seychelles
     50.000  -6.000 'SYC69    '  999.   BPT  WMO      360
     50.000  -8.000 'SYC70    '  999.   BPT  WMO      360
     50.000 -10.000 'SYC71    '  999.   BPT  WMO      360
-$ 
-$ NASA 
+$
+$ NASA
 $
   -117.8    32.333 'SITE3     '  999.   VBY  NASA     360
   -117.8    32.8   'SITEX     '  999.   VBY  NASA     360
@@ -1554,7 +1554,7 @@ $
    -67.85   43.40  'NW-GYX60  '  999.   IBP  NCEP      45
    -67.85   43.90  'NW-GYX61  '  999.   IBP  NCEP      45
    -67.85   44.40  'NW-GYX62  '  999.   IBP  NCEP      45
-$		
+$
    -77.91   33.85  'NW-MHX51  '  999.   IBP  NCEP      45
    -77.41   33.85  'NW-MHX52  '  999.   IBP  NCEP      45
    -76.91   33.85  'NW-MHX53  '  999.   IBP  NCEP      45

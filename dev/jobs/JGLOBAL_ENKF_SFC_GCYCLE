@@ -55,7 +55,7 @@ export USE_CFP=YES
 ${ENKFSFCGCYCLESH:-${SCRglobal}/exglobal_enkf_sfc_gcycle.sh} && true
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Failed to calculate the ensemble surface analysis"
+  err_exit "Failed to calculate the ensemble surface analysis"
 fi
 
 ##############################################
@@ -66,7 +66,7 @@ fi
 # Final processing
 ##############################################
 if [[ -e "${pgmout}" ]]; then
-    cat "${pgmout}"
+  cat "${pgmout}"
 fi
 
 ##########################################
@@ -74,7 +74,7 @@ fi
 ##########################################
 cd "${DATAROOT}" || true
 if [[ "${KEEPDATA}" == "NO" ]]; then
-    rm -rf "${DATA}"
+  rm -rf "${DATA}"
 fi
 
 exit 0

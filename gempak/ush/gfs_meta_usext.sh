@@ -31,9 +31,9 @@ device="nc | mrf.meta"
 # esac
 
 if [[ "${envir}" = "para" ]]; then
-    export m_title="GFSP"
+  export m_title="GFSP"
 else
-    export m_title="GFS"
+  export m_title="GFS"
 fi
 
 export pgm=gdplot2_nc
@@ -225,17 +225,17 @@ err_chk
 # FOR THIS CASE HERE.
 #####################################################
 if [[ "${err}" -ne 0 ]] || [[ ! -s mrf.meta ]] &> /dev/null; then
-    echo "FATAL ERROR: Failed to create gempak meta file mrf.meta"
-    exit $((err + 100))
+  echo "FATAL ERROR: Failed to create gempak meta file mrf.meta"
+  exit $((err + 100))
 fi
 
 cpfs mrf.meta "${COMOUT_ATMOS_GEMPAK_META}/gfs_${PDY}_${cyc}_usext"
 if [[ "${SENDDBN}" == "YES" ]]; then
+  "${DBNROOT}/bin/dbn_alert" MODEL "${DBN_ALERT_TYPE}" "${job}" \
+    "${COMOUT_ATMOS_GEMPAK_META}/gfs_${PDY}_${cyc}_usext"
+  if [[ ${DBN_ALERT_TYPE} == "GFS_METAFILE_LAST" ]]; then
+    DBN_ALERT_TYPE=GFS_METAFILE
     "${DBNROOT}/bin/dbn_alert" MODEL "${DBN_ALERT_TYPE}" "${job}" \
-        "${COMOUT_ATMOS_GEMPAK_META}/gfs_${PDY}_${cyc}_usext"
-    if [[ ${DBN_ALERT_TYPE} == "GFS_METAFILE_LAST" ]]; then
-        DBN_ALERT_TYPE=GFS_METAFILE
-        "${DBNROOT}/bin/dbn_alert" MODEL "${DBN_ALERT_TYPE}" "${job}" \
-            "${COMOUT_ATMOS_GEMPAK_META}/gfs_${PDY}_${cyc}_usext"
-    fi
+      "${COMOUT_ATMOS_GEMPAK_META}/gfs_${PDY}_${cyc}_usext"
+  fi
 fi

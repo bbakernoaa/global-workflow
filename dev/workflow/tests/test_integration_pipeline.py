@@ -16,9 +16,7 @@ from __future__ import annotations
 import os
 import stat
 import sys
-import tempfile
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 import yaml
@@ -26,7 +24,6 @@ import yaml
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from deployment.pipeline import PipelineError, SubmodulePolicy, run
-
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -137,9 +134,7 @@ def minimal_dev_tree(tmp_path):
                         "trigger": "gfs/atmos/stage/stage_ic == complete",
                         "jjob": "JGLOBAL_FORECAST",
                         "events": ["forecast_hour"],
-                        "meters": [
-                            {"name": "forecast_hour", "min": 0, "max": 120}
-                        ],
+                        "meters": [{"name": "forecast_hour", "min": 0, "max": 120}],
                     }
                 ],
             },
@@ -185,20 +180,12 @@ def minimal_dev_tree(tmp_path):
 ${EXPDIR}/ush/universal_wrapper.sh {{ task.jjob }}
 %include <tail.h>
 """
-    (dev_root / "workflow" / "ecflow" / "templates" / "task.ecf.j2").write_text(
-        template
-    )
+    (dev_root / "workflow" / "ecflow" / "templates" / "task.ecf.j2").write_text(template)
 
     # Create ecFlow include files
-    (dev_root / "workflow" / "ecflow" / "include" / "head.h").write_text(
-        "# head.h - ecFlow header\n"
-    )
-    (dev_root / "workflow" / "ecflow" / "include" / "tail.h").write_text(
-        "# tail.h - ecFlow tail\n"
-    )
-    (dev_root / "workflow" / "ecflow" / "include" / "envsetup.h").write_text(
-        "# envsetup.h - environment setup\n"
-    )
+    (dev_root / "workflow" / "ecflow" / "include" / "head.h").write_text("# head.h - ecFlow header\n")
+    (dev_root / "workflow" / "ecflow" / "include" / "tail.h").write_text("# tail.h - ecFlow tail\n")
+    (dev_root / "workflow" / "ecflow" / "include" / "envsetup.h").write_text("# envsetup.h - environment setup\n")
 
     # Create sample J-Jobs (EE2 compliant: source jjob_header.sh for env vars)
     jjob_template = (
@@ -216,26 +203,17 @@ ${EXPDIR}/ush/universal_wrapper.sh {{ task.jjob }}
         "export jobid=${{job}}.$$\n"
         "exit 0\n"
     )
-    for jjob_name in ["JGLOBAL_FORECAST", "JGLOBAL_STAGE_IC",
-                      "JGFS_ATMOS_POST", "JGLOBAL_ARCHIVE"]:
-        (dev_root / "jobs" / jjob_name).write_text(
-            jjob_template.format(name=jjob_name)
-        )
+    for jjob_name in ["JGLOBAL_FORECAST", "JGLOBAL_STAGE_IC", "JGFS_ATMOS_POST", "JGLOBAL_ARCHIVE"]:
+        (dev_root / "jobs" / jjob_name).write_text(jjob_template.format(name=jjob_name))
 
     # Create a sample ex-script
-    (dev_root / "scripts" / "exglobal_forecast.sh").write_text(
-        "#!/bin/bash\n# Ex-script: exglobal_forecast.sh\nexit 0\n"
-    )
+    (dev_root / "scripts" / "exglobal_forecast.sh").write_text("#!/bin/bash\n# Ex-script: exglobal_forecast.sh\nexit 0\n")
 
     # Create a sample ush utility
-    (dev_root / "ush" / "detect_machine.sh").write_text(
-        "#!/bin/bash\n# detect_machine.sh\nexport MACHINE=HERA\n"
-    )
+    (dev_root / "ush" / "detect_machine.sh").write_text("#!/bin/bash\n# detect_machine.sh\nexport MACHINE=HERA\n")
 
     # Create a versions file
-    (dev_root / "versions" / "run.ver").write_text(
-        "export gfs_ver=v17.0.0\n"
-    )
+    (dev_root / "versions" / "run.ver").write_text("export gfs_ver=v17.0.0\n")
 
     # Create a .git directory to mark repo root
     (tmp_path / ".git").mkdir()
@@ -301,17 +279,12 @@ class TestFullPipelineEndToEnd:
         # Verify NCO layout directories exist (Req 3.2)
         # Note: some dirs may be empty if no source files exist for them,
         # but the pipeline should create at least the ones with content
-        existing_dirs = {
-            d.name for d in expdir.iterdir() if d.is_dir()
-        }
+        existing_dirs = {d.name for d in expdir.iterdir() if d.is_dir()}
 
         # These directories MUST exist because we have source content for them
         required_present = {"jobs", "scripts", "ush", "ecf", "versions", "workflow"}
         for dirname in required_present:
-            assert dirname in existing_dirs, (
-                f"Required directory '{dirname}/' missing from EXPDIR. "
-                f"Found: {sorted(existing_dirs)}"
-            )
+            assert dirname in existing_dirs, f"Required directory '{dirname}/' missing from EXPDIR. Found: {sorted(existing_dirs)}"
 
     def test_pipeline_produces_manifest(self, minimal_dev_tree):
         """Pipeline generates manifest.yaml with Snapshot_ID and file hashes.
@@ -321,7 +294,7 @@ class TestFullPipelineEndToEnd:
         info = minimal_dev_tree
         expdir = info["tmp_path"] / "EXPDIR"
 
-        result = run(
+        run(
             config=str(info["config_path"]),
             platform="HERA",
             expdir=str(expdir),
@@ -414,9 +387,7 @@ class TestFullPipelineEndToEnd:
 
         # Should be named after the suite
         def_path = def_dir / "gfs_v17_fcst_only.def"
-        assert def_path.exists(), (
-            f"Expected gfs_v17_fcst_only.def, found: {[f.name for f in def_files]}"
-        )
+        assert def_path.exists(), f"Expected gfs_v17_fcst_only.def, found: {[f.name for f in def_files]}"
 
     def test_pipeline_generates_ecf_scripts(self, minimal_dev_tree):
         """Pipeline generates per-task .ecf scripts.
@@ -463,12 +434,8 @@ class TestFullPipelineEndToEnd:
 
         # Verify EE2 naming convention (uppercase, starts with J)
         for job_file in staged_jobs:
-            assert job_file.name.startswith("J"), (
-                f"J-Job '{job_file.name}' does not follow JAAAAA convention"
-            )
-            assert job_file.name == job_file.name.upper(), (
-                f"J-Job '{job_file.name}' is not uppercase"
-            )
+            assert job_file.name.startswith("J"), f"J-Job '{job_file.name}' does not follow JAAAAA convention"
+            assert job_file.name == job_file.name.upper(), f"J-Job '{job_file.name}' is not uppercase"
 
     def test_pipeline_stages_scripts(self, minimal_dev_tree):
         """Pipeline stages ex-scripts from dev/scripts/ to EXPDIR/scripts/.
@@ -556,17 +523,13 @@ class TestFullPipelineEndToEnd:
         # Check that regular files are mode 0444
         manifest_path = expdir / "manifest.yaml"
         file_mode = stat.S_IMODE(manifest_path.stat().st_mode)
-        assert file_mode == 0o444, (
-            f"manifest.yaml mode is {oct(file_mode)}, expected 0o444"
-        )
+        assert file_mode == 0o444, f"manifest.yaml mode is {oct(file_mode)}, expected 0o444"
 
         # Check that directories are mode 0555
         ecf_dir = expdir / "ecf"
         if ecf_dir.exists():
             dir_mode = stat.S_IMODE(ecf_dir.stat().st_mode)
-            assert dir_mode == 0o555, (
-                f"ecf/ dir mode is {oct(dir_mode)}, expected 0o555"
-            )
+            assert dir_mode == 0o555, f"ecf/ dir mode is {oct(dir_mode)}, expected 0o555"
 
     def test_pipeline_snapshot_id_format(self, minimal_dev_tree):
         """Pipeline returns a valid Snapshot_ID in the result.
@@ -662,26 +625,17 @@ class TestPipelineStageOrdering:
 
         # Staged jobs should appear in the manifest
         job_entries = [k for k in files_section if k.startswith("jobs/")]
-        assert len(job_entries) > 0, (
-            "Manifest does not contain staged job files — "
-            "stage 7 may have run before stage 4"
-        )
+        assert len(job_entries) > 0, "Manifest does not contain staged job files — stage 7 may have run before stage 4"
 
         # Stage 5 (DAG) must run after stage 2 (context):
         # .def file should exist
         def_files = list((expdir / "ecf" / "defs").glob("*.def"))
-        assert len(def_files) > 0, (
-            "No .def files found — stage 5 may not have executed"
-        )
+        assert len(def_files) > 0, "No .def files found — stage 5 may not have executed"
 
         # Stage 8 (seal) must run after stage 7 (manifest):
         # manifest.yaml should be read-only
-        manifest_mode = stat.S_IMODE(
-            (expdir / "manifest.yaml").stat().st_mode
-        )
-        assert manifest_mode == 0o444, (
-            "manifest.yaml is not sealed — stage 8 may not have run after stage 7"
-        )
+        manifest_mode = stat.S_IMODE((expdir / "manifest.yaml").stat().st_mode)
+        assert manifest_mode == 0o444, "manifest.yaml is not sealed — stage 8 may not have run after stage 7"
 
     def test_validate_rejects_existing_manifest(self, minimal_dev_tree):
         """Stage 1 (validate) prevents re-deployment to sealed EXPDIR.
@@ -774,16 +728,12 @@ class TestPipelineWithRealConfig:
             # wired — it's the context that's incomplete for the full
             # template tree.
             if "Undefined variable" in str(e) and "render_templates" in e.stage:
-                pytest.skip(
-                    f"Real config requires full context: {e.message}"
-                )
+                pytest.skip(f"Real config requires full context: {e.message}")
             # EE2 violations in pre-existing J-Jobs are outside the scope
             # of this integration test (they test pipeline wiring, not
             # J-Job content).
             if "ee2_scan" in e.stage:
-                pytest.skip(
-                    f"Pre-existing EE2 violations in staged J-Jobs: {e.message[:120]}"
-                )
+                pytest.skip(f"Pre-existing EE2 violations in staged J-Jobs: {e.message[:120]}")
             raise
 
         assert result["dry_run"] is False
@@ -836,13 +786,9 @@ class TestPipelineWithRealConfig:
             )
         except PipelineError as e:
             if "Undefined variable" in str(e) and "render_templates" in e.stage:
-                pytest.skip(
-                    f"Real config requires full context: {e.message}"
-                )
+                pytest.skip(f"Real config requires full context: {e.message}")
             if "ee2_scan" in e.stage:
-                pytest.skip(
-                    f"Pre-existing EE2 violations in staged J-Jobs: {e.message[:120]}"
-                )
+                pytest.skip(f"Pre-existing EE2 violations in staged J-Jobs: {e.message[:120]}")
             raise
 
         # The config has for_each expansion, so task count should be >= 4

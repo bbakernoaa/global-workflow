@@ -40,14 +40,14 @@ declare -rx COMIN_ATMOS_HISTORY_STAT_PREV="${ROTDIR}/enkfgdas.${GDATE:0:8}/${GDA
 ${ENKFUPDSH:-${SCRglobal}/exglobal_enkf_update.sh} && true
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Failed to update the ensemble"
+  err_exit "Failed to update the ensemble"
 fi
 
 ##############################################
 # Send Alerts
 ##############################################
 if [[ "${SENDDBN}" == "YES" ]]; then
-    "${DBNROOT}/bin/dbn_alert" "MODEL" "ENKF1_MSC_enkfstat" "${job}" "${COMOUT_ATMOS_ANALYSIS_STAT}/${APREFIX}enkfstat.txt"
+  "${DBNROOT}/bin/dbn_alert" "MODEL" "ENKF1_MSC_enkfstat" "${job}" "${COMOUT_ATMOS_ANALYSIS_STAT}/${APREFIX}enkfstat.txt"
 fi
 
 ##############################################
@@ -58,7 +58,7 @@ fi
 # Final processing
 ##############################################
 if [[ -e "${pgmout}" ]]; then
-    cat "${pgmout}"
+  cat "${pgmout}"
 fi
 
 ##########################################
@@ -66,7 +66,7 @@ fi
 ##########################################
 cd "${DATAROOT}" || true
 if [[ "${KEEPDATA}" == "NO" ]]; then
-    rm -rf "${DATA}"
+  rm -rf "${DATA}"
 fi
 
 exit 0

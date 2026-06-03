@@ -21,7 +21,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from deployment.completeness_verifier import CompletenessResult, CompletenessVerifier
 from deployment.pipeline import PipelineError
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -45,28 +44,20 @@ def complete_expdir(tmp_path: Path) -> Path:
     jobs_dir = tmp_path / "jobs"
     jobs_dir.mkdir()
     (jobs_dir / "JGLOBAL_FORECAST").write_text(
-        '#!/bin/bash\n'
+        "#!/bin/bash\n"
         'source "${HOMEglobal}/ush/jjob_header.sh" -e "fcst" -c "base fcst"\n'
         ': "${FORECASTSH:=${SCRglobal}/exglobal_forecast.sh}"\n'
         '"${FORECASTSH}" && true\n'
     )
     (jobs_dir / "JGFS_ATMOS_POST").write_text(
-        '#!/bin/bash\n'
-        'source "${HOMEglobal}/ush/jjob_header.sh" -e "post" -c "base"\n'
-        '${SCRglobal}/exgfs_atmos_post.sh\n'
+        '#!/bin/bash\nsource "${HOMEglobal}/ush/jjob_header.sh" -e "post" -c "base"\n${SCRglobal}/exgfs_atmos_post.sh\n'
     )
 
     # scripts/
     scripts_dir = tmp_path / "scripts"
     scripts_dir.mkdir()
-    (scripts_dir / "exglobal_forecast.sh").write_text(
-        '#!/bin/bash\n'
-        'source "${USHglobal}/forecast_predet.sh"\n'
-    )
-    (scripts_dir / "exgfs_atmos_post.sh").write_text(
-        '#!/bin/bash\n'
-        'source "${USHglobal}/post_utils.sh"\n'
-    )
+    (scripts_dir / "exglobal_forecast.sh").write_text('#!/bin/bash\nsource "${USHglobal}/forecast_predet.sh"\n')
+    (scripts_dir / "exgfs_atmos_post.sh").write_text('#!/bin/bash\nsource "${USHglobal}/post_utils.sh"\n')
 
     # ush/
     ush_dir = tmp_path / "ush"
@@ -92,11 +83,7 @@ def expdir_missing_ex_script(tmp_path: Path) -> Path:
     """
     jobs_dir = tmp_path / "jobs"
     jobs_dir.mkdir()
-    (jobs_dir / "JGLOBAL_FORECAST").write_text(
-        '#!/bin/bash\n'
-        ': "${FORECASTSH:=${SCRglobal}/exglobal_forecast.sh}"\n'
-        '"${FORECASTSH}" && true\n'
-    )
+    (jobs_dir / "JGLOBAL_FORECAST").write_text('#!/bin/bash\n: "${FORECASTSH:=${SCRglobal}/exglobal_forecast.sh}"\n"${FORECASTSH}" && true\n')
 
     # scripts/ exists but does NOT contain exglobal_forecast.sh
     scripts_dir = tmp_path / "scripts"
@@ -118,18 +105,11 @@ def expdir_missing_ush_script(tmp_path: Path) -> Path:
     """
     jobs_dir = tmp_path / "jobs"
     jobs_dir.mkdir()
-    (jobs_dir / "JGLOBAL_FORECAST").write_text(
-        '#!/bin/bash\n'
-        '${SCRglobal}/exglobal_forecast.sh\n'
-    )
+    (jobs_dir / "JGLOBAL_FORECAST").write_text("#!/bin/bash\n${SCRglobal}/exglobal_forecast.sh\n")
 
     scripts_dir = tmp_path / "scripts"
     scripts_dir.mkdir()
-    (scripts_dir / "exglobal_forecast.sh").write_text(
-        '#!/bin/bash\n'
-        'source "${USHglobal}/forecast_predet.sh"\n'
-        '. "${USHglobal}/forecast_det.sh"\n'
-    )
+    (scripts_dir / "exglobal_forecast.sh").write_text('#!/bin/bash\nsource "${USHglobal}/forecast_predet.sh"\n. "${USHglobal}/forecast_det.sh"\n')
 
     # ush/ exists but does NOT contain the referenced scripts
     ush_dir = tmp_path / "ush"
@@ -146,9 +126,7 @@ def expdir_missing_ush_script(tmp_path: Path) -> Path:
 class TestCompleteExpdir:
     """Tests that verification passes with a complete EXPDIR fixture."""
 
-    def test_verify_returns_result_on_complete_expdir(
-        self, complete_expdir: Path
-    ):
+    def test_verify_returns_result_on_complete_expdir(self, complete_expdir: Path):
         """verify() returns CompletenessResult (not raises) when all refs resolve."""
         verifier = CompletenessVerifier(complete_expdir)
         result = verifier.verify()
@@ -200,27 +178,21 @@ class TestMissingExScript:
             verifier.verify()
         assert exc_info.value.stage == "completeness"
 
-    def test_error_message_names_missing_script(
-        self, expdir_missing_ex_script: Path
-    ):
+    def test_error_message_names_missing_script(self, expdir_missing_ex_script: Path):
         """Error message includes the name of the missing ex-script."""
         verifier = CompletenessVerifier(expdir_missing_ex_script)
         with pytest.raises(PipelineError) as exc_info:
             verifier.verify()
         assert "exglobal_forecast.sh" in str(exc_info.value)
 
-    def test_error_message_names_referencing_jjob(
-        self, expdir_missing_ex_script: Path
-    ):
+    def test_error_message_names_referencing_jjob(self, expdir_missing_ex_script: Path):
         """Error message includes the J-Job that references the missing script."""
         verifier = CompletenessVerifier(expdir_missing_ex_script)
         with pytest.raises(PipelineError) as exc_info:
             verifier.verify()
         assert "JGLOBAL_FORECAST" in str(exc_info.value)
 
-    def test_check_jjob_ex_script_refs_returns_tuples(
-        self, expdir_missing_ex_script: Path
-    ):
+    def test_check_jjob_ex_script_refs_returns_tuples(self, expdir_missing_ex_script: Path):
         """_check_jjob_ex_script_refs returns list of (jjob, script) tuples."""
         verifier = CompletenessVerifier(expdir_missing_ex_script)
         missing = verifier._check_jjob_ex_script_refs()
@@ -244,27 +216,21 @@ class TestMissingUshScript:
         with pytest.raises(PipelineError):
             verifier.verify()
 
-    def test_error_message_names_missing_ush(
-        self, expdir_missing_ush_script: Path
-    ):
+    def test_error_message_names_missing_ush(self, expdir_missing_ush_script: Path):
         """Error message includes the name of the missing ush script."""
         verifier = CompletenessVerifier(expdir_missing_ush_script)
         with pytest.raises(PipelineError) as exc_info:
             verifier.verify()
         assert "forecast_predet.sh" in str(exc_info.value)
 
-    def test_error_message_names_referencing_script(
-        self, expdir_missing_ush_script: Path
-    ):
+    def test_error_message_names_referencing_script(self, expdir_missing_ush_script: Path):
         """Error message includes the ex-script that sources the missing ush."""
         verifier = CompletenessVerifier(expdir_missing_ush_script)
         with pytest.raises(PipelineError) as exc_info:
             verifier.verify()
         assert "exglobal_forecast.sh" in str(exc_info.value)
 
-    def test_detects_multiple_missing_ush_scripts(
-        self, expdir_missing_ush_script: Path
-    ):
+    def test_detects_multiple_missing_ush_scripts(self, expdir_missing_ush_script: Path):
         """Detects all missing ush scripts, not just the first one."""
         verifier = CompletenessVerifier(expdir_missing_ush_script)
         missing = verifier._check_ex_script_ush_refs()
@@ -273,9 +239,7 @@ class TestMissingUshScript:
         assert "forecast_predet.sh" in missing_names
         assert "forecast_det.sh" in missing_names
 
-    def test_check_ex_script_ush_refs_returns_tuples(
-        self, expdir_missing_ush_script: Path
-    ):
+    def test_check_ex_script_ush_refs_returns_tuples(self, expdir_missing_ush_script: Path):
         """_check_ex_script_ush_refs returns list of (script, ush) tuples."""
         verifier = CompletenessVerifier(expdir_missing_ush_script)
         missing = verifier._check_ex_script_ush_refs()
@@ -297,9 +261,7 @@ class TestFatalErrorFormat:
     ERROR naming the missing file and the referencing script.
     """
 
-    def test_error_starts_with_fatal_error(
-        self, expdir_missing_ex_script: Path
-    ):
+    def test_error_starts_with_fatal_error(self, expdir_missing_ex_script: Path):
         """PipelineError string starts with 'FATAL ERROR'."""
         verifier = CompletenessVerifier(expdir_missing_ex_script)
         with pytest.raises(PipelineError) as exc_info:
@@ -313,9 +275,7 @@ class TestFatalErrorFormat:
             verifier.verify()
         assert "[completeness]" in str(exc_info.value)
 
-    def test_error_includes_missing_file_path_context(
-        self, expdir_missing_ex_script: Path
-    ):
+    def test_error_includes_missing_file_path_context(self, expdir_missing_ex_script: Path):
         """Error includes path context for the missing file."""
         verifier = CompletenessVerifier(expdir_missing_ex_script)
         with pytest.raises(PipelineError) as exc_info:
@@ -323,9 +283,7 @@ class TestFatalErrorFormat:
         # Should mention the scripts directory where the file was expected
         assert "scripts" in str(exc_info.value)
 
-    def test_ush_error_includes_ush_directory(
-        self, expdir_missing_ush_script: Path
-    ):
+    def test_ush_error_includes_ush_directory(self, expdir_missing_ush_script: Path):
         """Error for missing ush script includes the ush directory path."""
         verifier = CompletenessVerifier(expdir_missing_ush_script)
         with pytest.raises(PipelineError) as exc_info:
@@ -337,14 +295,8 @@ class TestFatalErrorFormat:
         # Create EXPDIR with two J-Jobs referencing missing ex-scripts
         jobs_dir = tmp_path / "jobs"
         jobs_dir.mkdir()
-        (jobs_dir / "JGLOBAL_FORECAST").write_text(
-            '#!/bin/bash\n'
-            '${SCRglobal}/exglobal_forecast.sh\n'
-        )
-        (jobs_dir / "JGFS_ATMOS_POST").write_text(
-            '#!/bin/bash\n'
-            '${SCRglobal}/exgfs_atmos_post.sh\n'
-        )
+        (jobs_dir / "JGLOBAL_FORECAST").write_text("#!/bin/bash\n${SCRglobal}/exglobal_forecast.sh\n")
+        (jobs_dir / "JGFS_ATMOS_POST").write_text("#!/bin/bash\n${SCRglobal}/exgfs_atmos_post.sh\n")
         scripts_dir = tmp_path / "scripts"
         scripts_dir.mkdir()
         ush_dir = tmp_path / "ush"
@@ -385,10 +337,7 @@ class TestEdgeCases:
         """A J-Job that doesn't reference any ex-script passes verification."""
         jobs_dir = tmp_path / "jobs"
         jobs_dir.mkdir()
-        (jobs_dir / "JGLOBAL_CLEANUP").write_text(
-            '#!/bin/bash\n'
-            'echo "no ex-script reference"\n'
-        )
+        (jobs_dir / "JGLOBAL_CLEANUP").write_text('#!/bin/bash\necho "no ex-script reference"\n')
         scripts_dir = tmp_path / "scripts"
         scripts_dir.mkdir()
         ush_dir = tmp_path / "ush"
@@ -402,17 +351,10 @@ class TestEdgeCases:
         """Source references in comment lines are not checked."""
         jobs_dir = tmp_path / "jobs"
         jobs_dir.mkdir()
-        (jobs_dir / "JGLOBAL_FORECAST").write_text(
-            '#!/bin/bash\n'
-            '${SCRglobal}/exglobal_forecast.sh\n'
-        )
+        (jobs_dir / "JGLOBAL_FORECAST").write_text("#!/bin/bash\n${SCRglobal}/exglobal_forecast.sh\n")
         scripts_dir = tmp_path / "scripts"
         scripts_dir.mkdir()
-        (scripts_dir / "exglobal_forecast.sh").write_text(
-            '#!/bin/bash\n'
-            '# source "${USHglobal}/commented_out.sh"\n'
-            'echo "no real ush source"\n'
-        )
+        (scripts_dir / "exglobal_forecast.sh").write_text('#!/bin/bash\n# source "${USHglobal}/commented_out.sh"\necho "no real ush source"\n')
         ush_dir = tmp_path / "ush"
         ush_dir.mkdir()
 
@@ -424,10 +366,7 @@ class TestEdgeCases:
         """If scripts/ doesn't exist, J-Job ex-script refs are still flagged."""
         jobs_dir = tmp_path / "jobs"
         jobs_dir.mkdir()
-        (jobs_dir / "JGLOBAL_FORECAST").write_text(
-            '#!/bin/bash\n'
-            '${SCRglobal}/exglobal_forecast.sh\n'
-        )
+        (jobs_dir / "JGLOBAL_FORECAST").write_text("#!/bin/bash\n${SCRglobal}/exglobal_forecast.sh\n")
         # No scripts/ directory at all
 
         verifier = CompletenessVerifier(tmp_path)

@@ -130,18 +130,12 @@ class TestCheckVersionGate:
         # Should not raise.
         _check_version_gate(gate_dev_tree["dev_root"], enforce_versions=True)
 
-    def test_missing_package_fatal_when_enforcing(
-        self, monkeypatch, gate_dev_tree
-    ):
+    def test_missing_package_fatal_when_enforcing(self, monkeypatch, gate_dev_tree):
         """Not-importable wxflow/uwtools is FATAL when enforcing."""
-        _patch_installed_versions(
-            monkeypatch, {"wxflow": None, "uwtools": None}
-        )
+        _patch_installed_versions(monkeypatch, {"wxflow": None, "uwtools": None})
 
         with pytest.raises(PipelineError) as exc_info:
-            _check_version_gate(
-                gate_dev_tree["dev_root"], enforce_versions=True
-            )
+            _check_version_gate(gate_dev_tree["dev_root"], enforce_versions=True)
 
         msg = str(exc_info.value)
         # Names the package, the expected version, and the found state.
@@ -149,22 +143,14 @@ class TestCheckVersionGate:
         assert PINNED_WXFLOW in msg  # expected version
         assert "not installed" in msg or "not importable" in msg
 
-    def test_missing_package_not_fatal_when_not_enforcing(
-        self, monkeypatch, gate_dev_tree
-    ):
+    def test_missing_package_not_fatal_when_not_enforcing(self, monkeypatch, gate_dev_tree):
         """Not-importable package is a warning (no raise) when not enforcing."""
-        _patch_installed_versions(
-            monkeypatch, {"wxflow": None, "uwtools": None}
-        )
+        _patch_installed_versions(monkeypatch, {"wxflow": None, "uwtools": None})
 
         # Should not raise: a *missing* package is only FATAL under enforcement.
-        _check_version_gate(
-            gate_dev_tree["dev_root"], enforce_versions=False
-        )
+        _check_version_gate(gate_dev_tree["dev_root"], enforce_versions=False)
 
-    def test_mismatched_version_fatal_when_enforcing(
-        self, monkeypatch, gate_dev_tree
-    ):
+    def test_mismatched_version_fatal_when_enforcing(self, monkeypatch, gate_dev_tree):
         """A version mismatch is FATAL when enforcing."""
         _patch_installed_versions(
             monkeypatch,
@@ -172,17 +158,13 @@ class TestCheckVersionGate:
         )
 
         with pytest.raises(PipelineError) as exc_info:
-            _check_version_gate(
-                gate_dev_tree["dev_root"], enforce_versions=True
-            )
+            _check_version_gate(gate_dev_tree["dev_root"], enforce_versions=True)
 
         msg = str(exc_info.value)
         assert "wxflow" in msg
         assert "pinned" in msg or PINNED_WXFLOW in msg
 
-    def test_mismatched_version_fatal_even_when_not_enforcing(
-        self, monkeypatch, gate_dev_tree
-    ):
+    def test_mismatched_version_fatal_even_when_not_enforcing(self, monkeypatch, gate_dev_tree):
         """A version mismatch is ALWAYS FATAL, even when not enforcing."""
         _patch_installed_versions(
             monkeypatch,
@@ -190,9 +172,7 @@ class TestCheckVersionGate:
         )
 
         with pytest.raises(PipelineError) as exc_info:
-            _check_version_gate(
-                gate_dev_tree["dev_root"], enforce_versions=False
-            )
+            _check_version_gate(gate_dev_tree["dev_root"], enforce_versions=False)
 
         msg = str(exc_info.value)
         assert "uwtools" in msg
@@ -206,9 +186,7 @@ class TestCheckVersionGate:
 class TestStageValidateVersionGate:
     """Tests of the version gate as invoked through Stage 1 validate."""
 
-    def test_validate_passes_with_matching_versions(
-        self, monkeypatch, gate_dev_tree
-    ):
+    def test_validate_passes_with_matching_versions(self, monkeypatch, gate_dev_tree):
         """_stage_validate succeeds when versions match (enforcing)."""
         _patch_installed_versions(
             monkeypatch,
@@ -225,13 +203,9 @@ class TestStageValidateVersionGate:
             enforce_versions=True,
         )
 
-    def test_validate_fatal_on_missing_when_enforcing(
-        self, monkeypatch, gate_dev_tree
-    ):
+    def test_validate_fatal_on_missing_when_enforcing(self, monkeypatch, gate_dev_tree):
         """_stage_validate raises when a required package is missing."""
-        _patch_installed_versions(
-            monkeypatch, {"wxflow": None, "uwtools": None}
-        )
+        _patch_installed_versions(monkeypatch, {"wxflow": None, "uwtools": None})
 
         with pytest.raises(PipelineError):
             _stage_validate(
@@ -252,13 +226,9 @@ class TestStageValidateVersionGate:
 class TestRunWritesNoExpdirOnVersionFailure:
     """A FATAL version gate must guarantee no EXPDIR is written (Req 5.2)."""
 
-    def test_missing_package_writes_no_expdir(
-        self, monkeypatch, gate_dev_tree
-    ):
+    def test_missing_package_writes_no_expdir(self, monkeypatch, gate_dev_tree):
         """run(enforce_versions=True) FATALs and creates no EXPDIR."""
-        _patch_installed_versions(
-            monkeypatch, {"wxflow": None, "uwtools": None}
-        )
+        _patch_installed_versions(monkeypatch, {"wxflow": None, "uwtools": None})
         expdir = gate_dev_tree["tmp_path"] / "expdir"
 
         with pytest.raises(PipelineError):
@@ -273,9 +243,7 @@ class TestRunWritesNoExpdirOnVersionFailure:
         # Stage 1 runs before expdir.mkdir(), so nothing was written.
         assert not expdir.exists()
 
-    def test_mismatched_version_writes_no_expdir(
-        self, monkeypatch, gate_dev_tree
-    ):
+    def test_mismatched_version_writes_no_expdir(self, monkeypatch, gate_dev_tree):
         """A version mismatch FATALs (even un-enforced) and writes no EXPDIR."""
         _patch_installed_versions(
             monkeypatch,

@@ -18,11 +18,11 @@ cd "${DATA_RUN}" || exit 1
 source "${USHglobal}/product_functions.sh"
 
 for table in g2varswmo2.tbl g2vcrdwmo2.tbl g2varsncep1.tbl g2vcrdncep1.tbl; do
-    source_table="${HOMEglobal}/gempak/fix/${table}"
-    if [[ ! -f "${source_table}" ]]; then
-        err_exit "${table} is missing"
-    fi
-    cpreq "${source_table}" "${table}"
+  source_table="${HOMEglobal}/gempak/fix/${table}"
+  if [[ ! -f "${source_table}" ]]; then
+    err_exit "${table} is missing"
+  fi
+  cpreq "${source_table}" "${table}"
 done
 
 NAGRIB="${GEMEXE}/nagrib2_nc"
@@ -43,7 +43,7 @@ export GRIBIN="${!source_dirvar}/${RUN}.${cycle}.pres_a.${grid}.f${fhr3}.grib2"
 GRIBIN_chk="${GRIBIN}.idx"
 
 if [[ ! -r "${GRIBIN_chk}" ]]; then
-    err_exit "GRIB index file ${GRIBIN_chk} not found!"
+  err_exit "GRIB index file ${GRIBIN_chk} not found!"
 fi
 
 cpreq "${GRIBIN}" "grib${fhr3}"
@@ -71,13 +71,13 @@ EOF
 
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "${NAGRIB} failed to create ${GEMGRD}!"
+  err_exit "${NAGRIB} failed to create ${GEMGRD}!"
 fi
 
 cpfs "${GEMGRD}" "${destination}/${GEMGRD}"
 if [[ "${SENDDBN}" == "YES" ]]; then
-    "${DBNROOT}/bin/dbn_alert" MODEL "${DBN_ALERT_TYPE}" "${job}" \
-        "${destination}/${GEMGRD}"
+  "${DBNROOT}/bin/dbn_alert" MODEL "${DBN_ALERT_TYPE}" "${job}" \
+    "${destination}/${GEMGRD}"
 fi
 
 ############################### END OF SCRIPT #######################

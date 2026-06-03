@@ -11,13 +11,10 @@ Traces to: Requirements 5.1, 5.2, 6.2, 6.4, 6.6
 
 import json
 import os
-import stat
 import subprocess
-import tempfile
 from pathlib import Path
 
 import jinja2
-import pytest
 
 # Path to the universal_wrapper Jinja2 template
 TEMPLATE_PATH = Path(__file__).parents[2] / "ush" / "universal_wrapper.sh.j2"
@@ -43,11 +40,7 @@ def _setup_expdir(tmp_path: Path, machine: str = "hera") -> Path:
     env_dir = expdir / "env"
     env_dir.mkdir()
     env_file = env_dir / f"{machine}.env"
-    env_file.write_text(
-        '#!/bin/bash\n'
-        '# Minimal platform env for testing\n'
-        'export ENV_SOURCED="yes"\n'
-    )
+    env_file.write_text('#!/bin/bash\n# Minimal platform env for testing\nexport ENV_SOURCED="yes"\n')
 
     # Create ush directory with rendered wrapper
     ush_dir = expdir / "ush"
@@ -72,8 +65,7 @@ def _create_jjob(expdir: Path, name: str, script_content: str) -> Path:
     return jjob_path
 
 
-def _run_wrapper(expdir: Path, jjob_name: str, env_overrides: dict = None,
-                 timeout: int = 30) -> subprocess.CompletedProcess:
+def _run_wrapper(expdir: Path, jjob_name: str, env_overrides: dict = None, timeout: int = 30) -> subprocess.CompletedProcess:
     """Run the universal_wrapper.sh with the given JJob name."""
     wrapper_path = expdir / "ush" / "universal_wrapper.sh"
 
@@ -111,16 +103,20 @@ class TestEphemeralDirectoryCreation:
         expdir = _setup_expdir(tmp_path)
 
         # Create a JJob that verifies DATA exists and is a directory
-        _create_jjob(expdir, "JTEST_DATA_CHECK", (
-            '#!/bin/bash\n'
-            'if [[ -d "${DATA}" ]]; then\n'
-            '    echo "DATA_EXISTS=yes"\n'
-            '    echo "DATA_PATH=${DATA}"\n'
-            'else\n'
-            '    echo "DATA_EXISTS=no" >&2\n'
-            '    exit 1\n'
-            'fi\n'
-        ))
+        _create_jjob(
+            expdir,
+            "JTEST_DATA_CHECK",
+            (
+                "#!/bin/bash\n"
+                'if [[ -d "${DATA}" ]]; then\n'
+                '    echo "DATA_EXISTS=yes"\n'
+                '    echo "DATA_PATH=${DATA}"\n'
+                "else\n"
+                '    echo "DATA_EXISTS=no" >&2\n'
+                "    exit 1\n"
+                "fi\n"
+            ),
+        )
 
         result = _run_wrapper(expdir, "JTEST_DATA_CHECK")
         assert result.returncode == 0, f"Failed: {result.stderr}"
@@ -130,11 +126,7 @@ class TestEphemeralDirectoryCreation:
         """DATA directory path includes the jobid."""
         expdir = _setup_expdir(tmp_path)
 
-        _create_jjob(expdir, "JTEST_JOBID", (
-            '#!/bin/bash\n'
-            'echo "DATA=${DATA}"\n'
-            'echo "JOBID=${jobid}"\n'
-        ))
+        _create_jjob(expdir, "JTEST_JOBID", ('#!/bin/bash\necho "DATA=${DATA}"\necho "JOBID=${jobid}"\n'))
 
         result = _run_wrapper(expdir, "JTEST_JOBID")
         assert result.returncode == 0, f"Failed: {result.stderr}"
@@ -150,15 +142,19 @@ class TestEphemeralDirectoryCreation:
         # Pre-create a stale DATA directory with a marker file
         stale_dir = dataroot / "JTEST_STALE.$$"
         # We can't predict the exact jobid, so create a JJob that checks
-        _create_jjob(expdir, "JTEST_STALE", (
-            '#!/bin/bash\n'
-            '# Check that no stale marker file exists\n'
-            'if [[ -f "${DATA}/stale_marker" ]]; then\n'
-            '    echo "STALE_FOUND=yes" >&2\n'
-            '    exit 1\n'
-            'fi\n'
-            'echo "STALE_FOUND=no"\n'
-        ))
+        _create_jjob(
+            expdir,
+            "JTEST_STALE",
+            (
+                "#!/bin/bash\n"
+                "# Check that no stale marker file exists\n"
+                'if [[ -f "${DATA}/stale_marker" ]]; then\n'
+                '    echo "STALE_FOUND=yes" >&2\n'
+                "    exit 1\n"
+                "fi\n"
+                'echo "STALE_FOUND=no"\n'
+            ),
+        )
 
         # Pre-create the expected DATA path with a stale marker
         # The jobid will be JTEST_STALE.<PID>, but we can set jobid explicitly
@@ -175,10 +171,7 @@ class TestEphemeralDirectoryCreation:
         """pgmout is set to OUTPUT.$$ per EE2 conventions (Req 5.7)."""
         expdir = _setup_expdir(tmp_path)
 
-        _create_jjob(expdir, "JTEST_PGMOUT", (
-            '#!/bin/bash\n'
-            'echo "PGMOUT=${pgmout}"\n'
-        ))
+        _create_jjob(expdir, "JTEST_PGMOUT", ('#!/bin/bash\necho "PGMOUT=${pgmout}"\n'))
 
         result = _run_wrapper(expdir, "JTEST_PGMOUT")
         assert result.returncode == 0, f"Failed: {result.stderr}"
@@ -194,12 +187,11 @@ class TestEphemeralDirectoryCleanup:
         dataroot = expdir / "dataroot"
         dataroot.mkdir(parents=True, exist_ok=True)
 
-        _create_jjob(expdir, "JTEST_CLEANUP", (
-            '#!/bin/bash\n'
-            '# Write a marker to DATA so we can check it was cleaned\n'
-            'echo "marker" > "${DATA}/cleanup_test"\n'
-            'echo "DATA=${DATA}"\n'
-        ))
+        _create_jjob(
+            expdir,
+            "JTEST_CLEANUP",
+            ('#!/bin/bash\n# Write a marker to DATA so we can check it was cleaned\necho "marker" > "${DATA}/cleanup_test"\necho "DATA=${DATA}"\n'),
+        )
 
         env_overrides = {"jobid": "JTEST_CLEANUP.99999"}
         result = _run_wrapper(expdir, "JTEST_CLEANUP", env_overrides=env_overrides)
@@ -215,10 +207,7 @@ class TestEphemeralDirectoryCleanup:
         dataroot = expdir / "dataroot"
         dataroot.mkdir(parents=True, exist_ok=True)
 
-        _create_jjob(expdir, "JTEST_KEEP", (
-            '#!/bin/bash\n'
-            'echo "marker" > "${DATA}/keep_test"\n'
-        ))
+        _create_jjob(expdir, "JTEST_KEEP", ('#!/bin/bash\necho "marker" > "${DATA}/keep_test"\n'))
 
         env_overrides = {
             "jobid": "JTEST_KEEP.88888",
@@ -242,15 +231,9 @@ class TestEnvSourcing:
 
         # Update the env file to export a test variable
         env_file = expdir / "env" / "hera.env"
-        env_file.write_text(
-            '#!/bin/bash\n'
-            'export TEST_ENV_VAR="sourced_from_hera"\n'
-        )
+        env_file.write_text('#!/bin/bash\nexport TEST_ENV_VAR="sourced_from_hera"\n')
 
-        _create_jjob(expdir, "JTEST_ENV", (
-            '#!/bin/bash\n'
-            'echo "TEST_ENV_VAR=${TEST_ENV_VAR}"\n'
-        ))
+        _create_jjob(expdir, "JTEST_ENV", ('#!/bin/bash\necho "TEST_ENV_VAR=${TEST_ENV_VAR}"\n'))
 
         result = _run_wrapper(expdir, "JTEST_ENV")
         assert result.returncode == 0, f"Failed: {result.stderr}"
@@ -264,7 +247,7 @@ class TestEnvSourcing:
         env_file = expdir / "env" / "hera.env"
         env_file.unlink()
 
-        _create_jjob(expdir, "JTEST_NOENV", '#!/bin/bash\nexit 0\n')
+        _create_jjob(expdir, "JTEST_NOENV", "#!/bin/bash\nexit 0\n")
 
         result = _run_wrapper(expdir, "JTEST_NOENV")
         assert result.returncode != 0
@@ -277,15 +260,9 @@ class TestEnvSourcing:
 
         # Create an env file that exports its first argument
         env_file = expdir / "env" / "hera.env"
-        env_file.write_text(
-            '#!/bin/bash\n'
-            'export RECEIVED_JJOB_ARG="$1"\n'
-        )
+        env_file.write_text('#!/bin/bash\nexport RECEIVED_JJOB_ARG="$1"\n')
 
-        _create_jjob(expdir, "JTEST_ENVARG", (
-            '#!/bin/bash\n'
-            'echo "RECEIVED_JJOB_ARG=${RECEIVED_JJOB_ARG}"\n'
-        ))
+        _create_jjob(expdir, "JTEST_ENVARG", ('#!/bin/bash\necho "RECEIVED_JJOB_ARG=${RECEIVED_JJOB_ARG}"\n'))
 
         result = _run_wrapper(expdir, "JTEST_ENVARG")
         assert result.returncode == 0, f"Failed: {result.stderr}"
@@ -299,12 +276,9 @@ class TestEnvSourcing:
         # Use 'return 42' instead of 'exit 42' since source runs in-process;
         # 'exit' would terminate the entire shell immediately.
         env_file = expdir / "env" / "hera.env"
-        env_file.write_text(
-            '#!/bin/bash\n'
-            'return 42\n'
-        )
+        env_file.write_text("#!/bin/bash\nreturn 42\n")
 
-        _create_jjob(expdir, "JTEST_ENVFAIL", '#!/bin/bash\nexit 0\n')
+        _create_jjob(expdir, "JTEST_ENVFAIL", "#!/bin/bash\nexit 0\n")
 
         result = _run_wrapper(expdir, "JTEST_ENVFAIL")
         assert result.returncode != 0
@@ -321,18 +295,9 @@ class TestErrorHandling:
 
         # Create an err_exit.sh that the wrapper can source
         err_exit_path = expdir / "ush" / "err_exit.sh"
-        err_exit_path.write_text(
-            '#!/bin/bash\n'
-            'err_exit() {\n'
-            '    echo "ERR_EXIT: $1" >&2\n'
-            '    exit 1\n'
-            '}\n'
-        )
+        err_exit_path.write_text('#!/bin/bash\nerr_exit() {\n    echo "ERR_EXIT: $1" >&2\n    exit 1\n}\n')
 
-        _create_jjob(expdir, "JTEST_FAIL", (
-            '#!/bin/bash\n'
-            'exit 42\n'
-        ))
+        _create_jjob(expdir, "JTEST_FAIL", ("#!/bin/bash\nexit 42\n"))
 
         result = _run_wrapper(expdir, "JTEST_FAIL")
         assert result.returncode != 0
@@ -381,12 +346,9 @@ class TestErrorHandling:
         env_file = expdir / "env" / "WCOSS2.env"
         env_file.write_text('#!/bin/bash\nexport ENV_SOURCED="yes"\n')
 
-        _create_jjob(expdir, "JTEST_ENVIR", '#!/bin/bash\nexit 0\n')
+        _create_jjob(expdir, "JTEST_ENVIR", "#!/bin/bash\nexit 0\n")
 
-        result = _run_wrapper(
-            expdir, "JTEST_ENVIR",
-            env_overrides={"MACHINE": "WCOSS2", "envir": "invalid_value"}
-        )
+        result = _run_wrapper(expdir, "JTEST_ENVIR", env_overrides={"MACHINE": "WCOSS2", "envir": "invalid_value"})
         assert result.returncode != 0
         assert "FATAL ERROR" in result.stderr
         assert "envir" in result.stderr
@@ -398,12 +360,9 @@ class TestErrorHandling:
         env_file = expdir / "env" / "WCOSS2.env"
         env_file.write_text('#!/bin/bash\nexport ENV_SOURCED="yes"\n')
 
-        _create_jjob(expdir, "JTEST_PROD", '#!/bin/bash\nexit 0\n')
+        _create_jjob(expdir, "JTEST_PROD", "#!/bin/bash\nexit 0\n")
 
-        result = _run_wrapper(
-            expdir, "JTEST_PROD",
-            env_overrides={"MACHINE": "WCOSS2", "envir": "prod"}
-        )
+        result = _run_wrapper(expdir, "JTEST_PROD", env_overrides={"MACHINE": "WCOSS2", "envir": "prod"})
         assert result.returncode == 0, f"Failed: {result.stderr}"
 
     def test_wcoss2_envir_guard_accepts_para(self, tmp_path: Path):
@@ -413,12 +372,9 @@ class TestErrorHandling:
         env_file = expdir / "env" / "WCOSS2.env"
         env_file.write_text('#!/bin/bash\nexport ENV_SOURCED="yes"\n')
 
-        _create_jjob(expdir, "JTEST_PARA", '#!/bin/bash\nexit 0\n')
+        _create_jjob(expdir, "JTEST_PARA", "#!/bin/bash\nexit 0\n")
 
-        result = _run_wrapper(
-            expdir, "JTEST_PARA",
-            env_overrides={"MACHINE": "WCOSS2", "envir": "para"}
-        )
+        result = _run_wrapper(expdir, "JTEST_PARA", env_overrides={"MACHINE": "WCOSS2", "envir": "para"})
         assert result.returncode == 0, f"Failed: {result.stderr}"
 
     def test_wcoss2_envir_guard_accepts_test(self, tmp_path: Path):
@@ -428,12 +384,9 @@ class TestErrorHandling:
         env_file = expdir / "env" / "WCOSS2.env"
         env_file.write_text('#!/bin/bash\nexport ENV_SOURCED="yes"\n')
 
-        _create_jjob(expdir, "JTEST_TEST", '#!/bin/bash\nexit 0\n')
+        _create_jjob(expdir, "JTEST_TEST", "#!/bin/bash\nexit 0\n")
 
-        result = _run_wrapper(
-            expdir, "JTEST_TEST",
-            env_overrides={"MACHINE": "WCOSS2", "envir": "test"}
-        )
+        result = _run_wrapper(expdir, "JTEST_TEST", env_overrides={"MACHINE": "WCOSS2", "envir": "test"})
         assert result.returncode == 0, f"Failed: {result.stderr}"
 
     def test_wcoss2_missing_envir_causes_fatal_error(self, tmp_path: Path):
@@ -443,13 +396,10 @@ class TestErrorHandling:
         env_file = expdir / "env" / "WCOSS2.env"
         env_file.write_text('#!/bin/bash\nexport ENV_SOURCED="yes"\n')
 
-        _create_jjob(expdir, "JTEST_NOENVIR", '#!/bin/bash\nexit 0\n')
+        _create_jjob(expdir, "JTEST_NOENVIR", "#!/bin/bash\nexit 0\n")
 
         # Don't set envir at all
-        result = _run_wrapper(
-            expdir, "JTEST_NOENVIR",
-            env_overrides={"MACHINE": "WCOSS2"}
-        )
+        result = _run_wrapper(expdir, "JTEST_NOENVIR", env_overrides={"MACHINE": "WCOSS2"})
         assert result.returncode != 0
         assert "FATAL ERROR" in result.stderr
         assert "envir" in result.stderr
@@ -462,7 +412,7 @@ class TestLifecycleLogging:
         """An 'init' lifecycle event is emitted at wrapper start."""
         expdir = _setup_expdir(tmp_path)
 
-        _create_jjob(expdir, "JTEST_LOG_INIT", '#!/bin/bash\nexit 0\n')
+        _create_jjob(expdir, "JTEST_LOG_INIT", "#!/bin/bash\nexit 0\n")
 
         result = _run_wrapper(expdir, "JTEST_LOG_INIT")
         assert result.returncode == 0, f"Failed: {result.stderr}"
@@ -477,7 +427,7 @@ class TestLifecycleLogging:
         """A 'start' lifecycle event is emitted before JJob execution."""
         expdir = _setup_expdir(tmp_path)
 
-        _create_jjob(expdir, "JTEST_LOG_START", '#!/bin/bash\nexit 0\n')
+        _create_jjob(expdir, "JTEST_LOG_START", "#!/bin/bash\nexit 0\n")
 
         result = _run_wrapper(expdir, "JTEST_LOG_START")
         assert result.returncode == 0, f"Failed: {result.stderr}"
@@ -490,7 +440,7 @@ class TestLifecycleLogging:
         """A 'succeeded' lifecycle event is emitted on successful JJob."""
         expdir = _setup_expdir(tmp_path)
 
-        _create_jjob(expdir, "JTEST_LOG_OK", '#!/bin/bash\nexit 0\n')
+        _create_jjob(expdir, "JTEST_LOG_OK", "#!/bin/bash\nexit 0\n")
 
         result = _run_wrapper(expdir, "JTEST_LOG_OK")
         assert result.returncode == 0, f"Failed: {result.stderr}"
@@ -503,7 +453,7 @@ class TestLifecycleLogging:
         """A 'complete' lifecycle event is emitted on clean exit."""
         expdir = _setup_expdir(tmp_path)
 
-        _create_jjob(expdir, "JTEST_LOG_COMPLETE", '#!/bin/bash\nexit 0\n')
+        _create_jjob(expdir, "JTEST_LOG_COMPLETE", "#!/bin/bash\nexit 0\n")
 
         result = _run_wrapper(expdir, "JTEST_LOG_COMPLETE")
         assert result.returncode == 0, f"Failed: {result.stderr}"
@@ -518,15 +468,9 @@ class TestLifecycleLogging:
 
         # Create err_exit.sh so the wrapper can source it
         err_exit_path = expdir / "ush" / "err_exit.sh"
-        err_exit_path.write_text(
-            '#!/bin/bash\n'
-            'err_exit() {\n'
-            '    echo "ERR_EXIT: $1" >&2\n'
-            '    exit 1\n'
-            '}\n'
-        )
+        err_exit_path.write_text('#!/bin/bash\nerr_exit() {\n    echo "ERR_EXIT: $1" >&2\n    exit 1\n}\n')
 
-        _create_jjob(expdir, "JTEST_LOG_FAIL", '#!/bin/bash\nexit 7\n')
+        _create_jjob(expdir, "JTEST_LOG_FAIL", "#!/bin/bash\nexit 7\n")
 
         result = _run_wrapper(expdir, "JTEST_LOG_FAIL")
         assert result.returncode != 0
@@ -540,35 +484,26 @@ class TestLifecycleLogging:
         """Lifecycle events contain task, cycle, jobid, attempt, state, timestamp, duration."""
         expdir = _setup_expdir(tmp_path)
 
-        _create_jjob(expdir, "JTEST_FIELDS", '#!/bin/bash\nexit 0\n')
+        _create_jjob(expdir, "JTEST_FIELDS", "#!/bin/bash\nexit 0\n")
 
-        result = _run_wrapper(
-            expdir, "JTEST_FIELDS",
-            env_overrides={"jobid": "JTEST_FIELDS.77777"}
-        )
+        result = _run_wrapper(expdir, "JTEST_FIELDS", env_overrides={"jobid": "JTEST_FIELDS.77777"})
         assert result.returncode == 0, f"Failed: {result.stderr}"
 
         events = _extract_lifecycle_events(result.stderr)
         assert len(events) > 0, "No lifecycle events found"
 
-        required_fields = ["task", "cycle", "jobid", "attempt", "state",
-                           "timestamp", "duration_seconds"]
+        required_fields = ["task", "cycle", "jobid", "attempt", "state", "timestamp", "duration_seconds"]
         for event in events:
             for field in required_fields:
-                assert field in event, (
-                    f"Missing field '{field}' in lifecycle event: {event}"
-                )
+                assert field in event, f"Missing field '{field}' in lifecycle event: {event}"
 
     def test_lifecycle_event_has_correct_cycle(self, tmp_path: Path):
         """Lifecycle events include the correct cycle (PDY+cyc)."""
         expdir = _setup_expdir(tmp_path)
 
-        _create_jjob(expdir, "JTEST_CYCLE", '#!/bin/bash\nexit 0\n')
+        _create_jjob(expdir, "JTEST_CYCLE", "#!/bin/bash\nexit 0\n")
 
-        result = _run_wrapper(
-            expdir, "JTEST_CYCLE",
-            env_overrides={"PDY": "20250601", "cyc": "12"}
-        )
+        result = _run_wrapper(expdir, "JTEST_CYCLE", env_overrides={"PDY": "20250601", "cyc": "12"})
         assert result.returncode == 0, f"Failed: {result.stderr}"
 
         events = _extract_lifecycle_events(result.stderr)
@@ -579,12 +514,9 @@ class TestLifecycleLogging:
         """Lifecycle events include the snapshot_id."""
         expdir = _setup_expdir(tmp_path)
 
-        _create_jjob(expdir, "JTEST_SNAP", '#!/bin/bash\nexit 0\n')
+        _create_jjob(expdir, "JTEST_SNAP", "#!/bin/bash\nexit 0\n")
 
-        result = _run_wrapper(
-            expdir, "JTEST_SNAP",
-            env_overrides={"SNAPSHOT_ID": "v17.0.0+abc123def456"}
-        )
+        result = _run_wrapper(expdir, "JTEST_SNAP", env_overrides={"SNAPSHOT_ID": "v17.0.0+abc123def456"})
         assert result.returncode == 0, f"Failed: {result.stderr}"
 
         events = _extract_lifecycle_events(result.stderr)
@@ -599,7 +531,7 @@ class TestLifecycleLogging:
         env_file = expdir / "env" / "hera.env"
         env_file.unlink()
 
-        _create_jjob(expdir, "JTEST_ABORT", '#!/bin/bash\nexit 0\n')
+        _create_jjob(expdir, "JTEST_ABORT", "#!/bin/bash\nexit 0\n")
 
         result = _run_wrapper(expdir, "JTEST_ABORT")
         assert result.returncode != 0
@@ -634,9 +566,8 @@ class TestShellHardening:
         # PS4='+ $SECONDS + ' means trace lines should contain numbers
         # Look for the pattern "+ <number> + " in stderr
         import re
-        assert re.search(r'\+ \d+ \+', result.stderr), (
-            "PS4 timing pattern not found in trace output"
-        )
+
+        assert re.search(r"\+ \d+ \+", result.stderr), "PS4 timing pattern not found in trace output"
 
 
 def _extract_lifecycle_events(stderr: str) -> list:

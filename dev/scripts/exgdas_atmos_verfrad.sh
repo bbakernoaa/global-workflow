@@ -21,8 +21,8 @@
 source "${USHglobal}/unset_strict.sh"
 
 if [[ ! -s "${radstat}" || ! -s "${biascr}" ]]; then
-    export err=1
-    err_exit "Required data files ${radstat} and/or ${biascr} are missing!!"
+  export err=1
+  err_exit "Required data files ${radstat} and/or ${biascr} are missing!!"
 fi
 
 #------------------------------------------------------------------
@@ -47,7 +47,7 @@ rm "radstat.${PDY}${cyc}"
 radstat_files=$(find ./ -name 'd*ges*')
 radstat_satype=$(awk -F_ '{ print $2 "_" $3 }' <<< "${radstat_files}")
 if [[ "${VERBOSE}" == "YES" ]]; then
-    echo "${radstat_satype}"
+  echo "${radstat_satype}"
 fi
 
 echo satype_file = "${satype_file}"
@@ -58,9 +58,9 @@ echo satype_file = "${satype_file}"
 #  the cycle being processed is 00z.
 #------------------------------------------------------------------
 if [[ ${cyc} = "00" ]]; then
-    use_tankdir=${TANKverf_radM1}
+  use_tankdir=${TANKverf_radM1}
 else
-    use_tankdir=${TANKverf_rad}
+  use_tankdir=${TANKverf_rad}
 fi
 export use_tankdir
 
@@ -76,19 +76,19 @@ export SATYPE
 satype_changes=0
 new_satype=${SATYPE}
 for type in ${radstat_satype}; do
-    type_count=$(grep -c "${type}" <<< "${SATYPE}")
+  type_count=$(grep -c "${type}" <<< "${SATYPE}")
 
-    if [[ ${type_count} -eq 0 ]]; then
-        if [[ "${VERBOSE}" = "YES" ]]; then
-            echo "Found ${type} in radstat file but not in SATYPE list.  Adding it now."
-        fi
-        satype_changes=1
-        new_satype="${new_satype} ${type}"
+  if [[ ${type_count} -eq 0 ]]; then
+    if [[ "${VERBOSE}" = "YES" ]]; then
+      echo "Found ${type} in radstat file but not in SATYPE list.  Adding it now."
     fi
+    satype_changes=1
+    new_satype="${new_satype} ${type}"
+  fi
 done
 
 if [[ ${satype_changes} -eq 1 ]]; then
-    SATYPE=${new_satype}
+  SATYPE=${new_satype}
 fi
 
 #------------------------------------------------------------------
@@ -98,26 +98,26 @@ netcdf=0
 
 for type in ${SATYPE}; do
 
-    if [[ ${netcdf} -eq 0 && -e "diag_${type}_ges.${PDY}${cyc}.nc4.${Z}" ]]; then
-        netcdf=1
-    fi
+  if [[ ${netcdf} -eq 0 && -e "diag_${type}_ges.${PDY}${cyc}.nc4.${Z}" ]]; then
+    netcdf=1
+  fi
 
-    if [[ $(find . -maxdepth 1 -type f -name "diag_${type}_ges.${PDY}${cyc}*.${Z}" | wc -l) -gt 0 ]]; then
-        mv "diag_${type}_ges.${PDY}${cyc}"*".${Z}" "${type}.${Z}"
-        ${UNCOMPRESS} "./${type}.${Z}"
+  if [[ $(find . -maxdepth 1 -type f -name "diag_${type}_ges.${PDY}${cyc}*.${Z}" | wc -l) -gt 0 ]]; then
+    mv "diag_${type}_ges.${PDY}${cyc}"*".${Z}" "${type}.${Z}"
+    ${UNCOMPRESS} "./${type}.${Z}"
+  else
+    echo "WARNING: diag_${type}_ges.${PDY}${cyc}*.${Z} not available, skipping"
+  fi
+
+  if [[ ${USE_ANL} -eq 1 ]]; then
+    file_count=$(find . -maxdepth 1 -type f -name "diag_${type}_anl.${PDY}${cyc}*.${Z}" | wc -l)
+    if [[ ${file_count} -gt 0 ]]; then
+      mv "diag_${type}_anl.${PDY}${cyc}"*".${Z}" "${type}_anl.${Z}"
+      ${UNCOMPRESS} "./${type}_anl.${Z}"
     else
-        echo "WARNING: diag_${type}_ges.${PDY}${cyc}*.${Z} not available, skipping"
+      echo "WARNING: diag_${type}_anl.${PDY}${cyc}*.${Z} not available, skipping"
     fi
-
-    if [[ ${USE_ANL} -eq 1 ]]; then
-        file_count=$(find . -maxdepth 1 -type f -name "diag_${type}_anl.${PDY}${cyc}*.${Z}" | wc -l)
-        if [[ ${file_count} -gt 0 ]]; then
-            mv "diag_${type}_anl.${PDY}${cyc}"*".${Z}" "${type}_anl.${Z}"
-            ${UNCOMPRESS} "./${type}_anl.${Z}"
-        else
-            echo "WARNING: diag_${type}_anl.${PDY}${cyc}*.${Z} not available, skipping"
-        fi
-    fi
+  fi
 done
 
 export RADMON_NETCDF=${netcdf}
@@ -132,7 +132,7 @@ rc_angle=$?
 
 # Allow all scripts to run.  Call err_exit at the end, after files are restricted.
 if [[ ${rc_angle} -ne 0 ]]; then
-    echo "FATAL ERROR: radmon_verf_angle.sh failed!"
+  echo "FATAL ERROR: radmon_verf_angle.sh failed!"
 fi
 
 "${USHglobal}/radmon_verf_bcoef.sh" && true
@@ -140,7 +140,7 @@ rc_bcoef=$?
 "${USHglobal}/rstprod.sh"
 
 if [[ ${rc_bcoef} -ne 0 ]]; then
-    echo "FATAL ERROR: radmon_verf_bcoef.sh failed!"
+  echo "FATAL ERROR: radmon_verf_bcoef.sh failed!"
 fi
 
 "${USHglobal}/radmon_verf_bcor.sh" && true
@@ -148,7 +148,7 @@ rc_bcor=$?
 "${USHglobal}/rstprod.sh"
 
 if [[ ${rc_bcoef} -ne 0 ]]; then
-    echo "FATAL ERROR: radmon_verf_bcor.sh failed!"
+  echo "FATAL ERROR: radmon_verf_bcor.sh failed!"
 fi
 
 "${USHglobal}/radmon_verf_time.sh" && true
@@ -156,7 +156,7 @@ rc_time=$?
 "${USHglobal}/rstprod.sh"
 
 if [[ ${rc_bcoef} -ne 0 ]]; then
-    echo "FATAL ERROR: radmon_verf_time.sh failed!"
+  echo "FATAL ERROR: radmon_verf_time.sh failed!"
 fi
 
 #####################################################################
@@ -165,7 +165,7 @@ fi
 export err=$((rc_angle + rc_bcoef + rc_bcor + rc_time))
 
 if [[ ${err} -ne 0 ]]; then
-    err_exit "One or more radiance monitor subtasks failed!"
+  err_exit "One or more radiance monitor subtasks failed!"
 fi
 
 exit 0

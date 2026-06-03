@@ -58,15 +58,9 @@ def check_expdir_immutability(expdir: Path) -> None:
     # Try to extract the Snapshot_ID from the existing manifest
     snapshot_id = _extract_snapshot_id(manifest_path)
     if snapshot_id:
-        raise ValidationError(
-            f"FATAL ERROR: EXPDIR already published with Snapshot_ID {snapshot_id}. "
-            f"Path: {expdir}"
-        )
+        raise ValidationError(f"FATAL ERROR: EXPDIR already published with Snapshot_ID {snapshot_id}. Path: {expdir}")
     else:
-        raise ValidationError(
-            f"FATAL ERROR: EXPDIR already contains a manifest.yaml and is sealed. "
-            f"Path: {expdir}"
-        )
+        raise ValidationError(f"FATAL ERROR: EXPDIR already contains a manifest.yaml and is sealed. Path: {expdir}")
 
 
 def _extract_snapshot_id(manifest_path: Path) -> Optional[str]:
@@ -84,7 +78,7 @@ def _extract_snapshot_id(manifest_path: Path) -> Optional[str]:
         match = re.search(r'^snapshot_id:\s*["\']?([^"\'\n]+)["\']?', content, re.MULTILINE)
         if match:
             return match.group(1).strip()
-    except (OSError, IOError):
+    except OSError:
         pass
     return None
 
@@ -106,9 +100,7 @@ def check_pinned_versions(requirements_path: Path) -> ValidationResult:
     result = ValidationResult()
 
     if not requirements_path.exists():
-        result.add_error(
-            f"FATAL ERROR: Requirements file not found: {requirements_path}"
-        )
+        result.add_error(f"FATAL ERROR: Requirements file not found: {requirements_path}")
         return result
 
     pinned = _parse_pinned_versions(requirements_path)
@@ -116,14 +108,9 @@ def check_pinned_versions(requirements_path: Path) -> ValidationResult:
     for package, pinned_version in pinned.items():
         installed_version = _get_installed_version(package)
         if installed_version is None:
-            result.add_warning(
-                f"Package '{package}' is not installed; skipping version check"
-            )
+            result.add_warning(f"Package '{package}' is not installed; skipping version check")
         elif installed_version != pinned_version:
-            result.add_error(
-                f"FATAL ERROR: {package} {installed_version} != pinned {pinned_version} "
-                f"(from {requirements_path})"
-            )
+            result.add_error(f"FATAL ERROR: {package} {installed_version} != pinned {pinned_version} (from {requirements_path})")
 
     return result
 
@@ -147,12 +134,12 @@ def _parse_pinned_versions(requirements_path: Path) -> dict[str, str]:
             if not line or line.startswith("#"):
                 continue
             # Match exact pins: package==version
-            match = re.match(r'^([a-zA-Z0-9_-]+)==([^\s#]+)', line)
+            match = re.match(r"^([a-zA-Z0-9_-]+)==([^\s#]+)", line)
             if match:
                 package = match.group(1).lower()
                 version = match.group(2)
                 pinned[package] = version
-    except (OSError, IOError):
+    except OSError:
         pass
     return pinned
 
@@ -167,7 +154,8 @@ def _get_installed_version(package: str) -> Optional[str]:
         Version string if installed, None otherwise.
     """
     try:
-        from importlib.metadata import version, PackageNotFoundError
+        from importlib.metadata import version
+
         return version(package)
     except Exception:
         return None
@@ -202,17 +190,14 @@ def check_git_state(repo_path: Optional[Path] = None) -> ValidationResult:
         )
 
         if proc.returncode != 0:
-            result.add_warning(
-                f"Unable to check git state: {proc.stderr.strip()}"
-            )
+            result.add_warning(f"Unable to check git state: {proc.stderr.strip()}")
             return result
 
         if proc.stdout.strip():
             dirty_files = proc.stdout.strip().splitlines()
             n_dirty = len(dirty_files)
             result.add_warning(
-                f"Git working tree is not clean ({n_dirty} modified/untracked files). "
-                f"Deployment from a dirty tree may not be reproducible."
+                f"Git working tree is not clean ({n_dirty} modified/untracked files). Deployment from a dirty tree may not be reproducible."
             )
 
     except FileNotFoundError:

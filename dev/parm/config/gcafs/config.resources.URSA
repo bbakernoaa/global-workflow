@@ -14,8 +14,8 @@ case ${step} in
       "C96")
         if [[ "${RUN}" = "gcdas" ]]; then
           export walltime="01:30:00"
-        fi	    
-        ;;  
+        fi
+        ;;
       *)
         # Nothing to do for other resolutions
         true
@@ -43,7 +43,7 @@ case ${step} in
         export tasks_per_node=$(( max_tasks_per_node / threads_per_task ))
     fi
     ;;
-  
+
   "offlineanl")
     export memory="240GB"
     ;;

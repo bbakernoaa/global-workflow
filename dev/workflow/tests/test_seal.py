@@ -15,8 +15,6 @@ import os
 import platform
 import stat
 import sys
-import tempfile
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -32,7 +30,6 @@ from deployment.seal import (
     seal_permissions,
     write_provenance,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -85,9 +82,7 @@ class TestSealPermissions:
                 filepath = os.path.join(root, f)
                 if os.path.isfile(filepath) and not os.path.islink(filepath):
                     mode = stat.S_IMODE(os.stat(filepath).st_mode)
-                    assert mode == FILE_MODE, (
-                        f"File {filepath} has mode {oct(mode)}, expected {oct(FILE_MODE)}"
-                    )
+                    assert mode == FILE_MODE, f"File {filepath} has mode {oct(mode)}, expected {oct(FILE_MODE)}"
 
     def test_directories_set_to_0555(self, tmp_expdir):
         seal_permissions(tmp_expdir)
@@ -95,9 +90,7 @@ class TestSealPermissions:
         for root, dirs, _ in os.walk(str(tmp_expdir)):
             # Check the root directory itself
             mode = stat.S_IMODE(os.stat(root).st_mode)
-            assert mode == DIR_MODE, (
-                f"Directory {root} has mode {oct(mode)}, expected {oct(DIR_MODE)}"
-            )
+            assert mode == DIR_MODE, f"Directory {root} has mode {oct(mode)}, expected {oct(DIR_MODE)}"
 
     def test_deeply_nested_structure(self, nested_expdir):
         seal_permissions(nested_expdir)
@@ -195,6 +188,7 @@ class TestWriteProvenance:
 
         # Should be parseable as ISO format datetime
         from datetime import datetime
+
         ts = data["deployed_at"]
         # datetime.fromisoformat handles the format
         parsed = datetime.fromisoformat(ts)

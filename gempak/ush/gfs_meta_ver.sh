@@ -31,37 +31,37 @@ MDL2="GFSHPC"
 # shellcheck disable=SC2207
 lookbacks=($(IFS=$'\n' seq 6 6 180) $(IFS=$'\n' seq 192 12 216))
 for lookback in "${lookbacks[@]}"; do
-    init_time="$(date --utc +%Y%m%d%H -d "${PDY} ${cyc} - ${lookback} hours")"
-    init_PDY=${init_time:0:8}
-    init_cyc=${init_time:8:2}
+  init_time="$(date --utc +%Y%m%d%H -d "${PDY} ${cyc} - ${lookback} hours")"
+  init_PDY=${init_time:0:8}
+  init_cyc=${init_time:8:2}
 
-    if [[ "${init_time}" -le "${SDATE:-0}" ]]; then
-        echo "Skipping ver for ${init_time} because it is before the experiment began"
-        if [[ "${lookback}" -eq "${lookbacks[0]}" ]]; then
-            echo "First forecast time, no metafile produced"
-            exit 0
-        else
-            break
-        fi
+  if [[ "${init_time}" -le "${SDATE:-0}" ]]; then
+    echo "Skipping ver for ${init_time} because it is before the experiment began"
+    if [[ "${lookback}" -eq "${lookbacks[0]}" ]]; then
+      echo "First forecast time, no metafile produced"
+      exit 0
+    else
+      break
     fi
+  fi
 
-    dgdattim="f$(printf "%03g" "${lookback}")"
+  dgdattim="f$(printf "%03g" "${lookback}")"
 
-    # Create symlink in DATA to sidestep gempak path limits
-    # TODO: Add only necessary files and remove unneeded ones to minimize data volume
-    # TODO: remove live links and refer https://github.com/NOAA-EMC/global-workflow/issues/4406
-    HPCGFS="${RUN}.${init_time}"
-    rm -f "${HPCGFS}"
-    source_dir="${ROTDIR}/${RUN}.${init_PDY}/${init_cyc}/products/atmos/gempak/1p00"
-    ${NLN} "${source_dir}" "${HPCGFS}"
+  # Create symlink in DATA to sidestep gempak path limits
+  # TODO: Add only necessary files and remove unneeded ones to minimize data volume
+  # TODO: remove live links and refer https://github.com/NOAA-EMC/global-workflow/issues/4406
+  HPCGFS="${RUN}.${init_time}"
+  rm -f "${HPCGFS}"
+  source_dir="${ROTDIR}/${RUN}.${init_PDY}/${init_cyc}/products/atmos/gempak/1p00"
+  ${NLN} "${source_dir}" "${HPCGFS}"
 
-    grid="F-${MDL2} | ${init_PDY}/${init_cyc}00"
+  grid="F-${MDL2} | ${init_PDY}/${init_cyc}00"
 
-    # 500 MB HEIGHT METAFILE
+  # 500 MB HEIGHT METAFILE
 
-    export pgm=gdplot2_nc
-    source prep_step
-    "${GEMEXE}/gdplot2_nc" << EOFplt
+  export pgm=gdplot2_nc
+  source prep_step
+  "${GEMEXE}/gdplot2_nc" << EOFplt
 PROJ     = STR/90.0;-95.0;0.0
 GAREA    = 5.1;-124.6;49.6;-11.9
 map      = 1//2
@@ -193,30 +193,30 @@ r
 
 ex
 EOFplt
-    export err=$?
-    err_chk
+  export err=$?
+  err_chk
 
-    #####################################################
-    # GEMPAK DOES NOT ALWAYS HAVE A NON ZERO RETURN CODE
-    # WHEN IT CAN NOT PRODUCE THE DESIRED GRID.  CHECK
-    # FOR THIS CASE HERE.
-    #####################################################
-    if [[ "${err}" -ne 0 ]] || [[ ! -s "${metaname}" ]] &> /dev/null; then
-        echo "FATAL ERROR: Failed to create gempak meta file ${metaname}"
-        exit $((err + 100))
-    fi
+  #####################################################
+  # GEMPAK DOES NOT ALWAYS HAVE A NON ZERO RETURN CODE
+  # WHEN IT CAN NOT PRODUCE THE DESIRED GRID.  CHECK
+  # FOR THIS CASE HERE.
+  #####################################################
+  if [[ "${err}" -ne 0 ]] || [[ ! -s "${metaname}" ]] &> /dev/null; then
+    echo "FATAL ERROR: Failed to create gempak meta file ${metaname}"
+    exit $((err + 100))
+  fi
 
 done
 
 cpfs "${metaname}" "${COMOUT_ATMOS_GEMPAK_META}/gfsver_${PDY}_${cyc}"
 if [[ "${SENDDBN}" == "YES" ]]; then
+  "${DBNROOT}/bin/dbn_alert" MODEL "${DBN_ALERT_TYPE}" "${job}" \
+    "${COMOUT_ATMOS_GEMPAK_META}/gfsver_${PDY}_${cyc}"
+  if [[ "${DBN_ALERT_TYPE}" = "GFS_METAFILE_LAST" ]]; then
+    DBN_ALERT_TYPE=GFS_METAFILE
     "${DBNROOT}/bin/dbn_alert" MODEL "${DBN_ALERT_TYPE}" "${job}" \
-        "${COMOUT_ATMOS_GEMPAK_META}/gfsver_${PDY}_${cyc}"
-    if [[ "${DBN_ALERT_TYPE}" = "GFS_METAFILE_LAST" ]]; then
-        DBN_ALERT_TYPE=GFS_METAFILE
-        "${DBNROOT}/bin/dbn_alert" MODEL "${DBN_ALERT_TYPE}" "${job}" \
-            "${COMOUT_ATMOS_GEMPAK_META}/gfsver_${PDY}_${cyc}"
-    fi
+      "${COMOUT_ATMOS_GEMPAK_META}/gfsver_${PDY}_${cyc}"
+  fi
 fi
 
 exit

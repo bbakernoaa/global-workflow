@@ -1,23 +1,18 @@
 #!/usr/bin/env python3
 
-import glob
-import gzip
 import os
 import tarfile
 from logging import getLogger
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, Optional
+
 from jcb import render
-from wxflow import (AttrDict, FileHandler, Task, Executable,
-                    WorkflowException, WorkflowKeyError, WorkflowTypeError,
-                    chdir,
-                    parse_j2yaml, save_as_yaml,
-                    logit)
 
-logger = getLogger(__name__.split('.')[-1])
+from wxflow import AttrDict, Executable, FileHandler, WorkflowException, WorkflowKeyError, WorkflowTypeError, chdir, logit, parse_j2yaml, save_as_yaml
 
-required_jedi_keys = ['jedi_app_name', 'rundir', 'exe_src', 'mpi_cmd', 'jcb_base_yaml']
-optional_jedi_keys = ['jedi_args', 'jcb_algo', 'jcb_algo_yaml',
-                      'obs_list_yaml', 'bias_files_yaml', 'app_test_yaml']
+logger = getLogger(__name__.split(".")[-1])
+
+required_jedi_keys = ["jedi_app_name", "rundir", "exe_src", "mpi_cmd", "jcb_base_yaml"]
+optional_jedi_keys = ["jedi_args", "jcb_algo", "jcb_algo_yaml", "obs_list_yaml", "bias_files_yaml", "app_test_yaml"]
 
 
 class Jedi:
@@ -52,7 +47,7 @@ class Jedi:
         # Create the configuration dictionary for JEDI object
         local_dict = AttrDict(
             {
-                'exe_config_yaml': os.path.join(config.rundir, config.jedi_app_name + '.yaml'),
+                "exe_config_yaml": os.path.join(config.rundir, config.jedi_app_name + ".yaml"),
             }
         )
         self.jedi_config = AttrDict(**config, **local_dict)
@@ -68,9 +63,9 @@ class Jedi:
                 self.jedi_config[key] = None
 
         # Makes sure either jcb_algo or jcb_algo_yaml is specified, but not both
-        if 'jcb_algo' not in config and 'jcb_algo_yaml' not in config:
+        if "jcb_algo" not in config and "jcb_algo_yaml" not in config:
             raise WorkflowKeyError("Either 'jcb_algo' or 'jcb_algo_yaml' must be specified in JEDI config")
-        if 'jcb_algo' in config and 'jcb_algo_yaml' in config:
+        if "jcb_algo" in config and "jcb_algo_yaml" in config:
             raise WorkflowKeyError("Either 'jcb_algo' or 'jcb_algo_yaml' must be specified in JEDI config, but not both")
 
         # Construct JCB config dictionary
@@ -83,7 +78,7 @@ class Jedi:
         if self.jedi_config.jcb_algo_yaml is not None:
             # Render JCB algorithm config YAML if specified
             self._jcb_algo_config = parse_j2yaml(self.jedi_config.jcb_algo_yaml, task_config)
-            if 'algorithm' not in self._jcb_algo_config:
+            if "algorithm" not in self._jcb_algo_config:
                 raise WorkflowKeyError("JCB algorithm not specified in jcb_algo_yaml")
 
             self.jcb_config = AttrDict({**self._jcb_base_config, **self._jcb_algo_config})
@@ -96,7 +91,7 @@ class Jedi:
 
         # Set observations list in JCB config if obs_list_yaml specified
         if self.jedi_config.obs_list_yaml is not None:
-            self.jcb_config['observations'] = parse_j2yaml(self.jedi_config.obs_list_yaml, task_config)['observations']
+            self.jcb_config["observations"] = parse_j2yaml(self.jedi_config.obs_list_yaml, task_config)["observations"]
 
         # Include test reference YAML in JCB config if app_test_yaml specified
         if task_config.DO_TEST_MODE and self.jedi_config.app_test_yaml is not None:
@@ -106,12 +101,12 @@ class Jedi:
         # ---------------------
 
         # Set model attribute, checking that "app_path_observations" is present in jcb_config
-        if 'app_path_model' in self.jcb_config:
-            self.component = self.jcb_config['app_path_model'].split('/')[-1]
-        elif 'app_path_observations' in self.jcb_config:
-            self.component = self.jcb_config['app_path_observations'].split('/')[-1]
+        if "app_path_model" in self.jcb_config:
+            self.component = self.jcb_config["app_path_model"].split("/")[-1]
+        elif "app_path_observations" in self.jcb_config:
+            self.component = self.jcb_config["app_path_observations"].split("/")[-1]
         else:
-            raise WorkflowKeyError(f"Required key 'app_path_model' or 'app_path_observations'  not found in JCB config")
+            raise WorkflowKeyError("Required key 'app_path_model' or 'app_path_observations'  not found in JCB config")
 
         # Initialize JEDI application configuration dictionary to None
         self.exe_config = None
@@ -142,7 +137,7 @@ class Jedi:
         # Loop through dictionary of Jedi configuration dictionaries
         for block_name in jedi_config_dict:
             # jedi_app_name key is set to name for this block
-            jedi_config_dict[block_name]['jedi_app_name'] = block_name
+            jedi_config_dict[block_name]["jedi_app_name"] = block_name
 
             # Construct JEDI object
             jedi_dict[block_name] = Jedi(jedi_config_dict[block_name], task_config)
@@ -151,7 +146,7 @@ class Jedi:
         if expected_block_names:
             for block_name in expected_block_names:
                 if block_name not in jedi_dict:
-                    raise WorkflowKeyError(f"Expected block key {block_name} not present {jedi_config_yaml}")
+                    raise WorkflowKeyError(f"Expected block key {block_name} not present {jedi_config_dict}")
 
         # Return dictionary of JEDI objects
         return jedi_dict
@@ -239,14 +234,14 @@ class Jedi:
         # Set algorithm (method input algorithm takes precedence)
         if algorithm_in is not None:
             algorithm = algorithm_in
-        elif 'algorithm' in self.jcb_config:
-            algorithm = self.jcb_config['algorithm']
+        elif "algorithm" in self.jcb_config:
+            algorithm = self.jcb_config["algorithm"]
         else:
             raise WorkflowKeyError("JCB algorithm not specified")
 
         # Generate JEDI YAML config by rendering JCB config dictionary
         try:
-            exe_config = render({**self.jcb_config, **{'algorithm': algorithm}})
+            exe_config = render({**self.jcb_config, **{"algorithm": algorithm}})
         except Exception as e:
             raise WorkflowException(f"An error occurred while rendering JCB template for algorithm {algorithm}:\n{e}") from e
 
@@ -268,14 +263,14 @@ class Jedi:
         """
 
         # Get observers from JEDI input config
-        observers = find_value_in_nested_dict(self.exe_config, 'observers')
+        observers = find_value_in_nested_dict(self.exe_config, "observers")
 
         # Check if observers list actually present
         if observers:
             # Create new list of observers
             cleaned_observers = []
             for obs_space in observers:
-                fname = obs_space['obs space']['obsdatain']['engine']['obsfile']
+                fname = obs_space["obs space"]["obsdatain"]["engine"]["obsfile"]
                 if os.path.isfile(fname):
                     cleaned_observers.append(obs_space)
                 else:
@@ -287,7 +282,7 @@ class Jedi:
 
             # Warn if no observers left in list
             if observers == []:
-                logger.warning(f"No observers found in JEDI input config")
+                logger.warning("No observers found in JEDI input config")
 
     @logit(logger)
     def stage_obsdatain(self, comin) -> None:
@@ -307,28 +302,28 @@ class Jedi:
         """
 
         # Check that other required keys are present in jcb_config
-        for stem in ['obsdatain_path', 'obsdataout_path', 'obsdatain_prefix', 'obsdatain_suffix']:
-            key = f'{self.component}_{stem}'
+        for stem in ["obsdatain_path", "obsdataout_path", "obsdatain_prefix", "obsdatain_suffix"]:
+            key = f"{self.component}_{stem}"
             if key not in self.jcb_config:
                 raise WorkflowKeyError(f"Required key {key} not found in JCB config")
 
         # Initialize FileHandler input dictionary
-        fh_dict = {'mkdir': [], 'copy_opt': []}
+        fh_dict = {"mkdir": [], "copy_opt": []}
 
         # Make directories
-        fh_dict['mkdir'].append(self.jcb_config[f'{self.component}_obsdatain_path'])
-        fh_dict['mkdir'].append(self.jcb_config[f'{self.component}_obsdataout_path'])
+        fh_dict["mkdir"].append(self.jcb_config[f"{self.component}_obsdatain_path"])
+        fh_dict["mkdir"].append(self.jcb_config[f"{self.component}_obsdataout_path"])
 
         # Copy files
-        ob_dest = self.jcb_config[f'{self.component}_obsdatain_path']
-        for observation_from_jcb in self.jcb_config['observations']:
+        ob_dest = self.jcb_config[f"{self.component}_obsdatain_path"]
+        for observation_from_jcb in self.jcb_config["observations"]:
             # Observations
-            ob_src = os.path.join(comin,
-                                  self.jcb_config[f'{self.component}_obsdatain_prefix'] +
-                                  observation_from_jcb +
-                                  self.jcb_config[f'{self.component}_obsdatain_suffix'])
+            ob_src = os.path.join(
+                comin,
+                self.jcb_config[f"{self.component}_obsdatain_prefix"] + observation_from_jcb + self.jcb_config[f"{self.component}_obsdatain_suffix"],
+            )
 
-            fh_dict['copy_opt'].append([ob_src, ob_dest])
+            fh_dict["copy_opt"].append([ob_src, ob_dest])
 
         # Execute FileHandler sync
         FileHandler(fh_dict).sync()
@@ -350,8 +345,8 @@ class Jedi:
         """
 
         # Check that other required keys are present in jcb_config
-        for stem in ['obsdataout_path', 'obsdataout_prefix', 'obsdataout_suffix']:
-            key = f'{self.component}_{stem}'
+        for stem in ["obsdataout_path", "obsdataout_prefix", "obsdataout_suffix"]:
+            key = f"{self.component}_{stem}"
             if key not in self.jcb_config:
                 raise WorkflowKeyError(f"Required key {key} not found in JCB config")
 
@@ -361,11 +356,13 @@ class Jedi:
         # Create compressed tarball of obs output files in COM
         logger.info(f"Archiving observation output files to {tarball}")
         with tarfile.open(tarball, "w:gz") as archive:
-            for observation_from_jcb in self.jcb_config['observations']:
-                obsdataout_file = os.path.join(self.jcb_config[f"{self.component}_obsdataout_path"],
-                                               self.jcb_config[f"{self.component}_obsdataout_prefix"] +
-                                               observation_from_jcb +
-                                               self.jcb_config[f"{self.component}_obsdataout_suffix"])
+            for observation_from_jcb in self.jcb_config["observations"]:
+                obsdataout_file = os.path.join(
+                    self.jcb_config[f"{self.component}_obsdataout_path"],
+                    self.jcb_config[f"{self.component}_obsdataout_prefix"]
+                    + observation_from_jcb
+                    + self.jcb_config[f"{self.component}_obsdataout_suffix"],
+                )
                 if os.path.exists(obsdataout_file):
                     logger.info(f"Adding observation output file {obsdataout_file} to {tarball}")
                     archive.add(obsdataout_file, arcname=os.path.basename(obsdataout_file))
@@ -373,7 +370,7 @@ class Jedi:
                     logger.warning(f"Observation output file {obsdataout_file} does not exist and will be skipped")
 
         # Copy files to COM
-        FileHandler({'copy_opt': [[tarball, comout]]}).sync()
+        FileHandler({"copy_opt": [[tarball, comout]]}).sync()
 
     @logit(logger)
     def stage_obsbiasin(self, comin) -> None:
@@ -394,26 +391,28 @@ class Jedi:
         """
 
         # Check that other required keys are present in jcb_config
-        for stem in ['obsbiasin_path', 'obsbiasout_path', 'obsbiasin_prefix']:
-            key = f'{self.component}_{stem}'
+        for stem in ["obsbiasin_path", "obsbiasout_path", "obsbiasin_prefix"]:
+            key = f"{self.component}_{stem}"
             if key not in self.jcb_config:
                 raise WorkflowKeyError(f"Required key {key} not found in JCB config")
 
         # Initialize FileHandler input dictionary
-        fh_dict = {'mkdir': [], 'copy_opt': []}
+        fh_dict = {"mkdir": [], "copy_opt": []}
 
         # Make directories
-        fh_dict['mkdir'].append(self.jcb_config[f'{self.component}_obsbiasin_path'])
-        fh_dict['mkdir'].append(self.jcb_config[f'{self.component}_obsbiasout_path'])
+        fh_dict["mkdir"].append(self.jcb_config[f"{self.component}_obsbiasin_path"])
+        fh_dict["mkdir"].append(self.jcb_config[f"{self.component}_obsbiasout_path"])
 
         # Copy files
         files_already_copied = []
-        bias_dest = self.jcb_config[f'{self.component}_obsbiasin_path']
-        for observation_from_jcb in self.jcb_config['observations']:
+        bias_dest = self.jcb_config[f"{self.component}_obsbiasin_path"]
+        for observation_from_jcb in self.jcb_config["observations"]:
             if observation_from_jcb in self.jcb_config.bias_files_dict and observation_from_jcb not in files_already_copied:
-                bias_src = os.path.join(comin, self.jcb_config[f'{self.component}_obsbiasin_prefix'] + self.jcb_config.bias_files_dict[observation_from_jcb])
+                bias_src = os.path.join(
+                    comin, self.jcb_config[f"{self.component}_obsbiasin_prefix"] + self.jcb_config.bias_files_dict[observation_from_jcb]
+                )
 
-                fh_dict['copy_opt'].append([bias_src, bias_dest])
+                fh_dict["copy_opt"].append([bias_src, bias_dest])
 
                 # Don't copy same file multiple times
                 files_already_copied.append(observation_from_jcb)
@@ -423,11 +422,13 @@ class Jedi:
 
         # Untar bias corrections
         bias_file_list = []
-        for ob in self.jcb_config['observations']:
-            if ob in self.jcb_config.bias_files_dict and not self.jcb_config.bias_files_dict[ob] in bias_file_list:
+        for ob in self.jcb_config["observations"]:
+            if ob in self.jcb_config.bias_files_dict and self.jcb_config.bias_files_dict[ob] not in bias_file_list:
                 bias_file_list.append(self.jcb_config.bias_files_dict[ob])
-                bias_file_path = os.path.join(self.jcb_config[f"{self.component}_obsbiasin_path"],
-                                              self.jcb_config[f"{self.component}_obsbiasin_prefix"] + self.jcb_config.bias_files_dict[ob])
+                bias_file_path = os.path.join(
+                    self.jcb_config[f"{self.component}_obsbiasin_path"],
+                    self.jcb_config[f"{self.component}_obsbiasin_prefix"] + self.jcb_config.bias_files_dict[ob],
+                )
                 if os.path.exists(bias_file_path):
                     Jedi.extract_tar(bias_file_path)
                 else:
@@ -450,10 +451,16 @@ class Jedi:
         """
 
         # Check that other required keys are present in jcb_config
-        for stem in ['obsbiasin_path', 'obsbiasout_path', 'obsbiasin_prefix',
-                     'obsbiasout_prefix', 'obsbiasout_suffix', 'obsbiascovout_suffix',
-                     'obstlapsein_suffix']:
-            key = f'{self.component}_{stem}'
+        for stem in [
+            "obsbiasin_path",
+            "obsbiasout_path",
+            "obsbiasin_prefix",
+            "obsbiasout_prefix",
+            "obsbiasout_suffix",
+            "obsbiascovout_suffix",
+            "obstlapsein_suffix",
+        ]:
+            key = f"{self.component}_{stem}"
             if key not in self.jcb_config:
                 raise WorkflowKeyError(f"Required key {key} not found in JCB config")
 
@@ -464,42 +471,49 @@ class Jedi:
         satlist = []
         satcovlist = []
         tlaplist = []
-        for ob in self.jcb_config['observations']:
+        for ob in self.jcb_config["observations"]:
             # Sat bias file
-            satfile = os.path.join(self.jcb_config[f"{self.component}_obsbiasout_path"],
-                                   self.jcb_config[f"{self.component}_obsbiasout_prefix"] + ob + self.jcb_config[f"{self.component}_obsbiasout_suffix"])
+            satfile = os.path.join(
+                self.jcb_config[f"{self.component}_obsbiasout_path"],
+                self.jcb_config[f"{self.component}_obsbiasout_prefix"] + ob + self.jcb_config[f"{self.component}_obsbiasout_suffix"],
+            )
             if os.path.exists(satfile):
                 satlist.append(satfile)
 
             # Sat bias cov file
-            satcovfile = os.path.join(self.jcb_config[f"{self.component}_obsbiasout_path"],
-                                      self.jcb_config[f"{self.component}_obsbiasout_prefix"] + ob + self.jcb_config[f"{self.component}_obsbiascovout_suffix"])
+            satcovfile = os.path.join(
+                self.jcb_config[f"{self.component}_obsbiasout_path"],
+                self.jcb_config[f"{self.component}_obsbiasout_prefix"] + ob + self.jcb_config[f"{self.component}_obsbiascovout_suffix"],
+            )
             if os.path.exists(satcovfile):
                 satcovlist.append(satcovfile)
 
             # Temperature lapse rate file
-            tlapfile = os.path.join(self.jcb_config[f"{self.component}_obsbiasin_path"],
-                                    self.jcb_config[f"{self.component}_obsbiasin_prefix"] + ob + self.jcb_config[f"{self.component}_obstlapsein_suffix"])
+            tlapfile = os.path.join(
+                self.jcb_config[f"{self.component}_obsbiasin_path"],
+                self.jcb_config[f"{self.component}_obsbiasin_prefix"] + ob + self.jcb_config[f"{self.component}_obstlapsein_suffix"],
+            )
             if os.path.exists(tlapfile):
                 tlaplist.append(tlapfile)
 
         # Create tarball of bias correction files
         logger.info(f"Creating bias correction tarball {tarball}")
-        with tarfile.open(tarball, 'w') as bcor:
+        with tarfile.open(tarball, "w") as bcor:
             logger.info(f"Adding {bcor.getnames()}")
             for satfile in satlist + satcovlist:
                 logger.info(f"Adding satellite bias correction file {satfile} to {tarball}")
                 bcor.add(satfile, arcname=os.path.basename(satfile))
             for tlapfile in tlaplist:
                 # Change GPREFIX to APREFIX in tlapse file name when adding to tarball
-                tlapfile_rename = tlapfile.replace(self.jcb_config[f"{self.component}_obsbiasin_prefix"],
-                                                   self.jcb_config[f"{self.component}_obsbiasout_prefix"])
+                tlapfile_rename = tlapfile.replace(
+                    self.jcb_config[f"{self.component}_obsbiasin_prefix"], self.jcb_config[f"{self.component}_obsbiasout_prefix"]
+                )
                 logger.info(f"Adding temperature lapse rate file {tlapfile_rename} to {tarball}")
                 bcor.add(tlapfile, arcname=os.path.basename(tlapfile_rename))
 
         # Always copy the tarball to COM; it is always created above and required by the archive step
-        FileHandler({'mkdir': [comout]}).sync()
-        FileHandler({'copy_opt': [[tarball, comout]]}).sync()
+        FileHandler({"mkdir": [comout]}).sync()
+        FileHandler({"copy_opt": [[tarball, comout]]}).sync()
 
     @staticmethod
     @logit(logger)
@@ -581,7 +595,7 @@ def find_value_in_nested_dict(nested_dict: Dict, target_key: str) -> Any:
     """
 
     if not isinstance(nested_dict, dict):
-        raise WorkflowTypeError(f"Input is not of type(dict)")
+        raise WorkflowTypeError("Input is not of type(dict)")
 
     result = nested_dict.get(target_key)
     if result is not None:

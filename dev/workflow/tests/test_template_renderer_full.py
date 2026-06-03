@@ -23,7 +23,6 @@ from pathlib import Path
 
 from deployment.template_renderer import TemplateRenderer, TemplateRenderError
 
-
 # ---------------------------------------------------------------------------
 # Nested Includes (Requirement 4.2)
 # ---------------------------------------------------------------------------
@@ -41,11 +40,7 @@ class TestNestedIncludes:
 
         # Create parent template that includes the child
         src = tmp_path / "main_config.yaml.j2"
-        src.write_text(
-            "app: {{ app_name }}\n"
-            "database:\n"
-            "{% include 'partials/db_config.j2' %}"
-        )
+        src.write_text("app: {{ app_name }}\ndatabase:\n{% include 'partials/db_config.j2' %}")
 
         dst = tmp_path / "output" / "main_config.yaml"
 
@@ -185,17 +180,11 @@ class TestTemplateInheritance:
     def test_inheritance_uses_default_block_when_not_overridden(self, tmp_path):
         """Blocks not overridden in child use the base template's default."""
         base = tmp_path / "base.j2"
-        base.write_text(
-            "{% block section_a %}default_a{% endblock %}\n"
-            "{% block section_b %}default_b{% endblock %}\n"
-        )
+        base.write_text("{% block section_a %}default_a{% endblock %}\n{% block section_b %}default_b{% endblock %}\n")
 
         # Child only overrides section_a
         src = tmp_path / "partial_child.j2"
-        src.write_text(
-            "{% extends 'base.j2' %}\n"
-            "{% block section_a %}overridden_a{% endblock %}\n"
-        )
+        src.write_text("{% extends 'base.j2' %}\n{% block section_a %}overridden_a{% endblock %}\n")
 
         dst = tmp_path / "output" / "partial.txt"
 
@@ -216,16 +205,10 @@ class TestTemplateInheritance:
         base.write_text("{% block content %}base_content{% endblock %}\n")
 
         child = tmp_path / "parent.j2"
-        child.write_text(
-            "{% extends 'grandparent.j2' %}\n"
-            "{% block content %}parent_content{% endblock %}\n"
-        )
+        child.write_text("{% extends 'grandparent.j2' %}\n{% block content %}parent_content{% endblock %}\n")
 
         src = tmp_path / "grandchild.j2"
-        src.write_text(
-            "{% extends 'parent.j2' %}\n"
-            "{% block content %}grandchild_content{% endblock %}\n"
-        )
+        src.write_text("{% extends 'parent.j2' %}\n{% block content %}grandchild_content{% endblock %}\n")
 
         dst = tmp_path / "output" / "result.txt"
 
@@ -446,11 +429,7 @@ class TestUnresolvedTokenDetection:
     def test_unresolved_token_reports_line_number(self, tmp_path):
         """The error for unresolved tokens includes the line number."""
         src = tmp_path / "multiline.txt.j2"
-        src.write_text(
-            "line1: ok\n"
-            "line2: ok\n"
-            "{% raw %}line3: {{ leftover }}{% endraw %}\n"
-        )
+        src.write_text("line1: ok\nline2: ok\n{% raw %}line3: {{ leftover }}{% endraw %}\n")
 
         dst = tmp_path / "output" / "multiline.txt"
 

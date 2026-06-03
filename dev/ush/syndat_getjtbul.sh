@@ -23,9 +23,9 @@
 cd "${DATA}" || exit 1
 
 if [[ "$#" -ne '1' ]]; then
-    echo "**NON-FATAL ERROR PROGRAM  SYNDAT_GETJTBUL  run date not in \
+  echo "**NON-FATAL ERROR PROGRAM  SYNDAT_GETJTBUL  run date not in \
 positional parameter 1"
-    exit
+  exit
 fi
 
 run_date=$1
@@ -41,13 +41,13 @@ echo
 
 if [[ "${cyc}" -eq "00" ]]; then
 
-    # For 00Z cycle, need to go to prior day's tank
-    # ---------------------------------------------
+  # For 00Z cycle, need to go to prior day's tank
+  # ---------------------------------------------
 
-    jtwcdir="${TANK_TROPCY}/${PDY}/wtxtbul"
-    jtwcdirm1="${TANK_TROPCY}/${pdym1}/wtxtbul"
+  jtwcdir="${TANK_TROPCY}/${PDY}/wtxtbul"
+  jtwcdirm1="${TANK_TROPCY}/${pdym1}/wtxtbul"
 else
-    jtwcdir="${TANK_TROPCY}/${PDY}/wtxtbul"
+  jtwcdir="${TANK_TROPCY}/${PDY}/wtxtbul"
 fi
 
 set +x
@@ -68,20 +68,20 @@ echo "looking for string ${find} in ${jtwcdir}/tropcyc"
 rm -f jtwcbul
 grep "${ymd} ${cyc}" "${jtwcdir}/tropcyc" | grep JTWC > jtwcbul
 if [[ -s jtwcbul ]]; then
-    echo "String found: contents of JTWC bulletin are:"
-    cat jtwcbul
+  echo "String found: contents of JTWC bulletin are:"
+  cat jtwcbul
 else
-    echo "String not found: no JTWC bulletins available for this run"
+  echo "String not found: no JTWC bulletins available for this run"
 fi
 
 if [[ "${cyc}" == "00" ]]; then
-    grep "${ymd} ${cyc}" "${jtwcdirm1}/tropcyc" | grep JTWC >> jtwcbul
-    if [[ -s jtwcbul ]]; then
-        echo "String found: contents of JTWC bulletin are:"
-        cat jtwcbul
-    else
-        echo "String not found: no JTWC bulletins available for this run"
-    fi
+  grep "${ymd} ${cyc}" "${jtwcdirm1}/tropcyc" | grep JTWC >> jtwcbul
+  if [[ -s jtwcbul ]]; then
+    echo "String found: contents of JTWC bulletin are:"
+    cat jtwcbul
+  else
+    echo "String not found: no JTWC bulletins available for this run"
+  fi
 fi
 
 # Check for and truncate stormnames with length greater than nine characters and leave rest of record intact.
@@ -89,26 +89,26 @@ fi
 perl -wpi.ORIG -e 's/(^.... ... )(\S{9,9})(\S{1,})/$1$2/' jtwcbul
 diff jtwcbul.ORIG jtwcbul > jtwcbul_changes.txt
 if [[ -s jtwcbul_changes.txt ]]; then
-    echo "***WARNING:  SOME JTWC VITALS SEGMENTS REQUIRED PRELIMINARY MODIFICATION!"
-    cat jtwcbul_changes.txt
+  echo "***WARNING:  SOME JTWC VITALS SEGMENTS REQUIRED PRELIMINARY MODIFICATION!"
+  cat jtwcbul_changes.txt
 fi
 
 # Execute bulletin processing
 
 if [[ -s jtwcbul ]]; then
-    echo "Processing JTWC bulletin halfs into tcvitals records"
+  echo "Processing JTWC bulletin halfs into tcvitals records"
 fi
 
 pgm=$(basename "${EXECglobal}/syndat_getjtbul.x")
 export pgm
 if [[ -s prep_step ]]; then
-    source "${USHglobal}/unset_strict.sh"
-    source prep_step
-    source "${USHglobal}/set_strict.sh"
+  source "${USHglobal}/unset_strict.sh"
+  source prep_step
+  source "${USHglobal}/set_strict.sh"
 else
-    rm -f errfile
-    #shellcheck disable=SC2046
-    unset FORT00 $(env | grep "^FORT[0-9]\{1,\}=" | awk -F= '{print $1}')
+  rm -f errfile
+  #shellcheck disable=SC2046
+  unset FORT00 $(env | grep "^FORT[0-9]\{1,\}=" | awk -F= '{print $1}')
 fi
 
 rm -f fnoc
@@ -125,25 +125,25 @@ echo "The foreground exit status for SYNDAT_GETJTBUL is ${errget}"
 echo
 set -x
 if [[ "${errget}" -gt '0' ]]; then
-    if [[ "${errget}" -eq '1' ]]; then
-        msg="No JTWC bulletins in ${jtwcdir}/tropcyc, no JTWC tcvitals available for qctropcy for ${run_date}"
-        if [[ "${RUN}" == "gfs" ]]; then
-            if [[ "${SENDSDM}" == "YES" ]]; then
-                ecf_family=$(echo "${ECF_NAME}" | awk 'BEGIN {FS="/j"} {print $1}')
-                export ecf_family
-                echo "${msg}" > "${COMOUT}/${NET}_${RUN}.t${cyc}z.emailbody"
-                echo "export subject='No JTWC bulletins available for ${run_date} ${RUN} run'" > "${COMOUT}/${NET}_${RUN}.t${cyc}z.emailvar"
-                # JY echo "export maillist='sdm@noaa.gov'" >> $COMOUT/${NET}_${RUN}.t${cyc}z.emailvar
-                echo "export maillist=${maillist}" >> "${COMOUT}/${NET}_${RUN}.t${cyc}z.emailvar"
-                ecflow_client --run "${ecf_family}/j${RUN}_jtwc_bull_email"
-            fi
-        fi
-    else
-        echo "**NON-FATAL ERROR PROGRAM  SYNDAT_GETJTBUL  FOR ${run_date} \
-RETURN CODE ${errget}"
+  if [[ "${errget}" -eq '1' ]]; then
+    msg="No JTWC bulletins in ${jtwcdir}/tropcyc, no JTWC tcvitals available for qctropcy for ${run_date}"
+    if [[ "${RUN}" == "gfs" ]]; then
+      if [[ "${SENDSDM}" == "YES" ]]; then
+        ecf_family=$(echo "${ECF_NAME}" | awk 'BEGIN {FS="/j"} {print $1}')
+        export ecf_family
+        echo "${msg}" > "${COMOUT}/${NET}_${RUN}.t${cyc}z.emailbody"
+        echo "export subject='No JTWC bulletins available for ${run_date} ${RUN} run'" > "${COMOUT}/${NET}_${RUN}.t${cyc}z.emailvar"
+        # JY echo "export maillist='sdm@noaa.gov'" >> $COMOUT/${NET}_${RUN}.t${cyc}z.emailvar
+        echo "export maillist=${maillist}" >> "${COMOUT}/${NET}_${RUN}.t${cyc}z.emailvar"
+        ecflow_client --run "${ecf_family}/j${RUN}_jtwc_bull_email"
+      fi
     fi
+  else
+    echo "**NON-FATAL ERROR PROGRAM  SYNDAT_GETJTBUL  FOR ${run_date} \
+RETURN CODE ${errget}"
+  fi
 else
-    echo "program  SYNDAT_GETJTBUL  completed normally for ${run_date}, JTWC \
+  echo "program  SYNDAT_GETJTBUL  completed normally for ${run_date}, JTWC \
 rec. passed to qctropcy"
 fi
 set +x
@@ -155,8 +155,8 @@ echo
 set -x
 
 if [[ "${errget}" -eq '0' ]]; then
-    echo "Completed JTWC tcvitals records are:"
-    cat fnoc
+  echo "Completed JTWC tcvitals records are:"
+  cat fnoc
 fi
 
 echo "Leaving sub-shell syndat_getjtbul.sh to recover JTWC Bulletins"

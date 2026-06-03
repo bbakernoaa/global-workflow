@@ -14,14 +14,13 @@ import tempfile
 from pathlib import Path
 
 import pytest
-from hypothesis import given, settings, HealthCheck, assume
+from hypothesis import HealthCheck, assume, given, settings
 from hypothesis import strategies as st
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from deployment.name_resolver import DryRunReport, NameResolver, PrefixRegistry, ResolvedName
+from deployment.name_resolver import NameResolver, PrefixRegistry, ResolvedName
 from deployment.pipeline import PipelineError
-
 
 # ---------------------------------------------------------------------------
 # Shared Strategies
@@ -44,11 +43,13 @@ def _jjob_suffix(draw):
     num_parts = draw(st.integers(min_value=1, max_value=3))
     parts = []
     for _ in range(num_parts):
-        part = draw(st.text(
-            alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
-            min_size=2,
-            max_size=12,
-        ))
+        part = draw(
+            st.text(
+                alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
+                min_size=2,
+                max_size=12,
+            )
+        )
         # Ensure part starts with a letter
         if part[0].isdigit():
             part = "A" + part[1:]
@@ -102,15 +103,16 @@ def _mixed_mode_names(draw):
     # Generate unique suffixes upfront to avoid deduplication loops
     num_total = draw(st.integers(min_value=2, max_value=4))
     num_shared = draw(st.integers(min_value=1, max_value=max(1, num_total - 1)))
-    num_app = num_total - num_shared
 
     # Generate distinct suffixes
-    suffixes = draw(st.lists(
-        _jjob_suffix(),
-        min_size=num_total,
-        max_size=num_total,
-        unique=True,
-    ))
+    suffixes = draw(
+        st.lists(
+            _jjob_suffix(),
+            min_size=num_total,
+            max_size=num_total,
+            unique=True,
+        )
+    )
 
     # Split suffixes between shared and application names
     shared_suffixes = suffixes[:num_shared]
@@ -161,18 +163,11 @@ class TestBackwardCompatibilityProperty:
         result = resolver.resolve(shared_name)
 
         # Assert: pass-through — no rename
-        assert result.is_passthrough is True, (
-            f"Shared name '{shared_name}' should be pass-through but got "
-            f"is_passthrough={result.is_passthrough}"
-        )
+        assert result.is_passthrough is True, f"Shared name '{shared_name}' should be pass-through but got is_passthrough={result.is_passthrough}"
         assert result.source_name == shared_name, (
-            f"Shared name '{shared_name}' source_name should equal "
-            f"application_name but got source_name='{result.source_name}'"
+            f"Shared name '{shared_name}' source_name should equal application_name but got source_name='{result.source_name}'"
         )
-        assert result.application_name == shared_name, (
-            f"application_name should be '{shared_name}' but got "
-            f"'{result.application_name}'"
-        )
+        assert result.application_name == shared_name, f"application_name should be '{shared_name}' but got '{result.application_name}'"
 
     @given(data=_application_names_with_source())
     @settings(max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture])
@@ -203,12 +198,10 @@ class TestBackwardCompatibilityProperty:
 
         # Assert: resolved via prefix, not pass-through
         assert result.is_passthrough is False, (
-            f"Application name '{application_name}' should resolve via prefix "
-            f"(is_passthrough=False) but got is_passthrough=True"
+            f"Application name '{application_name}' should resolve via prefix (is_passthrough=False) but got is_passthrough=True"
         )
         assert result.source_name == source_name, (
-            f"Application name '{application_name}' should resolve to "
-            f"'{source_name}' but got '{result.source_name}'"
+            f"Application name '{application_name}' should resolve to '{source_name}' but got '{result.source_name}'"
         )
         assert result.application_name == application_name
 
@@ -249,27 +242,19 @@ class TestBackwardCompatibilityProperty:
 
         # Assert: shared names are pass-through
         for name in shared_names:
-            assert results[name].is_passthrough is True, (
-                f"Shared name '{name}' should be pass-through in mixed mode"
-            )
-            assert results[name].source_name == name, (
-                f"Shared name '{name}' source should equal itself in mixed mode"
-            )
+            assert results[name].is_passthrough is True, f"Shared name '{name}' should be pass-through in mixed mode"
+            assert results[name].source_name == name, f"Shared name '{name}' source should equal itself in mixed mode"
 
         # Assert: application names resolve via prefix
         for app_name, expected_source in app_pairs:
-            assert results[app_name].is_passthrough is False, (
-                f"App name '{app_name}' should NOT be pass-through in mixed mode"
-            )
+            assert results[app_name].is_passthrough is False, f"App name '{app_name}' should NOT be pass-through in mixed mode"
             assert results[app_name].source_name == expected_source, (
-                f"App name '{app_name}' should resolve to '{expected_source}' "
-                f"but got '{results[app_name].source_name}'"
+                f"App name '{app_name}' should resolve to '{expected_source}' but got '{results[app_name].source_name}'"
             )
 
         # Assert: total results equals total input names (no loss)
-        assert len(results) == len(all_names), (
-            f"Expected {len(all_names)} results but got {len(results)}"
-        )
+        assert len(results) == len(all_names), f"Expected {len(all_names)} results but got {len(results)}"
+
 
 # ---------------------------------------------------------------------------
 # Feature: application-jjob-naming, Property 1: Name Resolution Correctness
@@ -459,12 +444,14 @@ def _dry_run_name_sets(draw):
     total = num_resolvable + num_unresolvable
     assume(total >= 1)
 
-    suffixes = draw(st.lists(
-        _jjob_suffix(),
-        min_size=total,
-        max_size=total,
-        unique=True,
-    ))
+    suffixes = draw(
+        st.lists(
+            _jjob_suffix(),
+            min_size=total,
+            max_size=total,
+            unique=True,
+        )
+    )
 
     resolvable_suffixes = suffixes[:num_resolvable]
     unresolvable_suffixes = suffixes[num_resolvable:]
@@ -529,14 +516,11 @@ class TestDryRunCompletenessProperty:
             report = resolver.resolve_all_dry_run(all_names)
 
             # Assert: total_count equals N
-            assert report.total_count == n, (
-                f"Expected total_count={n} but got {report.total_count}"
-            )
+            assert report.total_count == n, f"Expected total_count={n} but got {report.total_count}"
 
             # Assert: resolvable_count + unresolvable_count == N
             assert report.resolvable_count + report.unresolvable_count == n, (
-                f"resolvable_count({report.resolvable_count}) + "
-                f"unresolvable_count({report.unresolvable_count}) != total({n})"
+                f"resolvable_count({report.resolvable_count}) + unresolvable_count({report.unresolvable_count}) != total({n})"
             )
 
     @given(name_sets=_dry_run_name_sets())
@@ -568,16 +552,13 @@ class TestDryRunCompletenessProperty:
 
             # Assert: all unresolvable names are reported in errors
             assert report.unresolvable_count == len(unresolvable_names), (
-                f"Expected {len(unresolvable_names)} unresolvable but got "
-                f"{report.unresolvable_count}"
+                f"Expected {len(unresolvable_names)} unresolvable but got {report.unresolvable_count}"
             )
 
             # Each unresolvable name must appear in the error messages
             for name in unresolvable_names:
                 found = any(name in error for error in report.errors)
-                assert found, (
-                    f"Unresolvable name '{name}' not found in error list: {report.errors}"
-                )
+                assert found, f"Unresolvable name '{name}' not found in error list: {report.errors}"
 
     @given(name_sets=_dry_run_name_sets())
     @settings(max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture])
@@ -607,17 +588,11 @@ class TestDryRunCompletenessProperty:
             report = resolver.resolve_all_dry_run(all_names)
 
             # Assert: all resolvable names appear in report.resolved
-            assert report.resolvable_count == len(resolvable_pairs), (
-                f"Expected {len(resolvable_pairs)} resolvable but got "
-                f"{report.resolvable_count}"
-            )
+            assert report.resolvable_count == len(resolvable_pairs), f"Expected {len(resolvable_pairs)} resolvable but got {report.resolvable_count}"
             for app_name, expected_source in resolvable_pairs:
-                assert app_name in report.resolved, (
-                    f"Resolvable name '{app_name}' not found in resolved dict"
-                )
+                assert app_name in report.resolved, f"Resolvable name '{app_name}' not found in resolved dict"
                 assert report.resolved[app_name].source_name == expected_source, (
-                    f"Expected source '{expected_source}' for '{app_name}' but "
-                    f"got '{report.resolved[app_name].source_name}'"
+                    f"Expected source '{expected_source}' for '{app_name}' but got '{report.resolved[app_name].source_name}'"
                 )
 
     @given(name_sets=_dry_run_name_sets())
@@ -650,15 +625,10 @@ class TestDryRunCompletenessProperty:
             try:
                 report = resolver.resolve_all_dry_run(all_names)
             except PipelineError:
-                pytest.fail(
-                    "resolve_all_dry_run raised PipelineError — it should "
-                    "accumulate errors instead of raising"
-                )
+                pytest.fail("resolve_all_dry_run raised PipelineError — it should accumulate errors instead of raising")
 
             # Verify it accumulated errors gracefully
-            assert report.unresolvable_count > 0, (
-                "Expected at least 1 unresolvable name but got 0"
-            )
+            assert report.unresolvable_count > 0, "Expected at least 1 unresolvable name but got 0"
 
 
 # ---------------------------------------------------------------------------
@@ -679,12 +649,14 @@ def _dag_filter_workflow_data(draw):
     """
     # Generate 1-3 unique suffixes for J-Jobs
     num_tasks = draw(st.integers(min_value=1, max_value=3))
-    suffixes = draw(st.lists(
-        _jjob_suffix(),
-        min_size=num_tasks,
-        max_size=num_tasks,
-        unique=True,
-    ))
+    suffixes = draw(
+        st.lists(
+            _jjob_suffix(),
+            min_size=num_tasks,
+            max_size=num_tasks,
+            unique=True,
+        )
+    )
 
     # Use JGCAFS_ prefix so they resolve to JGLOBAL_ sources
     app_prefix = draw(st.sampled_from(["JGCAFS_", "JGCDAS_"]))
@@ -745,7 +717,7 @@ class TestDAGFilterResolutionIntegration:
         # Feature: application-jjob-naming, Property 4: DAG Filter Resolution Integration
         **Validates: Requirements 4.1, 4.2, 4.3**
         """
-        from deployment.dag_filter import DAGFilter, DAGReachabilitySet
+        from deployment.dag_filter import DAGFilter
         from deployment.name_resolver import NameResolver, PrefixRegistry
 
         workflow_yaml = data["workflow_yaml"]
@@ -772,7 +744,7 @@ class TestDAGFilterResolutionIntegration:
         for i, app_name in enumerate(app_names):
             source_name = source_map[app_name]
             ex_script = ex_scripts[i]
-            content = f'#!/bin/bash\n${{SCRglobal}}/{ex_script}\n'
+            content = f"#!/bin/bash\n${{SCRglobal}}/{ex_script}\n"
             (jobs_dir / source_name).write_text(content)
             # Create the ex-script file (to pass existence check)
             (scripts_dir / ex_script).touch()
@@ -795,8 +767,7 @@ class TestDAGFilterResolutionIntegration:
         # Assert: extracted names are Application_Names, not source names
         for app_name in app_names:
             assert app_name in extracted, (
-                f"Application_Name '{app_name}' should be collected from YAML "
-                f"but was not found in extracted set: {extracted}"
+                f"Application_Name '{app_name}' should be collected from YAML but was not found in extracted set: {extracted}"
             )
 
         # Assert: source names are NOT directly in the extracted set
@@ -805,8 +776,7 @@ class TestDAGFilterResolutionIntegration:
             source_name = source_map[app_name]
             if source_name != app_name:
                 assert source_name not in extracted, (
-                    f"Source name '{source_name}' should NOT be in extracted "
-                    f"set — only Application_Names should be collected"
+                    f"Source name '{source_name}' should NOT be in extracted set — only Application_Names should be collected"
                 )
 
     @given(data=_dag_filter_workflow_data())
@@ -817,7 +787,7 @@ class TestDAGFilterResolutionIntegration:
         # Feature: application-jjob-naming, Property 4: DAG Filter Resolution Integration
         **Validates: Requirements 4.1, 4.2, 4.3**
         """
-        from deployment.dag_filter import DAGFilter, DAGReachabilitySet
+        from deployment.dag_filter import DAGFilter
         from deployment.name_resolver import NameResolver, PrefixRegistry
 
         workflow_yaml = data["workflow_yaml"]
@@ -843,7 +813,7 @@ class TestDAGFilterResolutionIntegration:
         for i, app_name in enumerate(app_names):
             source_name = source_map[app_name]
             ex_script = ex_scripts[i]
-            content = f'#!/bin/bash\n${{SCRglobal}}/{ex_script}\n'
+            content = f"#!/bin/bash\n${{SCRglobal}}/{ex_script}\n"
             (jobs_dir / source_name).write_text(content)
             (scripts_dir / ex_script).touch()
 
@@ -863,12 +833,9 @@ class TestDAGFilterResolutionIntegration:
         # Assert: jjob_source_map maps each app_name to its source_name
         for app_name in app_names:
             expected_source = source_map[app_name]
-            assert app_name in result.jjob_source_map, (
-                f"Application_Name '{app_name}' not found in jjob_source_map"
-            )
+            assert app_name in result.jjob_source_map, f"Application_Name '{app_name}' not found in jjob_source_map"
             assert result.jjob_source_map[app_name] == expected_source, (
-                f"Expected '{app_name}' → '{expected_source}' but got "
-                f"'{result.jjob_source_map[app_name]}'"
+                f"Expected '{app_name}' → '{expected_source}' but got '{result.jjob_source_map[app_name]}'"
             )
 
     @given(data=_dag_filter_workflow_data())
@@ -879,7 +846,7 @@ class TestDAGFilterResolutionIntegration:
         # Feature: application-jjob-naming, Property 4: DAG Filter Resolution Integration
         **Validates: Requirements 4.1, 4.2, 4.3**
         """
-        from deployment.dag_filter import DAGFilter, DAGReachabilitySet
+        from deployment.dag_filter import DAGFilter
         from deployment.name_resolver import NameResolver, PrefixRegistry
 
         workflow_yaml = data["workflow_yaml"]
@@ -906,7 +873,7 @@ class TestDAGFilterResolutionIntegration:
             source_name = source_map[app_name]
             ex_script = ex_scripts[i]
             # Source file has the ex-script reference
-            source_content = f'#!/bin/bash\n${{SCRglobal}}/{ex_script}\n'
+            source_content = f"#!/bin/bash\n${{SCRglobal}}/{ex_script}\n"
             (jobs_dir / source_name).write_text(source_content)
             (scripts_dir / ex_script).touch()
 
@@ -914,9 +881,7 @@ class TestDAGFilterResolutionIntegration:
         # is reading the SOURCE file, not the application-named file
         for app_name in app_names:
             app_path = jobs_dir / app_name
-            assert not app_path.exists(), (
-                f"Application-named file '{app_name}' should NOT exist on disk"
-            )
+            assert not app_path.exists(), f"Application-named file '{app_name}' should NOT exist on disk"
 
         registry = PrefixRegistry.default()
         resolver = NameResolver(dev_root, registry)
@@ -934,9 +899,7 @@ class TestDAGFilterResolutionIntegration:
         # Assert: ex-scripts found by parsing SOURCE files are in the result
         for ex_script in ex_scripts:
             assert ex_script in result.ex_scripts, (
-                f"Ex-script '{ex_script}' from source file should be in "
-                f"reachability set but was not found. "
-                f"result.ex_scripts = {result.ex_scripts}"
+                f"Ex-script '{ex_script}' from source file should be in reachability set but was not found. result.ex_scripts = {result.ex_scripts}"
             )
 
     @given(data=_dag_filter_workflow_data())
@@ -947,7 +910,7 @@ class TestDAGFilterResolutionIntegration:
         # Feature: application-jjob-naming, Property 4: DAG Filter Resolution Integration
         **Validates: Requirements 4.1, 4.2, 4.3**
         """
-        from deployment.dag_filter import DAGFilter, DAGReachabilitySet
+        from deployment.dag_filter import DAGFilter
         from deployment.name_resolver import NameResolver, PrefixRegistry
 
         workflow_yaml = data["workflow_yaml"]
@@ -973,7 +936,7 @@ class TestDAGFilterResolutionIntegration:
         for i, app_name in enumerate(app_names):
             source_name = source_map[app_name]
             ex_script = ex_scripts[i]
-            content = f'#!/bin/bash\n${{SCRglobal}}/{ex_script}\n'
+            content = f"#!/bin/bash\n${{SCRglobal}}/{ex_script}\n"
             (jobs_dir / source_name).write_text(content)
             (scripts_dir / ex_script).touch()
 
@@ -992,26 +955,18 @@ class TestDAGFilterResolutionIntegration:
 
         # Assert: Application_Names are in result.jjobs (for EXPDIR staging)
         for app_name in app_names:
-            assert app_name in result.jjobs, (
-                f"Application_Name '{app_name}' should be in result.jjobs "
-                f"but was not found: {result.jjobs}"
-            )
+            assert app_name in result.jjobs, f"Application_Name '{app_name}' should be in result.jjobs but was not found: {result.jjobs}"
 
         # Assert: source_names are accessible via jjob_source_map
         for app_name in app_names:
             source_name = source_map[app_name]
-            assert app_name in result.jjob_source_map, (
-                f"Application_Name '{app_name}' should have entry in "
-                f"jjob_source_map"
-            )
+            assert app_name in result.jjob_source_map, f"Application_Name '{app_name}' should have entry in jjob_source_map"
             assert result.jjob_source_map[app_name] == source_name, (
-                f"jjob_source_map['{app_name}'] should be '{source_name}' "
-                f"but got '{result.jjob_source_map[app_name]}'"
+                f"jjob_source_map['{app_name}'] should be '{source_name}' but got '{result.jjob_source_map[app_name]}'"
             )
 
         # Assert: the reachability set is valid (at least one J-Job)
         assert result.is_valid, "Reachability set should be valid with J-Jobs"
-
 
 
 # ---------------------------------------------------------------------------
@@ -1106,15 +1061,11 @@ class TestContentPreservationOnRename:
         result = stager.stage_jjobs_with_rename(resolution_map)
 
         # Assert: file was staged
-        assert result.files_copied == 1, (
-            f"Expected 1 file copied but got {result.files_copied}"
-        )
+        assert result.files_copied == 1, f"Expected 1 file copied but got {result.files_copied}"
 
         # Assert: byte content of destination == byte content of source
         dst_file = expdir / "jobs" / application_name
-        assert dst_file.exists(), (
-            f"Destination file {dst_file} should exist after staging"
-        )
+        assert dst_file.exists(), f"Destination file {dst_file} should exist after staging"
         assert dst_file.read_bytes() == source_content, (
             f"Byte content of destination '{application_name}' does not match "
             f"source '{source_name}'. Content was not preserved during rename-on-copy."
@@ -1164,18 +1115,14 @@ class TestContentPreservationOnRename:
         }
 
         # Act
-        result = stager.stage_jjobs_with_rename(resolution_map)
+        stager.stage_jjobs_with_rename(resolution_map)
 
         # Assert: content preserved for passthrough
         dst_file = expdir / "jobs" / application_name
-        assert dst_file.exists(), (
-            f"Destination file {dst_file} should exist after staging"
-        )
+        assert dst_file.exists(), f"Destination file {dst_file} should exist after staging"
         assert dst_file.read_bytes() == source_content, (
-            f"Byte content of passthrough destination '{application_name}' "
-            f"does not match source. Content was not preserved."
+            f"Byte content of passthrough destination '{application_name}' does not match source. Content was not preserved."
         )
-
 
 
 # ---------------------------------------------------------------------------
@@ -1270,8 +1217,7 @@ class TestUnconditionalLinkingScriptStaging:
             # Assert: link_workflow.sh exists in EXPDIR
             staged_link_workflow = expdir / "sorc" / "link_workflow.sh"
             assert staged_link_workflow.exists(), (
-                f"EXPDIR should contain sorc/link_workflow.sh but it does not. "
-                f"dag_filter_enabled={dag_filter_enabled}, jjobs={jjob_names}"
+                f"EXPDIR should contain sorc/link_workflow.sh but it does not. dag_filter_enabled={dag_filter_enabled}, jjobs={jjob_names}"
             )
 
             # Assert: link_fixdirs.sh exists in EXPDIR
@@ -1283,17 +1229,11 @@ class TestUnconditionalLinkingScriptStaging:
 
             # Assert: executable permission bits preserved on link_workflow.sh
             mode_lw = staged_link_workflow.stat().st_mode
-            assert mode_lw & 0o111 != 0, (
-                f"sorc/link_workflow.sh should have executable bits but mode={oct(mode_lw)}"
-            )
+            assert mode_lw & 0o111 != 0, f"sorc/link_workflow.sh should have executable bits but mode={oct(mode_lw)}"
 
             # Assert: executable permission bits preserved on link_fixdirs.sh
             mode_lf = staged_link_fixdirs.stat().st_mode
-            assert mode_lf & 0o111 != 0, (
-                f"sorc/ufs_utils.fd/fix/link_fixdirs.sh should have executable "
-                f"bits but mode={oct(mode_lf)}"
-            )
-
+            assert mode_lf & 0o111 != 0, f"sorc/ufs_utils.fd/fix/link_fixdirs.sh should have executable bits but mode={oct(mode_lf)}"
 
 
 # ---------------------------------------------------------------------------
@@ -1315,12 +1255,14 @@ def _expdir_naming_deployment_data(draw):
     num_jobs = draw(st.integers(min_value=1, max_value=5))
 
     # Generate unique suffixes
-    suffixes = draw(st.lists(
-        _jjob_suffix(),
-        min_size=num_jobs,
-        max_size=num_jobs,
-        unique=True,
-    ))
+    suffixes = draw(
+        st.lists(
+            _jjob_suffix(),
+            min_size=num_jobs,
+            max_size=num_jobs,
+            unique=True,
+        )
+    )
 
     # For each suffix, pick an application prefix from the registered set
     app_prefixes = ["JGCAFS_", "JGCDAS_", "JGFS_", "JGDAS_", "JGEFS_", "JSFS_"]
@@ -1369,6 +1311,7 @@ class TestEXPDIRNamingInvariantsProperty:
         **Validates: Requirements 3.2, 3.3, 6.1**
         """
         import re
+
         from deployment.file_stager import FileStager
 
         app_names = data["app_names"]
@@ -1416,10 +1359,7 @@ class TestEXPDIRNamingInvariantsProperty:
 
             for filepath in staged_jobs_dir.iterdir():
                 filename = filepath.name
-                assert jjob_pattern.match(filename), (
-                    f"File '{filename}' in EXPDIR/jobs/ does not match "
-                    f"^J[A-Z][A-Z0-9_]*$ pattern"
-                )
+                assert jjob_pattern.match(filename), f"File '{filename}' in EXPDIR/jobs/ does not match ^J[A-Z][A-Z0-9_]*$ pattern"
 
     @given(data=_expdir_naming_deployment_data())
     @settings(max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture])
@@ -1490,6 +1430,7 @@ class TestEXPDIRNamingInvariantsProperty:
         **Validates: Requirements 3.2, 3.3, 6.1**
         """
         import re
+
         from deployment.file_stager import FileStager
 
         app_names = data["app_names"]
@@ -1538,21 +1479,14 @@ class TestEXPDIRNamingInvariantsProperty:
             staged_filenames = [f.name for f in staged_jobs_dir.iterdir()]
 
             # Assert we staged the expected number of files
-            assert len(staged_filenames) == len(app_names), (
-                f"Expected {len(app_names)} files but found {len(staged_filenames)}: "
-                f"{staged_filenames}"
-            )
+            assert len(staged_filenames) == len(app_names), f"Expected {len(app_names)} files but found {len(staged_filenames)}: {staged_filenames}"
 
             for filename in staged_filenames:
                 # Invariant (a): conforms to JAAAAA pattern
-                assert jjob_pattern.match(filename), (
-                    f"File '{filename}' in EXPDIR/jobs/ does not match "
-                    f"^J[A-Z][A-Z0-9_]*$ pattern"
-                )
+                assert jjob_pattern.match(filename), f"File '{filename}' in EXPDIR/jobs/ does not match ^J[A-Z][A-Z0-9_]*$ pattern"
                 # Invariant (b): no JGLOBAL_ prefix
                 assert not filename.startswith("JGLOBAL_"), (
-                    f"File '{filename}' in EXPDIR/jobs/ has JGLOBAL_ prefix — "
-                    f"application naming should produce application-specific names"
+                    f"File '{filename}' in EXPDIR/jobs/ has JGLOBAL_ prefix — application naming should produce application-specific names"
                 )
 
 
@@ -1577,12 +1511,14 @@ def _dedup_resolution_map(draw):
         - source_content_map: dict[source_name, bytes] for creating source files
     """
     num_entries = draw(st.integers(min_value=1, max_value=4))
-    suffixes = draw(st.lists(
-        _jjob_suffix(),
-        min_size=num_entries,
-        max_size=num_entries,
-        unique=True,
-    ))
+    suffixes = draw(
+        st.lists(
+            _jjob_suffix(),
+            min_size=num_entries,
+            max_size=num_entries,
+            unique=True,
+        )
+    )
 
     resolution_map = {}
     source_content_map = {}
@@ -1621,12 +1557,14 @@ def _shared_source_distinction_data(draw):
     suffix = draw(_jjob_suffix())
 
     # Pick two DIFFERENT application prefixes
-    prefixes = draw(st.lists(
-        st.sampled_from(["JGCAFS_", "JGCDAS_", "JGFS_", "JGDAS_", "JGEFS_"]),
-        min_size=2,
-        max_size=2,
-        unique=True,
-    ))
+    prefixes = draw(
+        st.lists(
+            st.sampled_from(["JGCAFS_", "JGCDAS_", "JGFS_", "JGDAS_", "JGEFS_"]),
+            min_size=2,
+            max_size=2,
+            unique=True,
+        )
+    )
 
     app_name_1 = prefixes[0] + suffix
     app_name_2 = prefixes[1] + suffix
@@ -1711,28 +1649,20 @@ class TestDeduplicationAndDistinctionProperty:
 
             for app_name in resolution_map:
                 assert app_name in staged_names, (
-                    f"Application_Name '{app_name}' should be staged in "
-                    f"EXPDIR/jobs/ but was not found. Staged: {staged_names}"
+                    f"Application_Name '{app_name}' should be staged in EXPDIR/jobs/ but was not found. Staged: {staged_names}"
                 )
 
             # Assert: number of files equals number of unique application_names
             assert len(staged_files) == len(resolution_map), (
-                f"Expected exactly {len(resolution_map)} files (one per "
-                f"application_name) but found {len(staged_files)}. "
-                f"Staged: {staged_names}"
+                f"Expected exactly {len(resolution_map)} files (one per application_name) but found {len(staged_files)}. Staged: {staged_names}"
             )
 
             # Assert: files_copied count matches
-            assert result.files_copied == len(resolution_map), (
-                f"Expected files_copied={len(resolution_map)} but got "
-                f"{result.files_copied}"
-            )
+            assert result.files_copied == len(resolution_map), f"Expected files_copied={len(resolution_map)} but got {result.files_copied}"
 
     @given(data=_shared_source_distinction_data())
     @settings(max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture])
-    def test_different_app_names_same_source_produce_distinct_files(
-        self, data: tuple
-    ):
+    def test_different_app_names_same_source_produce_distinct_files(self, data: tuple):
         """Two different application_names resolving to same source produce two files.
 
         When JGCAFS_FORECAST and JGCDAS_FORECAST both resolve to
@@ -1781,34 +1711,21 @@ class TestDeduplicationAndDistinctionProperty:
 
             # Assert: both files exist
             for app_name in app_names:
-                assert app_name in staged_names, (
-                    f"Application_Name '{app_name}' should be in EXPDIR/jobs/ "
-                    f"but found: {staged_names}"
-                )
+                assert app_name in staged_names, f"Application_Name '{app_name}' should be in EXPDIR/jobs/ but found: {staged_names}"
 
             # Assert: exactly 2 files (distinct)
-            assert len(staged_files) == 2, (
-                f"Expected 2 distinct files but found {len(staged_files)}: "
-                f"{staged_names}"
-            )
+            assert len(staged_files) == 2, f"Expected 2 distinct files but found {len(staged_files)}: {staged_names}"
 
             # Assert: both files have identical content (same source)
             content_1 = (jobs_target / app_names[0]).read_bytes()
             content_2 = (jobs_target / app_names[1]).read_bytes()
-            assert content_1 == content_2, (
-                f"Two app names resolving to same source should have identical "
-                f"content, but they differ"
-            )
+            assert content_1 == content_2, "Two app names resolving to same source should have identical content, but they differ"
 
             # Assert: content matches original source
-            assert content_1 == content, (
-                f"Staged content should match source content but differs"
-            )
+            assert content_1 == content, "Staged content should match source content but differs"
 
             # Assert: files_copied is 2
-            assert result.files_copied == 2, (
-                f"Expected files_copied=2 but got {result.files_copied}"
-            )
+            assert result.files_copied == 2, f"Expected files_copied=2 but got {result.files_copied}"
 
     @given(data=_shared_source_distinction_data())
     @settings(max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture])

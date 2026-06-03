@@ -13,7 +13,6 @@ import re
 import warnings
 from typing import Dict, List, NamedTuple, Optional
 
-
 # ---------------------------------------------------------------------------
 # Data types
 # ---------------------------------------------------------------------------
@@ -253,8 +252,7 @@ def atparse_to_jinja2(
         else:
             unknown.append(var_name)
             warnings.warn(
-                f"Unknown atparse variable '@[{var_name}]' — "
-                f"no mapping defined, leaving unchanged.",
+                f"Unknown atparse variable '@[{var_name}]' — no mapping defined, leaving unchanged.",
                 stacklevel=2,
             )
             return match.group(0)  # Leave unchanged

@@ -103,7 +103,7 @@ def load_component_yaml(
         )
 
     try:
-        with open(filepath, "r") as f:
+        with open(filepath) as f:
             data = yaml.safe_load(f)
     except yaml.YAMLError as e:
         raise ComponentCompositionError(
@@ -224,9 +224,7 @@ def merge_families(
     for component_name, component_data in active_components.items():
         component_families = component_data.get("families", [])
         if not isinstance(component_families, list):
-            logger.warning(
-                f"Component '{component_name}': 'families' is not a list, skipping"
-            )
+            logger.warning(f"Component '{component_name}': 'families' is not a list, skipping")
             continue
 
         for family in component_families:
@@ -237,10 +235,7 @@ def merge_families(
                 merged.append(copy.deepcopy(family))
                 existing_paths.add(family_path)
             elif family_path in existing_paths:
-                logger.debug(
-                    f"Component '{component_name}': family '{family_path}' "
-                    f"already exists in base, skipping"
-                )
+                logger.debug(f"Component '{component_name}': family '{family_path}' already exists in base, skipping")
 
     return merged
 
@@ -359,11 +354,7 @@ def resolve_triggers(
                 task_path = f"{family.get('path', '?')}/{task.get('name', '?')}"
 
                 for dpath in dangling_paths:
-                    warnings.append(
-                        f"Removed dangling trigger reference '{dpath}' "
-                        f"from task '{task_path}' "
-                        f"(component excluded)"
-                    )
+                    warnings.append(f"Removed dangling trigger reference '{dpath}' from task '{task_path}' (component excluded)")
 
                 task["trigger"] = new_trigger
 
@@ -481,9 +472,7 @@ def compose_components(
     merged_families = merge_families(base_families, active_components)
 
     # Step 6: Resolve triggers and remove dangling references
-    resolved_families, warnings = resolve_triggers(
-        merged_families, excluded_components
-    )
+    resolved_families, warnings = resolve_triggers(merged_families, excluded_components)
 
     # Emit warnings for removed references
     for warning in warnings:

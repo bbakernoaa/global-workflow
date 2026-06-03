@@ -10,9 +10,7 @@ from __future__ import annotations
 
 import os
 import sys
-import tempfile
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 import yaml
@@ -20,13 +18,12 @@ import yaml
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from deployment.pipeline import (
-    build_context,
     _derive_net_run_mode,
-    _get_git_commit,
     _get_git_branch,
+    _get_git_commit,
     _get_git_remote,
+    build_context,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

@@ -14,8 +14,7 @@ from __future__ import annotations
 import os
 import sys
 
-import pytest
-from hypothesis import given, settings, HealthCheck
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 # Add the workflow module to the path
@@ -26,7 +25,6 @@ from deployment.model_context import (
     SUPPORTED_OCEAN_RESOLUTIONS,
     validate_coupled_model_context,
 )
-
 
 # ---------------------------------------------------------------------------
 # Hypothesis strategies for generating valid complete model contexts
@@ -44,15 +42,23 @@ def valid_ocean_section(draw: st.DrawFn) -> dict:
         "oda_incupd": draw(st.booleans()),
         "do_sppt": draw(st.booleans()),
         "river_runoff": draw(st.booleans()),
-        "diag_coord_def_z_file": draw(st.sampled_from([
-            "oceanda_zgrid_75L.nc",
-            "oceanda_zgrid_50L.nc",
-            "oceanda_zgrid_100L.nc",
-        ])),
-        "frunoff": draw(st.sampled_from([
-            "INPUT/runoff.daitren.clim.nc",
-            "INPUT/runoff.monthly.nc",
-        ])),
+        "diag_coord_def_z_file": draw(
+            st.sampled_from(
+                [
+                    "oceanda_zgrid_75L.nc",
+                    "oceanda_zgrid_50L.nc",
+                    "oceanda_zgrid_100L.nc",
+                ]
+            )
+        ),
+        "frunoff": draw(
+            st.sampled_from(
+                [
+                    "INPUT/runoff.daitren.clim.nc",
+                    "INPUT/runoff.monthly.nc",
+                ]
+            )
+        ),
         "tasks": draw(st.integers(min_value=1, max_value=1000)),
     }
 
@@ -62,20 +68,35 @@ def valid_ice_section(draw: st.DrawFn) -> dict:
     """Generate a valid model.ice section with all required keys."""
     return {
         "nprocs": draw(st.integers(min_value=1, max_value=512)),
-        "decomposition": draw(st.sampled_from([
-            "slenderX2", "slenderX1", "cartesian", "roundrobin",
-        ])),
+        "decomposition": draw(
+            st.sampled_from(
+                [
+                    "slenderX2",
+                    "slenderX1",
+                    "cartesian",
+                    "roundrobin",
+                ]
+            )
+        ),
         "dt_ice": draw(st.sampled_from([450, 600, 900, 1800, 3600])),
-        "grid": draw(st.sampled_from([
-            "grid_cice_NEMS_mx025.nc",
-            "grid_cice_NEMS_mx050.nc",
-            "grid_cice_NEMS_mx100.nc",
-        ])),
-        "mask": draw(st.sampled_from([
-            "kmtu_cice_NEMS_mx025.nc",
-            "kmtu_cice_NEMS_mx050.nc",
-            "kmtu_cice_NEMS_mx100.nc",
-        ])),
+        "grid": draw(
+            st.sampled_from(
+                [
+                    "grid_cice_NEMS_mx025.nc",
+                    "grid_cice_NEMS_mx050.nc",
+                    "grid_cice_NEMS_mx100.nc",
+                ]
+            )
+        ),
+        "mask": draw(
+            st.sampled_from(
+                [
+                    "kmtu_cice_NEMS_mx025.nc",
+                    "kmtu_cice_NEMS_mx050.nc",
+                    "kmtu_cice_NEMS_mx100.nc",
+                ]
+            )
+        ),
         "nx_glb": draw(st.sampled_from([72, 360, 720, 1440])),
         "ny_glb": draw(st.sampled_from([35, 320, 576, 1080])),
         "warm_start": draw(st.booleans()),
@@ -94,11 +115,15 @@ def valid_wave_section(draw: st.DrawFn) -> dict:
     return {
         "ice_input": draw(st.sampled_from(["YES", "CPL"])),
         "current_input": draw(st.sampled_from(["YES", "CPL"])),
-        "output_params": draw(st.sampled_from([
-            "HS FP DP PHS PTP PDIR CHA",
-            "HS FP DP",
-            "HS LM",
-        ])),
+        "output_params": draw(
+            st.sampled_from(
+                [
+                    "HS FP DP PHS PTP PDIR CHA",
+                    "HS FP DP",
+                    "HS LM",
+                ]
+            )
+        ),
         "dt_field_output": draw(st.integers(min_value=3600, max_value=86400)),
         "dt_point_output": draw(st.integers(min_value=900, max_value=43200)),
         "grid_output_dir": draw(st.sampled_from(["./", "./output/"])),
@@ -177,11 +202,13 @@ def unsupported_ocean_resolution(draw: st.DrawFn) -> str:
     Generates strings that are not in {025, 050, 100, 500}.
     """
     # Generate random strings that are unlikely to be valid resolutions
-    resolution = draw(st.text(
-        alphabet=st.characters(whitelist_categories=("Nd", "Lu", "Ll")),
-        min_size=1,
-        max_size=6,
-    ).filter(lambda s: s not in SUPPORTED_OCEAN_RESOLUTIONS))
+    resolution = draw(
+        st.text(
+            alphabet=st.characters(whitelist_categories=("Nd", "Lu", "Ll")),
+            min_size=1,
+            max_size=6,
+        ).filter(lambda s: s not in SUPPORTED_OCEAN_RESOLUTIONS)
+    )
     return resolution
 
 
@@ -208,9 +235,7 @@ class TestSchemaValidationProperty:
         deadline=None,
     )
     @given(data=model_context_with_removed_keys())
-    def test_missing_required_keys_produce_fatal_errors(
-        self, data: tuple[dict, list[tuple[str, str]]]
-    ):
+    def test_missing_required_keys_produce_fatal_errors(self, data: tuple[dict, list[tuple[str, str]]]):
         """Assert FATAL ERROR emitted for each missing required key.
 
         **Validates: Requirements 7.1, 7.2, 7.3, 7.4, 7.5**
@@ -226,27 +251,16 @@ class TestSchemaValidationProperty:
         errors = validate_coupled_model_context(context)
 
         # There must be at least one error
-        assert len(errors) >= 1, (
-            f"Expected FATAL ERROR(s) for removed keys {removed_keys}, "
-            f"but got no errors"
-        )
+        assert len(errors) >= 1, f"Expected FATAL ERROR(s) for removed keys {removed_keys}, but got no errors"
 
         # Every error must contain "FATAL ERROR"
         for error in errors:
-            assert "FATAL ERROR" in error, (
-                f"Error message does not contain 'FATAL ERROR': {error}"
-            )
+            assert "FATAL ERROR" in error, f"Error message does not contain 'FATAL ERROR': {error}"
 
         # Each removed key should be identified in the error messages
         for section, key in removed_keys:
-            matching = [
-                e for e in errors
-                if f"model.{section}.{key}" in e or f"model.{section}" in e
-            ]
-            assert len(matching) >= 1, (
-                f"No FATAL ERROR found for removed key "
-                f"'model.{section}.{key}'. Errors: {errors}"
-            )
+            matching = [e for e in errors if f"model.{section}.{key}" in e or f"model.{section}" in e]
+            assert len(matching) >= 1, f"No FATAL ERROR found for removed key 'model.{section}.{key}'. Errors: {errors}"
 
     @settings(
         max_examples=100,
@@ -254,9 +268,7 @@ class TestSchemaValidationProperty:
         deadline=None,
     )
     @given(bad_resolution=unsupported_ocean_resolution())
-    def test_unsupported_ocean_resolution_produces_fatal_error(
-        self, bad_resolution: str
-    ):
+    def test_unsupported_ocean_resolution_produces_fatal_error(self, bad_resolution: str):
         """Assert FATAL ERROR for unsupported ocean.resolution values.
 
         **Validates: Requirements 1.6, 7.1**
@@ -313,26 +325,15 @@ class TestSchemaValidationProperty:
         errors = validate_coupled_model_context(context)
 
         # Must have at least one error about the resolution
-        assert len(errors) >= 1, (
-            f"Expected FATAL ERROR for unsupported resolution '{bad_resolution}', "
-            f"but got no errors"
-        )
+        assert len(errors) >= 1, f"Expected FATAL ERROR for unsupported resolution '{bad_resolution}', but got no errors"
 
         # Find the resolution-specific error
-        resolution_errors = [
-            e for e in errors
-            if "ocean.resolution" in e and bad_resolution in e
-        ]
-        assert len(resolution_errors) >= 1, (
-            f"Expected FATAL ERROR mentioning 'ocean.resolution' and "
-            f"'{bad_resolution}', but got: {errors}"
-        )
+        resolution_errors = [e for e in errors if "ocean.resolution" in e and bad_resolution in e]
+        assert len(resolution_errors) >= 1, f"Expected FATAL ERROR mentioning 'ocean.resolution' and '{bad_resolution}', but got: {errors}"
 
         # The error must be a FATAL ERROR
         for error in resolution_errors:
-            assert "FATAL ERROR" in error, (
-                f"Resolution error does not contain 'FATAL ERROR': {error}"
-            )
+            assert "FATAL ERROR" in error, f"Resolution error does not contain 'FATAL ERROR': {error}"
 
     @settings(
         max_examples=100,
@@ -352,6 +353,4 @@ class TestSchemaValidationProperty:
         only fires on genuinely invalid inputs.
         """
         errors = validate_coupled_model_context(context)
-        assert errors == [], (
-            f"Valid context should produce no errors, but got: {errors}"
-        )
+        assert errors == [], f"Valid context should produce no errors, but got: {errors}"

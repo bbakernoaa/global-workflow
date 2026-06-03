@@ -218,14 +218,10 @@ class ParseError(Exception):
 # ---------------------------------------------------------------------------
 
 # Pattern for "path/to/task == complete" or "path/to/task == active" etc.
-_TASK_STATUS_RE = re.compile(
-    r"([\w/]+)\s*==\s*(complete|active|aborted|queued|submitted|unknown)"
-)
+_TASK_STATUS_RE = re.compile(r"([\w/]+)\s*==\s*(complete|active|aborted|queued|submitted|unknown)")
 
 # Pattern for "path/to/task:meter_name ge value"
-_METER_RE = re.compile(
-    r"([\w/]+):([\w]+)\s+(ge|gt|le|lt|eq|ne)\s+(\d+)"
-)
+_METER_RE = re.compile(r"([\w/]+):([\w]+)\s+(ge|gt|le|lt|eq|ne)\s+(\d+)")
 
 
 def _resolve_task_path(ref: str, family_path: str) -> str:
@@ -327,7 +323,7 @@ def _expand_for_each(task_def: dict) -> list[dict]:
             new_task["name"] = name
 
             # Expand trigger expression
-            if "trigger" in new_task and new_task["trigger"]:
+            if new_task.get("trigger"):
                 trigger = new_task["trigger"]
                 trigger = re.sub(
                     r"\{\{\s*" + re.escape(var_name) + r"\s*\}\}",
@@ -337,7 +333,7 @@ def _expand_for_each(task_def: dict) -> list[dict]:
                 new_task["trigger"] = trigger
 
             # Expand variables
-            if "variables" in new_task and new_task["variables"]:
+            if new_task.get("variables"):
                 new_vars = {}
                 for vk, vv in new_task["variables"].items():
                     if isinstance(vv, str):
@@ -381,7 +377,7 @@ def parse(path: str) -> DAG:
         raise ParseError(str(filepath), "File not found")
 
     try:
-        with open(filepath, "r") as f:
+        with open(filepath) as f:
             raw = yaml.safe_load(f)
     except yaml.YAMLError as e:
         # Extract line number from PyYAML error if available
@@ -647,6 +643,7 @@ def pretty_print(dag: DAG) -> str:
     # produces clean, deterministic output.
     class _OrderedDumper(yaml.SafeDumper):
         """Custom YAML dumper that preserves OrderedDict key order."""
+
         pass
 
     def _represent_ordered_dict(dumper: yaml.SafeDumper, data: OrderedDict) -> Any:
@@ -659,25 +656,17 @@ def pretty_print(dag: DAG) -> str:
         # Use double-quoted style for strings containing special chars
         # that might be misinterpreted, otherwise use plain style
         if any(c in data for c in ("\n", "\t", ":", "#", "{", "}", "[", "]", ",", "&", "*", "?", "|", "-", "<", ">", "=", "!", "%", "@", "`")):
-            return dumper.represent_scalar(
-                "tag:yaml.org,2002:str", data, style='"'
-            )
+            return dumper.represent_scalar("tag:yaml.org,2002:str", data, style='"')
         # Empty strings need quoting
         if data == "":
-            return dumper.represent_scalar(
-                "tag:yaml.org,2002:str", data, style='"'
-            )
+            return dumper.represent_scalar("tag:yaml.org,2002:str", data, style='"')
         # Strings that look like booleans or numbers need quoting
         if data.lower() in ("true", "false", "yes", "no", "null", "~"):
-            return dumper.represent_scalar(
-                "tag:yaml.org,2002:str", data, style='"'
-            )
+            return dumper.represent_scalar("tag:yaml.org,2002:str", data, style='"')
         # Check if it looks like a number
         try:
             float(data)
-            return dumper.represent_scalar(
-                "tag:yaml.org,2002:str", data, style='"'
-            )
+            return dumper.represent_scalar("tag:yaml.org,2002:str", data, style='"')
         except ValueError:
             pass
         return dumper.represent_scalar("tag:yaml.org,2002:str", data)

@@ -23,13 +23,12 @@ from __future__ import annotations
 import os
 import sys
 
-from hypothesis import given, settings, HealthCheck, assume
+from hypothesis import HealthCheck, assume, given, settings
 from hypothesis import strategies as st
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from deployment.config_conditioner import ConfigConditioner, ConditionerResult
-
+from deployment.config_conditioner import ConfigConditioner
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -37,9 +36,21 @@ from deployment.config_conditioner import ConfigConditioner, ConditionerResult
 
 # Deploy-time variables from the registry (known at deploy time)
 DEPLOY_TIME_VARS = [
-    "RUN", "NET", "CASE", "CASE_ENS", "MACHINE", "CDUMP",
-    "NMEM_ENS", "APP", "CCPP_SUITE", "DO_COUPLED", "DO_WAVE",
-    "DO_OCN", "DO_ICE", "DO_AERO", "REPLAY_ICS",
+    "RUN",
+    "NET",
+    "CASE",
+    "CASE_ENS",
+    "MACHINE",
+    "CDUMP",
+    "NMEM_ENS",
+    "APP",
+    "CCPP_SUITE",
+    "DO_COUPLED",
+    "DO_WAVE",
+    "DO_OCN",
+    "DO_ICE",
+    "DO_AERO",
+    "REPLAY_ICS",
 ]
 
 # Runtime variables (only known at job execution time, NOT in registry).
@@ -47,28 +58,59 @@ DEPLOY_TIME_VARS = [
 # pattern [A-Z_][A-Z0-9_]*. Lowercase vars like "cyc" are not matched by
 # the regex and get treated as "no variable found" (constant/deploy-time).
 RUNTIME_VARS = [
-    "PDY", "CYC", "FHOUR", "DATA", "COMOUT", "ROTDIR",
-    "COMIN", "DATAROOT", "CDATE", "GDATE",
+    "PDY",
+    "CYC",
+    "FHOUR",
+    "DATA",
+    "COMOUT",
+    "ROTDIR",
+    "COMIN",
+    "DATAROOT",
+    "CDATE",
+    "GDATE",
 ]
 
 # Safe values for deploy-time variables (simple alphanumeric, no special chars)
 DEPLOY_TIME_VALUES = [
-    "gfs", "gdas", "gefs", "C384", "C768", "C96",
-    "HERA", "WCOSS2", "ORION", "YES", "NO",
-    "ATM", "S2S", "S2SW", "FV3_GFS_v17_p8",
-    "0", "20", "80",
+    "gfs",
+    "gdas",
+    "gefs",
+    "C384",
+    "C768",
+    "C96",
+    "HERA",
+    "WCOSS2",
+    "ORION",
+    "YES",
+    "NO",
+    "ATM",
+    "S2S",
+    "S2SW",
+    "FV3_GFS_v17_p8",
+    "0",
+    "20",
+    "80",
 ]
 
 # Safe values used in runtime conditionals
 RUNTIME_VALUES = [
-    "20240101", "20230601", "00", "06", "12", "18",
-    "000", "024", "120", "384",
+    "20240101",
+    "20230601",
+    "00",
+    "06",
+    "12",
+    "18",
+    "000",
+    "024",
+    "120",
+    "384",
 ]
 
 
 # ---------------------------------------------------------------------------
 # Hypothesis Strategies
 # ---------------------------------------------------------------------------
+
 
 def _runtime_var_strategy():
     """Strategy that picks a runtime variable name."""
@@ -98,13 +140,24 @@ def _operator_strategy():
 def _simple_export_strategy():
     """Strategy that generates a simple export statement (valid bash)."""
     var_name = st.from_regex(r"[A-Z][A-Z0-9_]{2,8}", fullmatch=True)
-    var_value = st.sampled_from([
-        "YES", "NO", "1", "0", "hello", "/path/to/thing",
-        "${OTHER_VAR}", "some_value", "384", "C384",
-    ])
+    var_value = st.sampled_from(
+        [
+            "YES",
+            "NO",
+            "1",
+            "0",
+            "hello",
+            "/path/to/thing",
+            "${OTHER_VAR}",
+            "some_value",
+            "384",
+            "C384",
+        ]
+    )
     return st.builds(
         lambda name, val: f"  export {name}={val}",
-        var_name, var_value,
+        var_name,
+        var_value,
     )
 
 
@@ -206,8 +259,7 @@ def _deploy_time_if_block(draw, deploy_vars_dict):
         lines.append(body_else)
     lines.append("fi")
 
-    return (lines, var, test_value, actual_value, matches, has_else, body_true,
-            body_else if has_else else None)
+    return (lines, var, test_value, actual_value, matches, has_else, body_true, body_else if has_else else None)
 
 
 @st.composite
@@ -256,12 +308,14 @@ def _deploy_time_vars_dict_strategy(draw):
     # Always include RUN since it's the most common
     result = {}
     # Pick a subset of deploy-time vars (at least RUN)
-    selected = draw(st.lists(
-        st.sampled_from(DEPLOY_TIME_VARS),
-        min_size=3,
-        max_size=len(DEPLOY_TIME_VARS),
-        unique=True,
-    ))
+    selected = draw(
+        st.lists(
+            st.sampled_from(DEPLOY_TIME_VARS),
+            min_size=3,
+            max_size=len(DEPLOY_TIME_VARS),
+            unique=True,
+        )
+    )
     if "RUN" not in selected:
         selected.append("RUN")
 
@@ -288,9 +342,17 @@ def _valid_shell_config(draw, deploy_vars_dict):
 
     num_sections = draw(st.integers(min_value=1, max_value=5))
     for _ in range(num_sections):
-        section_type = draw(st.sampled_from([
-            "export", "runtime_if", "deploy_if", "runtime_case", "deploy_case",
-        ]))
+        section_type = draw(
+            st.sampled_from(
+                [
+                    "export",
+                    "runtime_if",
+                    "deploy_if",
+                    "runtime_case",
+                    "deploy_case",
+                ]
+            )
+        )
 
         if section_type == "export":
             stmt = draw(_simple_export_strategy())
@@ -318,13 +380,7 @@ def _valid_shell_config(draw, deploy_vars_dict):
             var = draw(st.sampled_from(list(deploy_vars_dict.keys())))
             actual = deploy_vars_dict[var]
             body = draw(_simple_export_strategy())
-            block = (
-                f"case ${{{var}}} in\n"
-                f"  *{actual})\n"
-                f"  {body}\n"
-                f"    ;;\n"
-                f"esac"
-            )
+            block = f"case ${{{var}}} in\n  *{actual})\n  {body}\n    ;;\nesac"
             parts.append(block)
 
         parts.append("")
@@ -335,6 +391,7 @@ def _valid_shell_config(draw, deploy_vars_dict):
 # ---------------------------------------------------------------------------
 # Property 4: Config Conditioner Preserves Runtime Conditionals
 # ---------------------------------------------------------------------------
+
 
 class TestProperty4RuntimePreservation:
     """Property 4: Config Conditioner Preserves Runtime Conditionals.
@@ -355,9 +412,7 @@ class TestProperty4RuntimePreservation:
         deadline=None,
         suppress_health_check=[HealthCheck.too_slow],
     )
-    def test_runtime_if_block_preserved_byte_identical(
-        self, runtime_block, deploy_vars
-    ):
+    def test_runtime_if_block_preserved_byte_identical(self, runtime_block, deploy_vars):
         """Runtime if-blocks are byte-identical in the output.
 
         **Validates: Requirements 5.3, 5.6, 5.7**
@@ -370,9 +425,7 @@ class TestProperty4RuntimePreservation:
 
         # The runtime block must appear byte-identical in the output
         assert runtime_block in result.output, (
-            f"Runtime if-block was modified by conditioner.\n"
-            f"Expected block:\n{runtime_block}\n"
-            f"Full output:\n{result.output}"
+            f"Runtime if-block was modified by conditioner.\nExpected block:\n{runtime_block}\nFull output:\n{result.output}"
         )
         # Preserved conditionals counter must be >= 1
         assert result.preserved_conditionals >= 1
@@ -386,9 +439,7 @@ class TestProperty4RuntimePreservation:
         deadline=None,
         suppress_health_check=[HealthCheck.too_slow],
     )
-    def test_runtime_case_block_preserved_byte_identical(
-        self, runtime_block, deploy_vars
-    ):
+    def test_runtime_case_block_preserved_byte_identical(self, runtime_block, deploy_vars):
         """Runtime case-blocks are byte-identical in the output.
 
         **Validates: Requirements 5.3, 5.6, 5.7**
@@ -400,9 +451,7 @@ class TestProperty4RuntimePreservation:
 
         # The runtime case block must appear byte-identical in the output
         assert runtime_block in result.output, (
-            f"Runtime case-block was modified by conditioner.\n"
-            f"Expected block:\n{runtime_block}\n"
-            f"Full output:\n{result.output}"
+            f"Runtime case-block was modified by conditioner.\nExpected block:\n{runtime_block}\nFull output:\n{result.output}"
         )
         assert result.preserved_conditionals >= 1
 
@@ -410,6 +459,7 @@ class TestProperty4RuntimePreservation:
 # ---------------------------------------------------------------------------
 # Property 5: Config Conditioner Evaluates Deploy-Time Conditionals
 # ---------------------------------------------------------------------------
+
 
 class TestProperty5DeployTimeEvaluation:
     """Property 5: Config Conditioner Evaluates Deploy-Time Conditionals.
@@ -439,22 +489,13 @@ class TestProperty5DeployTimeEvaluation:
         actual_value = deploy_vars[var]
         body = data.draw(_simple_export_strategy())
 
-        content = (
-            f"#!/bin/bash\n\n"
-            f'if [[ "${{{var}}}" == "{actual_value}" ]]; then\n'
-            f"{body}\n"
-            f"fi\n"
-        )
+        content = f'#!/bin/bash\n\nif [[ "${{{var}}}" == "{actual_value}" ]]; then\n{body}\nfi\n'
 
         conditioner = ConfigConditioner(deploy_time_vars=deploy_vars)
         result = conditioner.condition_file(content)
 
         # The matching branch body must appear in output
-        assert body.strip() in result.output, (
-            f"Matching branch body not found in output.\n"
-            f"Body: {body.strip()}\n"
-            f"Output:\n{result.output}"
-        )
+        assert body.strip() in result.output, f"Matching branch body not found in output.\nBody: {body.strip()}\nOutput:\n{result.output}"
         # The if/fi structure must be removed
         assert f'if [[ "${{{var}}}" == "{actual_value}" ]]; then' not in result.output
         assert "# Resolved:" in result.output
@@ -480,12 +521,7 @@ class TestProperty5DeployTimeEvaluation:
 
         body = data.draw(_simple_export_strategy())
 
-        content = (
-            f"#!/bin/bash\n\n"
-            f'if [[ "${{{var}}}" == "{test_value}" ]]; then\n'
-            f"{body}\n"
-            f"fi\n"
-        )
+        content = f'#!/bin/bash\n\nif [[ "${{{var}}}" == "{test_value}" ]]; then\n{body}\nfi\n'
 
         conditioner = ConfigConditioner(deploy_time_vars=deploy_vars)
         result = conditioner.condition_file(content)
@@ -529,14 +565,7 @@ class TestProperty5DeployTimeEvaluation:
         # Ensure the two bodies are different so we can distinguish them
         assume(true_body.strip() != else_body.strip())
 
-        content = (
-            f"#!/bin/bash\n\n"
-            f'if [[ "${{{var}}}" == "{test_value}" ]]; then\n'
-            f"{true_body}\n"
-            f"else\n"
-            f"{else_body}\n"
-            f"fi\n"
-        )
+        content = f'#!/bin/bash\n\nif [[ "${{{var}}}" == "{test_value}" ]]; then\n{true_body}\nelse\n{else_body}\nfi\n'
 
         conditioner = ConfigConditioner(deploy_time_vars=deploy_vars)
         result = conditioner.condition_file(content)
@@ -578,33 +607,18 @@ class TestProperty5DeployTimeEvaluation:
         other_value = data.draw(_deploy_time_value_strategy())
         assume(other_value != actual_value)
 
-        content = (
-            f"#!/bin/bash\n\n"
-            f"case ${{{var}}} in\n"
-            f"  *{actual_value})\n"
-            f"  {match_body}\n"
-            f"    ;;\n"
-            f"  *{other_value})\n"
-            f"  {other_body}\n"
-            f"    ;;\n"
-            f"esac\n"
-        )
+        content = f"#!/bin/bash\n\ncase ${{{var}}} in\n  *{actual_value})\n  {match_body}\n    ;;\n  *{other_value})\n  {other_body}\n    ;;\nesac\n"
 
         conditioner = ConfigConditioner(deploy_time_vars=deploy_vars)
         result = conditioner.condition_file(content)
 
         # The matching branch body must appear
         assert match_body.strip() in result.output, (
-            f"Matching case branch body not found.\n"
-            f"Body: {match_body.strip()}\n"
-            f"Var: {var}={actual_value}\n"
-            f"Output:\n{result.output}"
+            f"Matching case branch body not found.\nBody: {match_body.strip()}\nVar: {var}={actual_value}\nOutput:\n{result.output}"
         )
         # The non-matching branch body must NOT appear
         assert other_body.strip() not in result.output, (
-            f"Non-matching case branch body found in output.\n"
-            f"Body: {other_body.strip()}\n"
-            f"Output:\n{result.output}"
+            f"Non-matching case branch body found in output.\nBody: {other_body.strip()}\nOutput:\n{result.output}"
         )
         # Case structure removed
         assert "esac" not in result.output
@@ -615,6 +629,7 @@ class TestProperty5DeployTimeEvaluation:
 # ---------------------------------------------------------------------------
 # Property 6: Config Conditioner Output Validity
 # ---------------------------------------------------------------------------
+
 
 class TestProperty6OutputValidity:
     """Property 6: Config Conditioner Output Validity.
@@ -658,9 +673,7 @@ class TestProperty6OutputValidity:
         deadline=None,
         suppress_health_check=[HealthCheck.too_slow],
     )
-    def test_runtime_if_preservation_keeps_valid_shell(
-        self, runtime_block, deploy_vars
-    ):
+    def test_runtime_if_preservation_keeps_valid_shell(self, runtime_block, deploy_vars):
         """Preserved runtime if-blocks remain valid shell.
 
         **Validates: Requirements 5.8**
@@ -671,9 +684,7 @@ class TestProperty6OutputValidity:
         result = conditioner.condition_file(content)
 
         assert result.is_valid_shell, (
-            f"Output with preserved runtime block failed bash -n.\n"
-            f"Output:\n{result.output}\n"
-            f"Syntax error: {conditioner.last_syntax_error}"
+            f"Output with preserved runtime block failed bash -n.\nOutput:\n{result.output}\nSyntax error: {conditioner.last_syntax_error}"
         )
 
     @given(
@@ -685,9 +696,7 @@ class TestProperty6OutputValidity:
         deadline=None,
         suppress_health_check=[HealthCheck.too_slow],
     )
-    def test_runtime_case_preservation_keeps_valid_shell(
-        self, runtime_block, deploy_vars
-    ):
+    def test_runtime_case_preservation_keeps_valid_shell(self, runtime_block, deploy_vars):
         """Preserved runtime case-blocks remain valid shell.
 
         **Validates: Requirements 5.8**
@@ -698,7 +707,5 @@ class TestProperty6OutputValidity:
         result = conditioner.condition_file(content)
 
         assert result.is_valid_shell, (
-            f"Output with preserved runtime case block failed bash -n.\n"
-            f"Output:\n{result.output}\n"
-            f"Syntax error: {conditioner.last_syntax_error}"
+            f"Output with preserved runtime case block failed bash -n.\nOutput:\n{result.output}\nSyntax error: {conditioner.last_syntax_error}"
         )

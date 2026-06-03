@@ -30,7 +30,7 @@ _COMROOT_/gfs/_SHORTVER_/sdm_rtdm/
 + /avgdata/obcount_30davg.gfs.current
 - *
 B 256000
- 
+
 
 _COMROOT_/gfs/_SHORTVER_/sdm_rtdm/
 + /obcount_30day/
@@ -39,5 +39,3 @@ _COMROOT_/gfs/_SHORTVER_/sdm_rtdm/
 + /obcount_30day/gfs/gfs._PDY_/***
 - *
 B 2000000
- 
-

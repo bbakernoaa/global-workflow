@@ -14,17 +14,15 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "workflow"))
 
 from deployment.model_context import (
+    REQUIRED_AEROSOL_KEYS,
+    REQUIRED_FV3_KEYS,
+    REQUIRED_TOP_LEVEL_KEYS,
+    SUPPORTED_COUPLING_MODES,
+    SUPPORTED_PHYSICS_SUITES,
+    SUPPORTED_RESOLUTIONS,
     ModelContextSchema,
     merge_resolution_defaults,
-    SUPPORTED_RESOLUTIONS,
-    SUPPORTED_PHYSICS_SUITES,
-    SUPPORTED_COUPLING_MODES,
-    SUPPORTED_EMISSION_DATASETS,
-    REQUIRED_TOP_LEVEL_KEYS,
-    REQUIRED_FV3_KEYS,
-    REQUIRED_AEROSOL_KEYS,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -305,9 +303,7 @@ class TestTypeValidation:
         errors = schema.validate(context)
         assert any("restart_interval" in e for e in errors)
 
-    def test_aerosol_active_collections_must_be_nonempty_list(
-        self, schema, valid_top_level
-    ):
+    def test_aerosol_active_collections_must_be_nonempty_list(self, schema, valid_top_level):
         """model.aerosol.active_collections must be a non-empty list."""
         context = dict(valid_top_level)
         context["aerosol"] = {
@@ -318,9 +314,7 @@ class TestTypeValidation:
         errors = schema.validate(context)
         assert any("active_collections" in e for e in errors)
 
-    def test_aerosol_grid_label_must_be_nonempty_string(
-        self, schema, valid_top_level
-    ):
+    def test_aerosol_grid_label_must_be_nonempty_string(self, schema, valid_top_level):
         """model.aerosol.grid_label must be a non-empty string."""
         context = dict(valid_top_level)
         context["aerosol"] = {

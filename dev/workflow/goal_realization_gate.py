@@ -48,9 +48,10 @@ import subprocess
 import sys
 import tempfile
 import xml.etree.ElementTree as ET
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, Mapping, Optional
+from typing import Callable, Optional
 
 # The gate runs from dev/workflow/, where the ``deployment`` package and the
 # sibling modules live. Ensure that directory is importable whether the gate is
@@ -60,20 +61,21 @@ _WORKFLOW_DIR = Path(__file__).resolve().parent
 if str(_WORKFLOW_DIR) not in sys.path:
     sys.path.insert(0, str(_WORKFLOW_DIR))
 
-from deployment.ee2_scanner import ScanResult, scan_expdir, scan_file
-from deployment.pipeline import PipelineError, SubmodulePolicy, run as run_pipeline
-from deployment.rag_ee2_adapter import (
+from deployment.ee2_scanner import ScanResult, scan_file  # noqa: E402
+from deployment.pipeline import PipelineError, SubmodulePolicy  # noqa: E402
+from deployment.pipeline import run as run_pipeline  # noqa: E402
+from deployment.rag_ee2_adapter import (  # noqa: E402
     SCANNER_CATEGORIES,
     check_against_baseline,
     load_baseline,
 )
-from deployment.token_scan import (
+from deployment.token_scan import (  # noqa: E402
     TokenScanResult,
     load_exemptions,
     scan_rendered_expdir,
     scan_repo_runtime,
 )
-from deployment.traceability import (
+from deployment.traceability import (  # noqa: E402
     DEFAULT_PARENT_TASKS_PATH,
     TraceabilityMatrix,
     find_unmapped_parent_items,
@@ -134,9 +136,7 @@ DEFAULT_FIXTURE_ROOT = _WORKFLOW_DIR / "tests" / "fixtures" / "submodules"
 #: Default Atparse_Exemption_Registry consumed by the Token_Scan (Req 3.5).
 DEFAULT_REGISTRY_PATH = _DEV_ROOT / "parm" / "atparse_exemptions.yaml"
 #: Default committed EE2_Baseline_Recording for the offline EE2 check (Req 10.6).
-DEFAULT_BASELINE_PATH = (
-    _WORKFLOW_DIR / "tests" / "fixtures" / "ee2" / "forecast_postdet_baseline.json"
-)
+DEFAULT_BASELINE_PATH = _WORKFLOW_DIR / "tests" / "fixtures" / "ee2" / "forecast_postdet_baseline.json"
 #: Default Traceability_Matrix (Req 8.1).
 DEFAULT_MATRIX_PATH = _WORKFLOW_DIR / "traceability_matrix.yaml"
 #: Default platform / version used for the verification deploy.
@@ -195,19 +195,12 @@ class GateResult:
     @property
     def all_properties_pass(self) -> bool:
         """True iff all 14 parent Properties are present and pass (Req 7.1, 7.2)."""
-        return (
-            len(self.properties) == 14
-            and all(self.properties.get(n, False) for n in range(1, 15))
-        )
+        return len(self.properties) == 14 and all(self.properties.get(n, False) for n in range(1, 15))
 
     @property
     def suite_clean(self) -> bool:
         """True iff the full suite had zero failures, errors, and collection errors."""
-        return (
-            self.suite_failed == 0
-            and self.suite_errors == 0
-            and self.collection_errors == 0
-        )
+        return self.suite_failed == 0 and self.suite_errors == 0 and self.collection_errors == 0
 
     @property
     def realized(self) -> bool:
@@ -316,8 +309,7 @@ class JUnitReport:
             matches = [
                 passed
                 for key, passed in self.node_results.items()
-                if key.split("::", 1)[0] == file_part
-                and _node_matches(key.split("::", 1)[1], node)
+                if key.split("::", 1)[0] == file_part and _node_matches(key.split("::", 1)[1], node)
             ]
             return bool(matches) and all(matches)
         return self.file_results.get(file_part, False)
@@ -427,9 +419,7 @@ def parse_junit_report(xml_path: Path) -> JUnitReport:
 
         node_key = f"{file_part}::{name}" if name else file_part
         # If a node id repeats, AND the results (all must pass).
-        report.node_results[node_key] = (
-            report.node_results.get(node_key, True) and passed
-        )
+        report.node_results[node_key] = report.node_results.get(node_key, True) and passed
         file_bad[file_part] = file_bad.get(file_part, False) or (not passed)
 
     for file_part in file_seen:
@@ -454,10 +444,7 @@ def evaluate_properties(
     Returns:
         ``{property_number: passed}`` for every property in ``property_tests``.
     """
-    return {
-        number: all(report.test_id_passed(tid) for tid in tests)
-        for number, tests in property_tests.items()
-    }
+    return {number: all(report.test_id_passed(tid) for tid in tests) for number, tests in property_tests.items()}
 
 
 # ---------------------------------------------------------------------------
@@ -509,10 +496,7 @@ def run_token_scan(
     expdir_result = scan_rendered_expdir(Path(expdir))
     # Build a set of basenames from the registry for matching staged files
     exempt_basenames = {Path(p).name for p in registry}
-    expdir_result.atparse_violations = [
-        v for v in expdir_result.atparse_violations
-        if Path(v[0]).name not in exempt_basenames
-    ]
+    expdir_result.atparse_violations = [v for v in expdir_result.atparse_violations if Path(v[0]).name not in exempt_basenames]
 
     # Repo runtime scan
     repo_result = scan_repo_runtime(Path(repo_root), registry)
@@ -576,6 +560,7 @@ def run_offline_ee2(
         subdir_path = expdir / scan_subdir
         if subdir_path.is_dir():
             from deployment.ee2_scanner import _should_skip
+
             for filepath in sorted(subdir_path.rglob("*")):
                 if not filepath.is_file():
                     continue
@@ -600,11 +585,7 @@ def run_offline_ee2(
     divergences = check_against_baseline(aggregate, baseline_path)
     scanner_violations = [v.format() for v in aggregate.violations]
 
-    rag_ee2_passed = (
-        bool(baseline.get("passed", False))
-        and aggregate.passed
-        and not divergences
-    )
+    rag_ee2_passed = bool(baseline.get("passed", False)) and aggregate.passed and not divergences
 
     return OfflineEE2Outcome(
         ee2_passed=ee2_passed,
@@ -643,9 +624,7 @@ def run_reconciliation(
         ``(unmapped_parent_items, task_test_mismatches)``.
     """
     unmapped = find_unmapped_parent_items(matrix)
-    mismatches = reconcile_completed_tasks(
-        matrix, parent_tasks_path, test_results=test_results
-    )
+    mismatches = reconcile_completed_tasks(matrix, parent_tasks_path, test_results=test_results)
     return unmapped, mismatches
 
 
@@ -853,9 +832,7 @@ def run_gate(
         logger.info("Gate step 6/7: traceability reconciliation")
         matrix = load_traceability_matrix(matrix_path)
         test_results = junit_test_results(report, matrix)
-        unmapped, mismatches = run_reconciliation(
-            matrix, parent_tasks_path, test_results=test_results
-        )
+        unmapped, mismatches = run_reconciliation(matrix, parent_tasks_path, test_results=test_results)
 
         # --- Assemble the GateResult ---
         result = GateResult(

@@ -2,27 +2,18 @@
 
 import os
 from logging import getLogger
-from typing import Dict, Any, Union
 from pprint import pformat
+from typing import Any, Dict, Union
 
-from wxflow import (AttrDict,
-                    parse_j2yaml,
-                    FileHandler,
-                    Jinja,
-                    logit,
-                    Task,
-                    add_to_datetime, to_timedelta,
-                    WorkflowException,
-                    Executable, which)
+from wxflow import AttrDict, Executable, FileHandler, Jinja, Task, WorkflowException, add_to_datetime, logit, parse_j2yaml, to_timedelta, which
 
-logger = getLogger(__name__.split('.')[-1])
+logger = getLogger(__name__.split(".")[-1])
 
 
 class UPP(Task):
-    """Unified Post Processor Task
-    """
+    """Unified Post Processor Task"""
 
-    VALID_UPP_RUN = ['analysis', 'forecast', 'goes']
+    VALID_UPP_RUN = ["analysis", "forecast", "goes"]
 
     def __init__(self, config: Dict[str, Any]) -> None:
         """Constructor for the UPP task
@@ -45,20 +36,21 @@ class UPP(Task):
         super().__init__(config)
 
         if self.task_config.UPP_RUN not in self.VALID_UPP_RUN:
-            raise NotImplementedError(f'{self.task_config.UPP_RUN} is not a valid UPP run type.\n' +
-                                      'Valid UPP_RUN values are:\n' +
-                                      f'{", ".join(self.VALID_UPP_RUN)}')
+            raise NotImplementedError(
+                f"{self.task_config.UPP_RUN} is not a valid UPP run type.\n" + "Valid UPP_RUN values are:\n" + f"{', '.join(self.VALID_UPP_RUN)}"
+            )
 
         valid_datetime = add_to_datetime(self.task_config.current_cycle, to_timedelta(f"{self.task_config.FORECAST_HOUR}H"))
 
         # Extend task_config with localdict
         localdict = AttrDict(
-            {'upp_run': self.task_config.UPP_RUN,
-             'forecast_hour': self.task_config.FORECAST_HOUR,
-             'valid_datetime': valid_datetime,
-             'atmos_filename': f"atm_{valid_datetime.strftime('%Y%m%d%H%M%S')}.nc",
-             'flux_filename': f"sfc_{valid_datetime.strftime('%Y%m%d%H%M%S')}.nc"
-             }
+            {
+                "upp_run": self.task_config.UPP_RUN,
+                "forecast_hour": self.task_config.FORECAST_HOUR,
+                "valid_datetime": valid_datetime,
+                "atmos_filename": f"atm_{valid_datetime.strftime('%Y%m%d%H%M%S')}.nc",
+                "flux_filename": f"sfc_{valid_datetime.strftime('%Y%m%d%H%M%S')}.nc",
+            }
         )
         self.task_config = AttrDict(**self.task_config, **localdict)
 
@@ -146,7 +138,7 @@ class UPP(Task):
 
     @classmethod
     @logit(logger)
-    def run(cls, workdir: Union[str, os.PathLike], aprun_cmd: str, exec_name: str = 'upp.x') -> None:
+    def run(cls, workdir: Union[str, os.PathLike], aprun_cmd: str, exec_name: str = "upp.x") -> None:
         """
         Run the UPP executable
 
@@ -200,7 +192,7 @@ class UPP(Task):
 
         template = f"GFS{{file_type}}.GrbF{forecast_hour:02d}"
 
-        for ftype in ['PRS', 'FLX', 'GOES']:
+        for ftype in ["PRS", "FLX", "GOES"]:
             grbfile = template.format(file_type=ftype)
             grbfidx = f"{grbfile}.idx"
 

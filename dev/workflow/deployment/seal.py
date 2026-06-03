@@ -9,7 +9,6 @@ Traces to: Requirements 3.4, 13.4
 import getpass
 import os
 import platform
-import stat
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
@@ -17,13 +16,12 @@ from typing import Any, Optional
 
 import yaml
 
-
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 
 FILE_MODE = 0o444  # read-only for all
-DIR_MODE = 0o555   # read + execute for all, no write
+DIR_MODE = 0o555  # read + execute for all, no write
 
 PROVENANCE_FILENAME = "workflow/provenance.yaml"
 
@@ -211,9 +209,7 @@ def seal_expdir(
     expdir = Path(expdir)
 
     if not expdir.is_dir():
-        raise FileNotFoundError(
-            f"EXPDIR does not exist: {expdir}"
-        )
+        raise FileNotFoundError(f"EXPDIR does not exist: {expdir}")
 
     # Write provenance before sealing (need write permission)
     provenance_path = write_provenance(expdir, config=config, repo_path=repo_path)

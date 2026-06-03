@@ -13,7 +13,6 @@ Tests cover:
 import os
 import sqlite3
 import sys
-import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
@@ -21,7 +20,7 @@ import pytest
 
 # Add dev/ush to path so we can import the module
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "ush"))
-import log_task_event  # noqa: E402
+import log_task_event
 
 
 class TestInitDatabase:
@@ -47,18 +46,24 @@ class TestInitDatabase:
         conn = log_task_event.init_database(db_path)
 
         cursor = conn.cursor()
-        cursor.execute(
-            "SELECT sql FROM sqlite_master WHERE type='table' AND name='task_events'"
-        )
+        cursor.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='task_events'")
         row = cursor.fetchone()
         assert row is not None
         schema = row[0]
 
         # Verify all expected columns are present
         expected_columns = [
-            "snapshot_id", "git_commit", "cycle", "family_path",
-            "task_name", "attempt", "scheduler_job_id", "state",
-            "exit_status", "timestamp", "duration_seconds"
+            "snapshot_id",
+            "git_commit",
+            "cycle",
+            "family_path",
+            "task_name",
+            "attempt",
+            "scheduler_job_id",
+            "state",
+            "exit_status",
+            "timestamp",
+            "duration_seconds",
         ]
         for col in expected_columns:
             assert col in schema
@@ -71,10 +76,7 @@ class TestInitDatabase:
         conn = log_task_event.init_database(db_path)
 
         cursor = conn.cursor()
-        cursor.execute(
-            "SELECT name FROM sqlite_master WHERE type='index' "
-            "AND name='idx_task_events_cycle'"
-        )
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='index' AND name='idx_task_events_cycle'")
         assert cursor.fetchone() is not None
         conn.close()
 
@@ -84,10 +86,7 @@ class TestInitDatabase:
         conn = log_task_event.init_database(db_path)
 
         cursor = conn.cursor()
-        cursor.execute(
-            "SELECT name FROM sqlite_master WHERE type='index' "
-            "AND name='idx_task_events_state'"
-        )
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='index' AND name='idx_task_events_state'")
         assert cursor.fetchone() is not None
         conn.close()
 
@@ -121,7 +120,7 @@ class TestInsertEvent:
             state="succeeded",
             exit_status=0,
             timestamp="2025-01-15T14:30:00Z",
-            duration_seconds=120
+            duration_seconds=120,
         )
 
         assert row_id == 1
@@ -163,12 +162,11 @@ class TestInsertEvent:
             state="init",
             exit_status=None,
             timestamp="2025-01-15T14:00:00Z",
-            duration_seconds=None
+            duration_seconds=None,
         )
 
         cursor = conn.cursor()
-        cursor.execute("SELECT exit_status, duration_seconds FROM task_events WHERE id = ?",
-                       (row_id,))
+        cursor.execute("SELECT exit_status, duration_seconds FROM task_events WHERE id = ?", (row_id,))
         row = cursor.fetchone()
         assert row[0] is None
         assert row[1] is None
@@ -193,7 +191,7 @@ class TestInsertEvent:
                 state=state,
                 exit_status=0 if state == "succeeded" else None,
                 timestamp="2025-01-15T14:00:00Z",
-                duration_seconds=60 if state == "succeeded" else None
+                duration_seconds=60 if state == "succeeded" else None,
             )
 
         cursor = conn.cursor()
@@ -262,13 +260,7 @@ class TestParseArgs:
 
     def test_all_required_args(self):
         """All required arguments are parsed correctly."""
-        args = log_task_event.parse_args([
-            "--task", "anal",
-            "--cycle", "2025011500",
-            "--jobid", "12345",
-            "--attempt", "1",
-            "--state", "succeeded"
-        ])
+        args = log_task_event.parse_args(["--task", "anal", "--cycle", "2025011500", "--jobid", "12345", "--attempt", "1", "--state", "succeeded"])
         assert args.task == "anal"
         assert args.cycle == "2025011500"
         assert args.jobid == "12345"
@@ -280,16 +272,26 @@ class TestParseArgs:
 
     def test_all_optional_args(self):
         """Optional arguments are parsed correctly."""
-        args = log_task_event.parse_args([
-            "--task", "fcst",
-            "--cycle", "2025011506",
-            "--jobid", "99999",
-            "--attempt", "2",
-            "--state", "failed",
-            "--exit-status", "1",
-            "--duration", "3600",
-            "--db-path", "/custom/path/state.db"
-        ])
+        args = log_task_event.parse_args(
+            [
+                "--task",
+                "fcst",
+                "--cycle",
+                "2025011506",
+                "--jobid",
+                "99999",
+                "--attempt",
+                "2",
+                "--state",
+                "failed",
+                "--exit-status",
+                "1",
+                "--duration",
+                "3600",
+                "--db-path",
+                "/custom/path/state.db",
+            ]
+        )
         assert args.exit_status == 1
         assert args.duration == 3600
         assert args.db_path == "/custom/path/state.db"
@@ -297,13 +299,7 @@ class TestParseArgs:
     def test_invalid_state_rejected(self):
         """Invalid state values are rejected."""
         with pytest.raises(SystemExit):
-            log_task_event.parse_args([
-                "--task", "anal",
-                "--cycle", "2025011500",
-                "--jobid", "12345",
-                "--attempt", "1",
-                "--state", "invalid_state"
-            ])
+            log_task_event.parse_args(["--task", "anal", "--cycle", "2025011500", "--jobid", "12345", "--attempt", "1", "--state", "invalid_state"])
 
     def test_missing_required_arg(self):
         """Missing required arguments cause exit."""
@@ -317,22 +313,28 @@ class TestMain:
     def test_successful_event_logging(self, tmp_path):
         """Main function logs an event and returns 0."""
         db_path = str(tmp_path / "state.db")
-        env = {
-            "SNAPSHOT_ID": "v17.0.0+a3f8c1d2e4b6",
-            "GIT_COMMIT": "abc123def456",
-            "ECF_NAME": "/gfs_v17/gdas/atmos/analysis/anal"
-        }
+        env = {"SNAPSHOT_ID": "v17.0.0+a3f8c1d2e4b6", "GIT_COMMIT": "abc123def456", "ECF_NAME": "/gfs_v17/gdas/atmos/analysis/anal"}
         with patch.dict(os.environ, env):
-            rc = log_task_event.main([
-                "--task", "anal",
-                "--cycle", "2025011500",
-                "--jobid", "12345",
-                "--attempt", "1",
-                "--state", "succeeded",
-                "--exit-status", "0",
-                "--duration", "120",
-                "--db-path", db_path
-            ])
+            rc = log_task_event.main(
+                [
+                    "--task",
+                    "anal",
+                    "--cycle",
+                    "2025011500",
+                    "--jobid",
+                    "12345",
+                    "--attempt",
+                    "1",
+                    "--state",
+                    "succeeded",
+                    "--exit-status",
+                    "0",
+                    "--duration",
+                    "120",
+                    "--db-path",
+                    db_path,
+                ]
+            )
 
         assert rc == 0
 
@@ -353,32 +355,15 @@ class TestMain:
         env = os.environ.copy()
         env.pop("EXPDIR", None)
         with patch.dict(os.environ, env, clear=True):
-            rc = log_task_event.main([
-                "--task", "anal",
-                "--cycle", "2025011500",
-                "--jobid", "12345",
-                "--attempt", "1",
-                "--state", "init"
-            ])
+            rc = log_task_event.main(["--task", "anal", "--cycle", "2025011500", "--jobid", "12345", "--attempt", "1", "--state", "init"])
         assert rc == 1
 
     def test_uses_expdir_default(self, tmp_path):
         """Uses EXPDIR/workflow/state.db when --db-path not specified."""
         expdir = str(tmp_path / "expdir")
-        env = {
-            "EXPDIR": expdir,
-            "SNAPSHOT_ID": "v1.0.0+test",
-            "GIT_COMMIT": "deadbeef",
-            "ECF_NAME": "/suite/family/task"
-        }
+        env = {"EXPDIR": expdir, "SNAPSHOT_ID": "v1.0.0+test", "GIT_COMMIT": "deadbeef", "ECF_NAME": "/suite/family/task"}
         with patch.dict(os.environ, env):
-            rc = log_task_event.main([
-                "--task", "task",
-                "--cycle", "2025010100",
-                "--jobid", "111",
-                "--attempt", "1",
-                "--state", "start"
-            ])
+            rc = log_task_event.main(["--task", "task", "--cycle", "2025010100", "--jobid", "111", "--attempt", "1", "--state", "start"])
 
         assert rc == 0
         assert Path(expdir, "workflow", "state.db").exists()
@@ -391,14 +376,9 @@ class TestMain:
         env.pop("GIT_COMMIT", None)
         env.pop("ECF_NAME", None)
         with patch.dict(os.environ, env, clear=True):
-            rc = log_task_event.main([
-                "--task", "anal",
-                "--cycle", "2025011500",
-                "--jobid", "12345",
-                "--attempt", "1",
-                "--state", "init",
-                "--db-path", db_path
-            ])
+            rc = log_task_event.main(
+                ["--task", "anal", "--cycle", "2025011500", "--jobid", "12345", "--attempt", "1", "--state", "init", "--db-path", db_path]
+            )
 
         assert rc == 0
         conn = sqlite3.connect(db_path)

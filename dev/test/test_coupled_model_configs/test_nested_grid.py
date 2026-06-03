@@ -18,7 +18,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "workflow
 
 from deployment.validators.model_configure import ModelConfigureValidator
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -115,7 +114,7 @@ def _render_nested_grid(jinja_env, context):
     template_text = (TEMPLATE_DIR / TEMPLATE_NAME).read_text()
 
     # Protect shell variables from Jinja2 resolution
-    shell_var_pattern = re.compile(r'\$\{[A-Z_][A-Z0-9_]*\}')
+    shell_var_pattern = re.compile(r"\$\{[A-Z_][A-Z0-9_]*\}")
     replacements = {}
     counter = 0
 
@@ -146,16 +145,12 @@ def _render_nested_grid(jinja_env, context):
 class TestNestSpecificParameters:
     """Tests that nest-specific parameters are included/excluded based on do_nest."""
 
-    def test_nest_imo_present_when_do_nest_true(
-        self, jinja_env, valid_fv3_context_with_nest
-    ):
+    def test_nest_imo_present_when_do_nest_true(self, jinja_env, valid_fv3_context_with_nest):
         """NEST_IMO should be present when do_nest=True."""
         rendered = _render_nested_grid(jinja_env, valid_fv3_context_with_nest)
         assert "NEST_IMO:" in rendered
 
-    def test_nest_jmo_present_when_do_nest_true(
-        self, jinja_env, valid_fv3_context_with_nest
-    ):
+    def test_nest_jmo_present_when_do_nest_true(self, jinja_env, valid_fv3_context_with_nest):
         """NEST_JMO should be present when do_nest=True."""
         rendered = _render_nested_grid(jinja_env, valid_fv3_context_with_nest)
         assert "NEST_JMO:" in rendered
@@ -169,20 +164,16 @@ class TestNestSpecificParameters:
         """NEST_JMO should have the correct npy_nest value."""
         rendered = _render_nested_grid(jinja_env, valid_fv3_context_with_nest)
         # Both npx_nest and npy_nest are 961 in our fixture
-        lines = [l for l in rendered.splitlines() if "NEST_JMO" in l]
+        lines = [ln for ln in rendered.splitlines() if "NEST_JMO" in ln]
         assert len(lines) == 1
         assert "961" in lines[0]
 
-    def test_nest_imo_absent_when_do_nest_false(
-        self, jinja_env, valid_fv3_context_without_nest
-    ):
+    def test_nest_imo_absent_when_do_nest_false(self, jinja_env, valid_fv3_context_without_nest):
         """NEST_IMO should NOT be present when do_nest=False."""
         rendered = _render_nested_grid(jinja_env, valid_fv3_context_without_nest)
         assert "NEST_IMO" not in rendered
 
-    def test_nest_jmo_absent_when_do_nest_false(
-        self, jinja_env, valid_fv3_context_without_nest
-    ):
+    def test_nest_jmo_absent_when_do_nest_false(self, jinja_env, valid_fv3_context_without_nest):
         """NEST_JMO should NOT be present when do_nest=False."""
         rendered = _render_nested_grid(jinja_env, valid_fv3_context_without_nest)
         assert "NEST_JMO" not in rendered
@@ -220,17 +211,13 @@ class TestShellVariablePreservation:
 class TestModelConfigureFormatValidity:
     """Tests that rendered input_global_nest.nml passes ModelConfigureValidator."""
 
-    def test_validator_passes_with_nest(
-        self, jinja_env, valid_fv3_context_with_nest, validator
-    ):
+    def test_validator_passes_with_nest(self, jinja_env, valid_fv3_context_with_nest, validator):
         """Rendered output with do_nest=True should pass ModelConfigureValidator."""
         rendered = _render_nested_grid(jinja_env, valid_fv3_context_with_nest)
         errors = validator.validate(rendered, "input_global_nest.nml")
         assert errors == [], f"Validation errors: {errors}"
 
-    def test_validator_passes_without_nest(
-        self, jinja_env, valid_fv3_context_without_nest, validator
-    ):
+    def test_validator_passes_without_nest(self, jinja_env, valid_fv3_context_without_nest, validator):
         """Rendered output with do_nest=False should pass ModelConfigureValidator."""
         rendered = _render_nested_grid(jinja_env, valid_fv3_context_without_nest)
         errors = validator.validate(rendered, "input_global_nest.nml")

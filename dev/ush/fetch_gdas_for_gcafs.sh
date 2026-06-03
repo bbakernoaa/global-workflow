@@ -6,8 +6,8 @@ set -u
 
 # Get arguments from command line
 if [[ "${#}" -ne 2 ]]; then
-    echo "Usage: ${0} <YYYYMMDDHH> <output_directory>"
-    exit 1
+  echo "Usage: ${0} <YYYYMMDDHH> <output_directory>"
+  exit 1
 fi
 YYYYMMDDHH=${1}
 OUTPUT_DIR=${2}
@@ -17,11 +17,11 @@ mkdir -p "${OUTPUT_DIR}/tmp"
 
 # determine GDAS version based on date
 if [[ "${YYYYMMDDHH}" -ge "2022112900" ]]; then
-    gdas_version="v16.3"
+  gdas_version="v16.3"
 elif [[ "${YYYYMMDDHH}" -ge "2022062700" ]]; then
-    gdas_version="v16.2"
+  gdas_version="v16.2"
 else
-    gdas_version="prod"
+  gdas_version="prod"
 fi
 
 # break date and time into components

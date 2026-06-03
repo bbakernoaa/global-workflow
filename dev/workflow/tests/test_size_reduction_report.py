@@ -11,10 +11,7 @@ from __future__ import annotations
 import logging
 import os
 import sys
-from pathlib import Path
 from unittest.mock import MagicMock
-
-import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -63,7 +60,7 @@ class TestSizeReductionReport:
         log_text = caplog.text
         assert "DAG Filter Results:" in log_text
         assert "2/10" in log_text  # J-Jobs
-        assert "1/8" in log_text   # Ex-Scripts
+        assert "1/8" in log_text  # Ex-Scripts
         assert "4/20" in log_text  # Ush Scripts
         assert "3/15" in log_text  # Configs
 

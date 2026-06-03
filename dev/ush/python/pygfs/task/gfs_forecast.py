@@ -1,11 +1,10 @@
-import os
 import logging
-from typing import Dict, Any
+from typing import Any, Dict
 
-from wxflow import logit, Task
 from pygfs.ufswm.gfs import GFS
+from wxflow import Task
 
-logger = logging.getLogger(__name__.split('.')[-1])
+logger = logging.getLogger(__name__.split(".")[-1])
 
 
 class GFSForecast(Task):

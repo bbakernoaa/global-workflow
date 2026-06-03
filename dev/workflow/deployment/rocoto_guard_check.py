@@ -194,7 +194,7 @@ def check_setup_workflow_rocoto_free(path: Path) -> list[str]:
 
     try:
         source = path.read_text(encoding="utf-8")
-    except (OSError, IOError) as exc:
+    except OSError as exc:
         return [f"FATAL ERROR: cannot read {path}: {exc}"]
 
     lines = source.splitlines()
@@ -202,9 +202,7 @@ def check_setup_workflow_rocoto_free(path: Path) -> list[str]:
     try:
         tree = ast.parse(source, filename=str(path))
     except SyntaxError as exc:
-        return [
-            f"FATAL ERROR: cannot parse {path} for rocoto-guard analysis: {exc}"
-        ]
+        return [f"FATAL ERROR: cannot parse {path} for rocoto-guard analysis: {exc}"]
 
     guard_lines = _build_guard_line_coverage(tree, lines)
 

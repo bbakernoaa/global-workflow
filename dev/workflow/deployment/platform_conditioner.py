@@ -27,19 +27,21 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 # Supported platforms (mirrors pipeline.SUPPORTED_PLATFORMS)
-SUPPORTED_PLATFORMS = frozenset({
-    "WCOSS2",
-    "HERA",
-    "HERCULES",
-    "ORION",
-    "GAEAC6",
-    "DERECHO",
-    "URSA",
-    "AWSPW",
-    "AZUREPW",
-    "GOOGLEPW",
-    "CONTAINER",
-})
+SUPPORTED_PLATFORMS = frozenset(
+    {
+        "WCOSS2",
+        "HERA",
+        "HERCULES",
+        "ORION",
+        "GAEAC6",
+        "DERECHO",
+        "URSA",
+        "AWSPW",
+        "AZUREPW",
+        "GOOGLEPW",
+        "CONTAINER",
+    }
+)
 
 # Mapping from platform name to modulefile platform suffix.
 # Modulefiles use lowercase platform names in their filenames
@@ -135,10 +137,7 @@ def render_platform_env(
             break
 
     if src_path is None:
-        logger.warning(
-            f"Platform env file not found for {platform}. "
-            f"Searched: {[str(c) for c in candidates]}"
-        )
+        logger.warning(f"Platform env file not found for {platform}. Searched: {[str(c) for c in candidates]}")
         return None
 
     # Destination path
@@ -149,10 +148,7 @@ def render_platform_env(
     # If it's a .j2 template, render it; otherwise copy verbatim
     if src_path.suffix == ".j2":
         if renderer is None:
-            raise PlatformConditionError(
-                f"Env file {src_path} is a Jinja2 template but no renderer "
-                f"was provided."
-            )
+            raise PlatformConditionError(f"Env file {src_path} is a Jinja2 template but no renderer was provided.")
         renderer.render_file(src_path, dst_path)
     else:
         shutil.copy2(src_path, dst_path)
@@ -194,10 +190,7 @@ def render_platform_resources(
     src_config_dir = project_root / "dev" / "parm" / "config" / app
 
     if not src_config_dir.is_dir():
-        logger.debug(
-            f"  Config directory not found: {src_config_dir}. "
-            f"Skipping platform resources for app '{app}'."
-        )
+        logger.debug(f"  Config directory not found: {src_config_dir}. Skipping platform resources for app '{app}'.")
         return rendered_files
 
     # Destination directory
@@ -219,23 +212,14 @@ def render_platform_resources(
         dst_platform = dst_config_dir / f"config.resources.{platform}"
         if platform_resources.suffix == ".j2":
             if renderer is None:
-                raise PlatformConditionError(
-                    f"Resource file {platform_resources} is a Jinja2 template "
-                    f"but no renderer was provided."
-                )
+                raise PlatformConditionError(f"Resource file {platform_resources} is a Jinja2 template but no renderer was provided.")
             renderer.render_file(platform_resources, dst_platform)
         else:
             shutil.copy2(platform_resources, dst_platform)
         rendered_files.append(dst_platform)
-        logger.info(
-            f"  ✓ Platform resources: config.resources.{platform} "
-            f"→ parm/config/{app}/"
-        )
+        logger.info(f"  ✓ Platform resources: config.resources.{platform} → parm/config/{app}/")
     else:
-        logger.debug(
-            f"  No platform-specific config.resources.{platform} "
-            f"found for app '{app}'."
-        )
+        logger.debug(f"  No platform-specific config.resources.{platform} found for app '{app}'.")
 
     return rendered_files
 
@@ -274,10 +258,7 @@ def stage_platform_modulefiles(
     # Determine the modulefile suffix for this platform
     platform_suffix = _PLATFORM_TO_MODULEFILE_SUFFIX.get(platform)
     if platform_suffix is None:
-        logger.warning(
-            f"No modulefile suffix mapping for platform {platform}. "
-            f"Skipping modulefile staging."
-        )
+        logger.warning(f"No modulefile suffix mapping for platform {platform}. Skipping modulefile staging.")
         return staged_files
 
     # Search for modulefiles in known locations
@@ -306,9 +287,7 @@ def stage_platform_modulefiles(
 
     # Pattern to match platform-specific modulefiles
     # e.g., gw_run.hera.lua, gw_setup.hera.lua
-    platform_pattern = re.compile(
-        rf"^.*\.{re.escape(platform_suffix)}\.lua$", re.IGNORECASE
-    )
+    platform_pattern = re.compile(rf"^.*\.{re.escape(platform_suffix)}\.lua$", re.IGNORECASE)
     common_pattern = re.compile(r"^.*\.common\.lua$", re.IGNORECASE)
 
     for src_file in sorted(src_dir.iterdir()):
@@ -330,14 +309,9 @@ def stage_platform_modulefiles(
                 staged_files.append(dst_file)
 
     if staged_files:
-        logger.info(
-            f"  ✓ Platform modulefiles: {len(staged_files)} file(s) "
-            f"→ modulefiles/{platform}/"
-        )
+        logger.info(f"  ✓ Platform modulefiles: {len(staged_files)} file(s) → modulefiles/{platform}/")
     else:
-        logger.debug(
-            f"  No modulefiles found for platform suffix '{platform_suffix}'."
-        )
+        logger.debug(f"  No modulefiles found for platform suffix '{platform_suffix}'.")
 
     return staged_files
 
@@ -403,15 +377,8 @@ def render_all_platform_conditioned(
         platform=platform,
     )
 
-    total = (
-        (1 if result.env_file else 0)
-        + len(result.resource_files)
-        + len(result.modulefile_paths)
-    )
-    logger.info(
-        f"  ✓ Platform-conditioned rendering complete: "
-        f"{total} file(s) for {platform}"
-    )
+    total = (1 if result.env_file else 0) + len(result.resource_files) + len(result.modulefile_paths)
+    logger.info(f"  ✓ Platform-conditioned rendering complete: {total} file(s) for {platform}")
 
     return result
 

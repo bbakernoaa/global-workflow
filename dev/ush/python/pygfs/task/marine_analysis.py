@@ -1,24 +1,24 @@
 #!/usr/bin/env python3
 
+import os
 from datetime import datetime, timedelta
+from logging import getLogger
+
 import dateutil.parser as dparser
 from netCDF4 import Dataset
-from logging import getLogger
-import os
+
 from pygfs.jedi import Jedi
 from pygfs.task.analysis import Analysis
-from wxflow import (AttrDict, FileHandler,
-                    to_timedelta, to_fv3time, to_isotime,
-                    parse_j2yaml, parse_j2tmpl,
-                    logit)
+from wxflow import AttrDict, FileHandler, logit, parse_j2tmpl, parse_j2yaml, to_fv3time, to_isotime
 
-logger = getLogger(__name__.split('.')[-1])
+logger = getLogger(__name__.split(".")[-1])
 
 
 class MarineAnalysis(Analysis):
     """
     Class for global marine analysis tasks
     """
+
     def __init__(self, config):
         """Constructor for global marine analysis
 
@@ -48,9 +48,9 @@ class MarineAnalysis(Analysis):
 
         # Determine background error model
         if self.task_config.NMEM_ENS >= 2:
-            _berror_model = 'marine_background_error_hybrid_diffusion_diffusion'
+            _berror_model = "marine_background_error_hybrid_diffusion_diffusion"
         else:
-            _berror_model = 'marine_background_error_static_diffusion'
+            _berror_model = "marine_background_error_static_diffusion"
 
         # Get restart date
         if self.task_config.DOIAU:
@@ -67,29 +67,35 @@ class MarineAnalysis(Analysis):
         bkg_date = self.task_config.WINDOW_BEGIN
         for fcst_hour in fcst_hour_list:
             bkg_date = bkg_date + timedelta(hours=dt_pseudo)
-            _marine_pseudo_model_states.append({'date': to_isotime(bkg_date),
-                                                'basename': './bkg/',
-                                                'ocn_filename': f"ocean.bkg.f{str(fcst_hour).zfill(3)}.nc",
-                                                'ice_filename': f"ice.bkg.f{str(fcst_hour).zfill(3)}.nc",
-                                                'read_from_file': 1})
+            _marine_pseudo_model_states.append(
+                {
+                    "date": to_isotime(bkg_date),
+                    "basename": "./bkg/",
+                    "ocn_filename": f"ocean.bkg.f{str(fcst_hour).zfill(3)}.nc",
+                    "ice_filename": f"ice.bkg.f{str(fcst_hour).zfill(3)}.nc",
+                    "read_from_file": 1,
+                }
+            )
 
         # Create a local dictionary that is repeatedly used across this class
-        self.task_config.update(AttrDict(
-            {
-                'PARMmarine': os.path.join(self.task_config.PARMglobal, 'gdas', 'marine'),
-                'ENSPERT_RELPATH': _enspert_relpath,
-                'berror_model': _berror_model,
-                'rst_date': _rst_date,
-                'cice_rst_date': _cice_rst_date,
-                'marine_pseudo_model_states': _marine_pseudo_model_states
-            }
-        ))
+        self.task_config.update(
+            AttrDict(
+                {
+                    "PARMmarine": os.path.join(self.task_config.PARMglobal, "gdas", "marine"),
+                    "ENSPERT_RELPATH": _enspert_relpath,
+                    "berror_model": _berror_model,
+                    "rst_date": _rst_date,
+                    "cice_rst_date": _cice_rst_date,
+                    "marine_pseudo_model_states": _marine_pseudo_model_states,
+                }
+            )
+        )
 
         # Extend task_config with content of config yaml for this task
         self.task_config.update(parse_j2yaml(self.task_config.TASK_CONFIG_YAML, self.task_config))
 
         # Construct dictionary of JEDI objects, one for each JEDI application need for the analysis
-        expected_keys = ['var', 'soca_incpostproc', 'soca_diag_stats']
+        expected_keys = ["var", "soca_incpostproc", "soca_diag_stats"]
         self.jedi_dict = Jedi.get_jedi_dict(self.task_config.jedi_config, self.task_config, expected_keys)
 
     @logit(logger)
@@ -115,35 +121,30 @@ class MarineAnalysis(Analysis):
         """
 
         # stage files from COM
-        logger.info(f"Staging files from COM and creating input/output directories")
+        logger.info("Staging files from COM and creating input/output directories")
         FileHandler(self.task_config.data_in).sync()
 
         # Stage observation files
-        logger.info(f"Staging observations")
-        self.jedi_dict['var'].stage_obsdatain(self.task_config.COMIN_OBS)
+        logger.info("Staging observations")
+        self.jedi_dict["var"].stage_obsdatain(self.task_config.COMIN_OBS)
 
         # prepare the deterministic MOM6 input.nml
-        logger.info(f"Preparing deterministic MOM6 input namelist")
-        parse_j2tmpl(os.path.join(self.task_config.PARMmarine, 'mom_input.nml.j2'),
-                     self.task_config,
-                     output_file="mom_input.nml")
+        logger.info("Preparing deterministic MOM6 input namelist")
+        parse_j2tmpl(os.path.join(self.task_config.PARMmarine, "mom_input.nml.j2"), self.task_config, output_file="mom_input.nml")
 
         # prepare the input.nml for the analysis geometry
-        logger.info(f"Preparing analysis geometry input namelist")
-        parse_j2tmpl(os.path.join(self.task_config.PARMmarine, 'mom_input_anlgeom.nml.j2'),
-                     self.task_config,
-                     output_file="./anl_geom/mom_input.nml")
+        logger.info("Preparing analysis geometry input namelist")
+        parse_j2tmpl(os.path.join(self.task_config.PARMmarine, "mom_input_anlgeom.nml.j2"), self.task_config, output_file="./anl_geom/mom_input.nml")
 
         # assert that dates of the history files are correct
-        test_hist_date('./INPUT/MOM.res.nc', self.task_config.WINDOW_BEGIN)
+        test_hist_date("./INPUT/MOM.res.nc", self.task_config.WINDOW_BEGIN)
         for state in self.task_config.marine_pseudo_model_states:
-            test_hist_date(state['basename'] + state['ocn_filename'],
-                           datetime.strptime(state['date'], '%Y-%m-%dT%H:%M:%SZ'))
+            test_hist_date(state["basename"] + state["ocn_filename"], datetime.strptime(state["date"], "%Y-%m-%dT%H:%M:%SZ"))
 
         # initialize JEDI applications
-        logger.info(f"Initializing JEDI applications")
-        self.jedi_dict['var'].initialize(clean_empty_obsspaces=True)
-        self.jedi_dict['soca_incpostproc'].initialize()
+        logger.info("Initializing JEDI applications")
+        self.jedi_dict["var"].initialize(clean_empty_obsspaces=True)
+        self.jedi_dict["soca_incpostproc"].initialize()
 
         # This method is a bit of a hack that will be removed in the future when the anlstat
         # job fully replaces the SOCA obs_diag_stats application
@@ -188,18 +189,17 @@ class MarineAnalysis(Analysis):
         """
 
         # Save files from COM
-        logger.info(f"Saving files to COM")
+        logger.info("Saving files to COM")
         FileHandler(self.task_config.data_out).sync()
 
         # Archive, compress, and save diag files in COM directory
-        logger.info(f"Saving observation diag files to COM")
-        self.jedi_dict['var'].save_obsdataout(self.task_config.COMOUT_OCEAN_ANALYSIS,
-                                              f"{self.task_config.APREFIX}marine_analysis.ioda_hofx")
+        logger.info("Saving observation diag files to COM")
+        self.jedi_dict["var"].save_obsdataout(self.task_config.COMOUT_OCEAN_ANALYSIS, f"{self.task_config.APREFIX}marine_analysis.ioda_hofx")
 
         # Save obs diag statistics to COM (this is for legacy obs monitoring)
         logger.info(f"Copy (legacy) observation statistics from {self.task_config.DATA} to {self.task_config.COMOUT_OCEAN_ANALYSIS}")
         try:
-            diags_list = self.jedi_dict['soca_diag_stats'].render_jcb_template(algorithm_in='soca_diags_finalize')
+            diags_list = self.jedi_dict["soca_diag_stats"].render_jcb_template(algorithm_in="soca_diags_finalize")
         except Exception as e:
             logger.warning(f"Failed to render JCB template, 'soca_diags_finalize': {e}")
         FileHandler(diags_list).sync()
@@ -224,20 +224,20 @@ class MarineAnalysis(Analysis):
         #
         cleaned_observations = []
         obs_variables = {}
-        for obs_space in self.jedi_dict['var'].jedi_config.input_config['cost function']['observations']['observers']:
-            name = obs_space['obs space']['name']
-            variable = obs_space['obs space']['simulated variables'][0]
+        for obs_space in self.jedi_dict["var"].jedi_config.input_config["cost function"]["observations"]["observers"]:
+            name = obs_space["obs space"]["name"]
+            variable = obs_space["obs space"]["simulated variables"][0]
 
             cleaned_observations.append(name)
             obs_variables[name] = variable
 
         # Update the task_config with the observation variables
-        self.task_config['cleaned_observations'] = cleaned_observations
-        self.task_config['obs_variables'] = obs_variables
+        self.task_config["cleaned_observations"] = cleaned_observations
+        self.task_config["obs_variables"] = obs_variables
 
         # Initialize the observation statistics
-        logger.info(f"Initializing JEDI SOCA observation statistics application")
-        self.jedi_dict['soca_diag_stats'].initialize(self.task_config)
+        logger.info("Initializing JEDI SOCA observation statistics application")
+        self.jedi_dict["soca_diag_stats"].initialize(self.task_config)
 
 
 @logit(logger)
@@ -247,8 +247,8 @@ def test_hist_date(histfile: str, ref_date: datetime) -> None:
     TODO: Implement the same for seaice
     """
 
-    ncf = Dataset(histfile, 'r')
-    hist_date = dparser.parse(ncf.variables['time'].units, fuzzy=True) + timedelta(hours=int(ncf.variables['time'][0]))
+    ncf = Dataset(histfile, "r")
+    hist_date = dparser.parse(ncf.variables["time"].units, fuzzy=True) + timedelta(hours=int(ncf.variables["time"][0]))
     ncf.close()
     logger.info(f"*** history file date: {hist_date} expected date: {ref_date}")
 

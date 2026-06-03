@@ -43,7 +43,7 @@ GSIDIAGDIR=${GSIDIAGDIR:-"${pCOMIN_ATMOS_ANALYSIS}/gsidiags"}
 USE_BUILD_GSINFO=${USE_BUILD_GSINFO:-"NO"}
 DIAG_COMPRESS=${DIAG_COMPRESS:-"YES"}
 if [[ "${DIAG_COMPRESS:-}" == "YES" ]]; then
-    COMPRESS_SUFFIX=".gz"
+  COMPRESS_SUFFIX=".gz"
 fi
 DIAG_TARBALL=${DIAG_TARBALL:-"YES"}
 
@@ -51,30 +51,30 @@ DIAG_TARBALL=${DIAG_TARBALL:-"YES"}
 
 ################################################################################
 if [[ "${GENDIAG}" != "YES" ]]; then
-    echo "INFO: GENDIAG set to NO.  Skipping diagnostic file generation."
-    exit 0
+  echo "INFO: GENDIAG set to NO.  Skipping diagnostic file generation."
+  exit 0
 fi
 
 # Check that the gsidiags directory exists
 if [[ ! -d "${GSIDIAGDIR}" ]]; then
-    export err=1
-    err_exit "gsidiags directory ${GSIDIAGDIR} does not exist"
+  export err=1
+  err_exit "gsidiags directory ${GSIDIAGDIR} does not exist"
 fi
 
 ################################################################################
 # Link to the gsidiags directory if it is populated
 count_dirs=$(find "${GSIDIAGDIR}" -maxdepth 1 -type d -name "dir.*" | wc -l)
 if [[ ${count_dirs} -eq 0 ]]; then
-    export err=1
-    err_exit "No gsidiags directories found in ${GSIDIAGDIR}"
+  export err=1
+  err_exit "No gsidiags directories found in ${GSIDIAGDIR}"
 fi
 
 # Continue if there is at least one file to process
 # Note -quit stops find after the first match
 count_files=$(find "${GSIDIAGDIR}"/dir.* -maxdepth 1 -type f -printf '.' -quit | wc -c)
 if [[ ${count_files} -eq 0 ]]; then
-    echo "WARNING: No diagnostic files found to process!"
-    exit 0
+  echo "WARNING: No diagnostic files found to process!"
+  exit 0
 fi
 
 ${NLN} "${GSIDIAGDIR}/"dir.* .
@@ -85,11 +85,11 @@ ntype=3
 diagtype[0]="conv conv_gps conv_ps conv_pw conv_q conv_sst conv_t conv_tcp conv_uv conv_spd"
 diagtype[1]="pcp_ssmi_dmsp pcp_tmi_trmm"
 if [[ ${USE_BUILD_GSINFO} == "YES" ]]; then
-    diagtype[2]=$(cat "${BUILD_GSINFO_DIR}/ozinfo/satellites")
-    diagtype[3]=$(cat "${BUILD_GSINFO_DIR}/satinfo/satellites")
+  diagtype[2]=$(cat "${BUILD_GSINFO_DIR}/ozinfo/satellites")
+  diagtype[3]=$(cat "${BUILD_GSINFO_DIR}/satinfo/satellites")
 else
-    diagtype[2]="sbuv2_n16 sbuv2_n17 sbuv2_n18 sbuv2_n19 gome_metop-a gome_metop-b omi_aura mls30_aura ompsnp_npp ompstc8_npp  ompstc8_n20 ompsnp_n20 ompstc8_n21 ompsnp_n21 ompslp_npp gome_metop-c"
-    diagtype[3]="msu_n14 sndr_g08 sndr_g11 sndr_g12 sndr_g13 sndr_g08_prep sndr_g11_prep sndr_g12_prep sndr_g13_prep sndrd1_g11 sndrd2_g11 sndrd3_g11 sndrd4_g11 sndrd1_g12 sndrd2_g12 sndrd3_g12 sndrd4_g12 sndrd1_g13 sndrd2_g13 sndrd3_g13 sndrd4_g13 sndrd1_g14 sndrd2_g14 sndrd3_g14 sndrd4_g14 sndrd1_g15 sndrd2_g15 sndrd3_g15 sndrd4_g15 amsua_n15 amsua_n16 amsua_n17 amsub_n15 amsub_n16 amsub_n17 hsb_aqua airs_aqua amsua_aqua imgr_g08 imgr_g11 imgr_g12 imgr_g14 imgr_g15 ssmi_f13 ssmi_f15 amsua_n18 amsua_metop-a mhs_n18 mhs_metop-a amsre_low_aqua amsre_mid_aqua amsre_hig_aqua ssmis_f16 ssmis_f17 ssmis_f18 ssmis_f19 ssmis_f20 iasi_metop-a amsua_n19 mhs_n19 seviri_m08 seviri_m09 seviri_m10 seviri_m11 cris_npp cris-fsr_npp cris-fsr_n20 atms_npp atms_n20 amsua_metop-b mhs_metop-b iasi_metop-b avhrr_metop-b avhrr_n18 avhrr_n19 avhrr_metop-a amsr2_gcom-w1 gmi_gpm saphir_meghat ahi_himawari8 abi_g16 abi_g17 amsua_metop-c mhs_metop-c iasi_metop-c avhrr_metop-c viirs-m_npp viirs-m_j1 abi_g18 ahi_himawari9 viirs-m_j2 cris-fsr_n21 atms_n21 abi_g19"
+  diagtype[2]="sbuv2_n16 sbuv2_n17 sbuv2_n18 sbuv2_n19 gome_metop-a gome_metop-b omi_aura mls30_aura ompsnp_npp ompstc8_npp  ompstc8_n20 ompsnp_n20 ompstc8_n21 ompsnp_n21 ompslp_npp gome_metop-c"
+  diagtype[3]="msu_n14 sndr_g08 sndr_g11 sndr_g12 sndr_g13 sndr_g08_prep sndr_g11_prep sndr_g12_prep sndr_g13_prep sndrd1_g11 sndrd2_g11 sndrd3_g11 sndrd4_g11 sndrd1_g12 sndrd2_g12 sndrd3_g12 sndrd4_g12 sndrd1_g13 sndrd2_g13 sndrd3_g13 sndrd4_g13 sndrd1_g14 sndrd2_g14 sndrd3_g14 sndrd4_g14 sndrd1_g15 sndrd2_g15 sndrd3_g15 sndrd4_g15 amsua_n15 amsua_n16 amsua_n17 amsub_n15 amsub_n16 amsub_n17 hsb_aqua airs_aqua amsua_aqua imgr_g08 imgr_g11 imgr_g12 imgr_g14 imgr_g15 ssmi_f13 ssmi_f15 amsua_n18 amsua_metop-a mhs_n18 mhs_metop-a amsre_low_aqua amsre_mid_aqua amsre_hig_aqua ssmis_f16 ssmis_f17 ssmis_f18 ssmis_f19 ssmis_f20 iasi_metop-a amsua_n19 mhs_n19 seviri_m08 seviri_m09 seviri_m10 seviri_m11 cris_npp cris-fsr_npp cris-fsr_n20 atms_npp atms_n20 amsua_metop-b mhs_metop-b iasi_metop-b avhrr_metop-b avhrr_n18 avhrr_n19 avhrr_metop-a amsr2_gcom-w1 gmi_gpm saphir_meghat ahi_himawari8 abi_g16 abi_g17 amsua_metop-c mhs_metop-c iasi_metop-c avhrr_metop-c viirs-m_npp viirs-m_j1 abi_g18 ahi_himawari9 viirs-m_j2 cris-fsr_n21 atms_n21 abi_g19"
 fi
 
 diaglist[0]=listcnv
@@ -155,36 +155,36 @@ rm -f cmdfile
 touch cmdfile
 loops="01 03"
 for loop in ${loops}; do
-    case ${loop} in
-        01) string=ges ;;
-        03) string=anl ;;
-        *) string=${loop} ;;
-    esac
-    echo "START loop ${string}"
-    n=-1
-    while [[ ${n} -lt ${ntype} ]]; do
-        n=$((n + 1))
-        for dtype in ${diagtype[n]}; do
-            if [[ "${dtype}" == *"avhrr"* ]]; then # recast dtype in avhrr form
-                dtype="avhrr${dtype##avhrr[23]}"
-            fi
-            # -L to follow symlinks, as dir.* are symlinks to gsidiags/dir.*
-            count=$(find -L ./dir.* -path "./dir.*/${dtype}_${loop}*" -type f -printf "." | wc -c)
-            if [[ ${count} -eq 0 ]]; then
-                continue
-            fi
-            echo "${DATA}/diag.sh ${dtype} ${loop} ${string} ${count} ${DIAG_SUFFIX:-}.nc4" >> cmdfile
-            echo "diag_${dtype}_${string}.${PDY}${cyc}${DIAG_SUFFIX:-}.nc4${COMPRESS_SUFFIX:-}" >> "${diaglist[n]}"
-            numfile[n]=$((numfile[n] + 1))
-        done
+  case ${loop} in
+    01) string=ges ;;
+    03) string=anl ;;
+    *) string=${loop} ;;
+  esac
+  echo "START loop ${string}"
+  n=-1
+  while [[ ${n} -lt ${ntype} ]]; do
+    n=$((n + 1))
+    for dtype in ${diagtype[n]}; do
+      if [[ "${dtype}" == *"avhrr"* ]]; then # recast dtype in avhrr form
+        dtype="avhrr${dtype##avhrr[23]}"
+      fi
+      # -L to follow symlinks, as dir.* are symlinks to gsidiags/dir.*
+      count=$(find -L ./dir.* -path "./dir.*/${dtype}_${loop}*" -type f -printf "." | wc -c)
+      if [[ ${count} -eq 0 ]]; then
+        continue
+      fi
+      echo "${DATA}/diag.sh ${dtype} ${loop} ${string} ${count} ${DIAG_SUFFIX:-}.nc4" >> cmdfile
+      echo "diag_${dtype}_${string}.${PDY}${cyc}${DIAG_SUFFIX:-}.nc4${COMPRESS_SUFFIX:-}" >> "${diaglist[n]}"
+      numfile[n]=$((numfile[n] + 1))
     done
-    echo "END loop ${string}"
+  done
+  echo "END loop ${string}"
 done
 
 ncmd=$(wc -l < cmdfile)
 if [[ ${ncmd} -eq 0 ]]; then
-    echo "WARNING: No diagnostic files found to process!"
-    exit 0
+  echo "WARNING: No diagnostic files found to process!"
+  exit 0
 fi
 
 # MPMD can only be executed on a single node,
@@ -193,58 +193,58 @@ fi
 split -l "${tasks_per_node}" ./cmdfile cmdfile_part_
 cmdfile_parts=$(ls cmdfile_part_*)
 for partfile in ${cmdfile_parts}; do
-    "${USHglobal}/run_mpmd.sh" "${partfile}" && true
-    export err=$?
-    if [[ ${err} -ne 0 ]]; then
-        err_exit "Failed to create one or more observation diagnostic files for ${partfile}!"
-    fi
+  "${USHglobal}/run_mpmd.sh" "${partfile}" && true
+  export err=$?
+  if [[ ${err} -ne 0 ]]; then
+    err_exit "Failed to create one or more observation diagnostic files for ${partfile}!"
+  fi
 done
 
 # Restrict diagnostic files containing rstprod data
 if [[ "${CHGRP_RSTPROD}" == "YES" ]]; then
-    rlist="conv_gps conv_ps conv_pw conv_q conv_sst conv_t conv_uv saphir"
-    for rtype in ${rlist}; do
-        for rfile in *"${rtype}"*; do
-            if [[ -s "${rfile}" ]]; then
-                ${CHGRP_CMD} "${rfile}"
-            fi
-        done
+  rlist="conv_gps conv_ps conv_pw conv_q conv_sst conv_t conv_uv saphir"
+  for rtype in ${rlist}; do
+    for rfile in *"${rtype}"*; do
+      if [[ -s "${rfile}" ]]; then
+        ${CHGRP_CMD} "${rfile}"
+      fi
     done
+  done
 fi
 
 # If requested, create diagnostic file tarballs
 if [[ "${DIAG_TARBALL}" == "YES" ]]; then
-    echo "START tar diagnostic files"
-    n=-1
-    while [[ ${n} -lt ${ntype} ]]; do
-        n=$((n + 1))
-        TAROPTS="-uvf"
-        if [[ ! -s "${diagfile[n]}" ]]; then
-            TAROPTS="-cvf"
-        fi
-        if [[ ${numfile[n]} -gt 0 ]]; then
-            tar "${TAROPTS}" "${diagfile[n]}" -T "${diaglist[n]}"
-            export err=$?
-            if [[ ${err} -ne 0 ]]; then
-                err_exit "Unable to create ${diagfile[n]}!"
-            fi
-        fi
-    done
-    echo "END tar diagnostic files"
+  echo "START tar diagnostic files"
+  n=-1
+  while [[ ${n} -lt ${ntype} ]]; do
+    n=$((n + 1))
+    TAROPTS="-uvf"
+    if [[ ! -s "${diagfile[n]}" ]]; then
+      TAROPTS="-cvf"
+    fi
+    if [[ ${numfile[n]} -gt 0 ]]; then
+      tar "${TAROPTS}" "${diagfile[n]}" -T "${diaglist[n]}"
+      export err=$?
+      if [[ ${err} -ne 0 ]]; then
+        err_exit "Unable to create ${diagfile[n]}!"
+      fi
+    fi
+  done
+  echo "END tar diagnostic files"
 
-    # Restrict CNVSTAT
-    chmod 750 "${CNVSTAT}"
+  # Restrict CNVSTAT
+  chmod 750 "${CNVSTAT}"
+  if [[ "${CHGRP_RSTPROD}" == "YES" ]]; then
+    ${CHGRP_CMD} "${CNVSTAT}"
+  fi
+
+  # Restrict RADSTAT
+  if [[ -s "${RADSTAT}" ]]; then
+    chmod 750 "${RADSTAT}"
     if [[ "${CHGRP_RSTPROD}" == "YES" ]]; then
-        ${CHGRP_CMD} "${CNVSTAT}"
+      ${CHGRP_CMD} "${RADSTAT}"
     fi
-
-    # Restrict RADSTAT
-    if [[ -s "${RADSTAT}" ]]; then
-        chmod 750 "${RADSTAT}"
-        if [[ "${CHGRP_RSTPROD}" == "YES" ]]; then
-            ${CHGRP_CMD} "${RADSTAT}"
-        fi
-    fi
+  fi
 fi
 
 ################################################################################

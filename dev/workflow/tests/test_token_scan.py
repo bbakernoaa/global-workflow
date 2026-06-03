@@ -53,11 +53,7 @@ def _write(path: Path, text: str) -> Path:
 
 def _write_registry(path: Path, paths: list[str]) -> Path:
     """Write an Atparse_Exemption_Registry YAML listing ``paths``."""
-    data = {
-        "exemptions": [
-            {"path": p, "justification": f"test exemption for {p}"} for p in paths
-        ]
-    }
+    data = {"exemptions": [{"path": p, "justification": f"test exemption for {p}"} for p in paths]}
     return _write(path, yaml.dump(data, sort_keys=False))
 
 
@@ -192,9 +188,7 @@ def test_stale_and_active_exemptions_distinguished(tmp_path: Path):
     """Only the token-free exempt entry is stale; the active one is not."""
     _write(tmp_path / "ush" / "active.sh", "v=@[KEEP]\n")
     _write(tmp_path / "ush" / "stale.sh", "echo nothing\n")
-    result = scan_repo_runtime(
-        tmp_path, registry={"ush/active.sh", "ush/stale.sh"}
-    )
+    result = scan_repo_runtime(tmp_path, registry={"ush/active.sh", "ush/stale.sh"})
 
     assert result.passed
     assert result.stale_exemptions == ["ush/stale.sh"]
@@ -209,25 +203,19 @@ def test_forecast_postdet_parsing_source_detected(tmp_path: Path):
     """Sourcing a parsing_namelists_*.sh in forecast_postdet.sh is a violation."""
     _write(
         tmp_path / "ush" / "forecast_postdet.sh",
-        "#!/bin/bash\n"
-        'source "${USHgfs}/parsing_namelists_WW3.sh"\n'
-        "WW3_namelists\n",
+        '#!/bin/bash\nsource "${USHgfs}/parsing_namelists_WW3.sh"\nWW3_namelists\n',
     )
     result = scan_repo_runtime(tmp_path, registry=set())
 
     assert not result.passed
-    assert result.parsing_source_violations == [
-        ("ush/forecast_postdet.sh", "parsing_namelists_WW3.sh")
-    ]
+    assert result.parsing_source_violations == [("ush/forecast_postdet.sh", "parsing_namelists_WW3.sh")]
 
 
 def test_forecast_postdet_parsing_source_comment_ignored(tmp_path: Path):
     """A commented-out parsing_namelists reference is not a violation."""
     _write(
         tmp_path / "ush" / "forecast_postdet.sh",
-        "#!/bin/bash\n"
-        '# legacy: source "${USHgfs}/parsing_namelists_MOM6.sh"\n'
-        'cpreq "${EXPDIR}/parm/ufs/ocean/MOM_input" "${DATA}/INPUT/MOM_input"\n',
+        '#!/bin/bash\n# legacy: source "${USHgfs}/parsing_namelists_MOM6.sh"\ncpreq "${EXPDIR}/parm/ufs/ocean/MOM_input" "${DATA}/INPUT/MOM_input"\n',
     )
     result = scan_repo_runtime(tmp_path, registry=set())
 
@@ -249,9 +237,8 @@ def test_real_forecast_postdet_has_no_parsing_sources():
     # Scope the scan to dev/ush/ so this unit test does not depend on the whole repo.
     result = scan_repo_runtime(REPO_ROOT, registry=registry, scan_dirs=("dev/ush",))
 
-    assert result.parsing_source_violations == [], (
-        "forecast_postdet.sh still sources parsing_namelists_*.sh:\n"
-        + "\n".join(f"  {s} -> {n}" for s, n in result.parsing_source_violations)
+    assert result.parsing_source_violations == [], "forecast_postdet.sh still sources parsing_namelists_*.sh:\n" + "\n".join(
+        f"  {s} -> {n}" for s, n in result.parsing_source_violations
     )
 
 
@@ -362,10 +349,6 @@ def test_result_passed_true_when_only_stale():
 
 def test_result_passed_false_on_any_hard_violation():
     """Any atparse/jinja/parsing-source violation makes passed False."""
-    assert not TokenScanResult(
-        atparse_violations=[("f", 1, "@[X]")]
-    ).passed
+    assert not TokenScanResult(atparse_violations=[("f", 1, "@[X]")]).passed
     assert not TokenScanResult(jinja_violations=[("f", 1, "{{")]).passed
-    assert not TokenScanResult(
-        parsing_source_violations=[("ush/forecast_postdet.sh", "parsing_namelists_WW3.sh")]
-    ).passed
+    assert not TokenScanResult(parsing_source_violations=[("ush/forecast_postdet.sh", "parsing_namelists_WW3.sh")]).passed

@@ -14,23 +14,21 @@ Traces to: Design Document - Correctness Property 1
 from __future__ import annotations
 
 import os
-import stat
 import sys
 import tempfile
 from pathlib import Path
 
-import pytest
 import yaml
-from hypothesis import given, settings, HealthCheck, assume
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from deployment.pipeline import run, PipelineError, SubmodulePolicy
+from deployment.pipeline import SubmodulePolicy, run
 
 # Committed Submodule_Fixture tree (Req 6.2, 6.7). Resolved relative to this
 # test file so it works regardless of the current working directory.
-FIXTURE_ROOT = (Path(__file__).resolve().parent / "fixtures" / "submodules")
+FIXTURE_ROOT = Path(__file__).resolve().parent / "fixtures" / "submodules"
 
 
 # ---------------------------------------------------------------------------
@@ -95,9 +93,7 @@ def _create_minimal_dev_tree(base_path: Path, config_name: str = "test_config.ya
 ${EXPDIR}/ush/universal_wrapper.sh {{ task.jjob }}
 %include <tail.h>
 """
-    (dev_root / "workflow" / "ecflow" / "templates" / "task.ecf.j2").write_text(
-        template
-    )
+    (dev_root / "workflow" / "ecflow" / "templates" / "task.ecf.j2").write_text(template)
 
     # Create a .git directory to mark repo root
     (base_path / ".git").mkdir(exist_ok=True)
@@ -183,7 +179,7 @@ def test_deployment_determinism_property(version):
 
         try:
             # First deployment
-            result_1 = run(
+            run(
                 config=str(tree["config_path"]),
                 platform=platform,
                 expdir=str(expdir_1),
@@ -198,7 +194,7 @@ def test_deployment_determinism_property(version):
             # Second deployment (same config, same platform, same version)
             # Need to remove manifest from first run's check — but we deploy
             # to a different EXPDIR so no conflict
-            result_2 = run(
+            run(
                 config=str(tree["config_path"]),
                 platform=platform,
                 expdir=str(expdir_2),

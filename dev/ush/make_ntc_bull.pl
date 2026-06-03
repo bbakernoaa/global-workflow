@@ -2,26 +2,26 @@
 #
 #------------------------------------------------------
 #
-# This is make_ntc_bull.pl 
+# This is make_ntc_bull.pl
 # It attaches the appropriate headers to the input file
 # and copies it to a unique name for input to NTC.
 #
-# A Bulletin Flag Field Separator is prepended to the 
+# A Bulletin Flag Field Separator is prepended to the
 # text bulletin.  This TOC header contains the total
-# number of bytes in the product not counting the 
+# number of bytes in the product not counting the
 # bulletin flag field separator.
 #
-# Input: 
+# Input:
 #    File identifier -  Output name identier.
 #    subheader - "NONE" if none.
-#    Originator - Not used currently               
-#    datetime  - Not used currently                         
+#    Originator - Not used currently
+#    datetime  - Not used currently
 #    filename - input file name
 #    output_path - name of output file
 #
 #   Author: Larry Sager based on a script by Paula Freeman
 #
-#  31 Oct  05 -- new script                           
+#  31 Oct  05 -- new script
 #
 #------------------------------------------------------
 
@@ -38,11 +38,11 @@ if ($NArgs < 6)   {
 #  Get input
 #
 
-$NAME=shift; 
-$WMOname=shift; 
-$ORIGname=shift; 
-$DATEname=shift; 
-$Filename=shift; 
+$NAME=shift;
+$WMOname=shift;
+$ORIGname=shift;
+$DATEname=shift;
+$Filename=shift;
 $OutputFilename=shift;
 print " Input :  $Filename";
 print " Output:  $OutputFilename";
@@ -68,7 +68,7 @@ if ( ($Filename eq "") || ($OutputFilename eq "")  ) {
 #
 #
 
-   
+
 sub usage () {
    print "Usage: $0  <wmoheader> <Originator> <YYYYMMDDHH> <subheader|NONE> <inpath> <outpath>\n";
 }
@@ -198,7 +198,7 @@ sub make_tocredb {
 
 #
 #  Prepare the Redbook graphic for transmission to TOC by removing the AWIPS
-#  header and creating an NTC header.  Get the Bytecount of the file to   
+#  header and creating an NTC header.  Get the Bytecount of the file to
 #  insert into the Bulletin Flag Field Seperator.
 #
 
@@ -212,7 +212,7 @@ sub make_tocredb {
    $cho = $rec;
    $Outp="$OutputFilename";
    open(OUTFILE, ">$Outp") or die "Cannot open $OutputFilename for output.";
-   $cho = substr($cho,24); 
+   $cho = substr($cho,24);
    $ByteCount = length($cho);
    print " length is $ByteCount ";
    $BulletinFlagFieldSep = sprintf( "****%10.10d****", $ByteCount);

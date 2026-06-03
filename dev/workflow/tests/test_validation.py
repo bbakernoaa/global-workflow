@@ -20,15 +20,13 @@ from unittest.mock import patch
 
 from deployment.validation import (
     ValidationError,
-    ValidationResult,
+    _extract_snapshot_id,
+    _parse_pinned_versions,
     check_expdir_immutability,
     check_git_state,
     check_pinned_versions,
     validate_inputs,
-    _extract_snapshot_id,
-    _parse_pinned_versions,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -297,9 +295,7 @@ class TestGitState:
     def test_clean_repo_passes(self, tmp_path):
         """Clean git repo should pass without warnings."""
         with patch("subprocess.run") as mock_run:
-            mock_run.return_value = type(
-                "Result", (), {"returncode": 0, "stdout": "", "stderr": ""}
-            )()
+            mock_run.return_value = type("Result", (), {"returncode": 0, "stdout": "", "stderr": ""})()
             result = check_git_state(tmp_path)
 
         assert result.passed
@@ -385,9 +381,7 @@ class TestValidateInputs:
             return_value="0.3.0",
         ):
             with patch("subprocess.run") as mock_run:
-                mock_run.return_value = type(
-                    "Result", (), {"returncode": 0, "stdout": "", "stderr": ""}
-                )()
+                mock_run.return_value = type("Result", (), {"returncode": 0, "stdout": "", "stderr": ""})()
                 result = validate_inputs(
                     expdir=expdir,
                     requirements_path=Path(req_file),
@@ -430,9 +424,7 @@ class TestValidateInputs:
             return_value="0.2.0",
         ):
             with patch("subprocess.run") as mock_run:
-                mock_run.return_value = type(
-                    "Result", (), {"returncode": 0, "stdout": "", "stderr": ""}
-                )()
+                mock_run.return_value = type("Result", (), {"returncode": 0, "stdout": "", "stderr": ""})()
                 result = validate_inputs(
                     expdir=expdir,
                     requirements_path=Path(req_file),

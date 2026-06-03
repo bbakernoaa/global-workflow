@@ -2,24 +2,25 @@
 
 import os
 from logging import getLogger
-from typing import Dict, List, Optional, Any
 from pprint import pformat
-import glob
-import gzip
-import tarfile
-import numpy as np
-from netCDF4 import Dataset
-from pygfs.task.analysis import Analysis
-from pygfs.jedi import Jedi
-from wxflow import (AttrDict, Executable, FileHandler, WorkflowException,
-                    to_fv3time, to_YMD, to_YMDH, to_timedelta, add_to_datetime,
-                    to_julian,
-                    rm_p, cp,
-                    parse_j2yaml, save_as_yaml,
-                    Jinja,
-                    logit)
+from typing import Any, Dict
 
-logger = getLogger(__name__.split('.')[-1])
+from pygfs.jedi import Jedi
+from pygfs.task.analysis import Analysis
+from wxflow import (
+    AttrDict,
+    Executable,
+    FileHandler,
+    Jinja,
+    WorkflowException,
+    logit,
+    parse_j2yaml,
+    rm_p,
+    to_fv3time,
+    to_YMDH,
+)
+
+logger = getLogger(__name__.split(".")[-1])
 
 
 class SnowAnalysis(Analysis):
@@ -46,16 +47,15 @@ class SnowAnalysis(Analysis):
         """
         super().__init__(config)
 
-        _res = int(self.task_config['CASE'][1:])
-        _fail_on_missing = str(self.task_config.fail_on_missing_snowobs[0]).lower() == "true" \
-            if isinstance(self.task_config.fail_on_missing_snowobs, list) \
+        _res = int(self.task_config["CASE"][1:])
+        _fail_on_missing = (
+            str(self.task_config.fail_on_missing_snowobs[0]).lower() == "true"
+            if isinstance(self.task_config.fail_on_missing_snowobs, list)
             else bool(self.task_config.fail_on_missing_snowobs)
+        )
 
         # if 00z, do SCF preprocessing
-        _ims_file = os.path.join(
-            self.task_config.COMIN_OBS,
-            f'{self.task_config.OPREFIX}imssnow96.{self.task_config.ims_scf_obs_suffix}'
-        )
+        _ims_file = os.path.join(self.task_config.COMIN_OBS, f"{self.task_config.OPREFIX}imssnow96.{self.task_config.ims_scf_obs_suffix}")
         logger.info(f"Checking for IMS file: {_ims_file}")
         _DO_IMS_SCF = False
         if self.task_config.cyc == 0:
@@ -63,16 +63,14 @@ class SnowAnalysis(Analysis):
                 _DO_IMS_SCF = True
             else:
                 if _fail_on_missing:
-                    raise FileNotFoundError(
-                        f"IMS obs file required but not found: {_ims_file}"
-                    )
+                    raise FileNotFoundError(f"IMS obs file required but not found: {_ims_file}")
                 else:
                     logger.warning(f"IMS obs file missing: {_ims_file}")
         else:
             logger.info("Not 00z cycle — Skipping IMS preprocessing.")
 
         # if 00z, do GHCN preprocessing
-        _ghcn_file = os.path.join(self.task_config.COMIN_OBS, f'{self.task_config.OPREFIX}ghcn_snow.csv')
+        _ghcn_file = os.path.join(self.task_config.COMIN_OBS, f"{self.task_config.OPREFIX}ghcn_snow.csv")
         logger.info(f"Checking for GHCN csv file: {_ghcn_file}")
         _DO_GHCN = False
         if self.task_config.cyc == 0:
@@ -80,42 +78,41 @@ class SnowAnalysis(Analysis):
                 _DO_GHCN = True
             else:
                 if _fail_on_missing:
-                    raise FileNotFoundError(
-                        f"GHCN obs file required but not found: {_ghcn_file}"
-                    )
+                    raise FileNotFoundError(f"GHCN obs file required but not found: {_ghcn_file}")
                 else:
                     logger.warning(f"GHCN obs file missing: {_ghcn_file}")
         else:
             logger.info("Not 00z cycle — Skipping GHCN preprocessing.")
 
         # Extend task_config with variables repeatedly used across this class
-        self.task_config.update(AttrDict(
-            {
-                'npx_ges': _res + 1,
-                'npy_ges': _res + 1,
-                'npz_ges': self.task_config.LEVS - 1,
-                'npz': self.task_config.LEVS - 1,
-                'snow_bkg_path': os.path.join('.', 'bkg/'),
-                'snow_prepobs_path': os.path.join(self.task_config.DATA, 'prep'),
-                'ims_file': _ims_file,
-                'DO_IMS_SCF': _DO_IMS_SCF,  # Boolean to decide if IMS snow cover processing is done
-                'DO_GHCN': _DO_GHCN,  # Boolean to decide if GHCN processing is done
-            }
-        ))
+        self.task_config.update(
+            AttrDict(
+                {
+                    "npx_ges": _res + 1,
+                    "npy_ges": _res + 1,
+                    "npz_ges": self.task_config.LEVS - 1,
+                    "npz": self.task_config.LEVS - 1,
+                    "snow_bkg_path": os.path.join(".", "bkg/"),
+                    "snow_prepobs_path": os.path.join(self.task_config.DATA, "prep"),
+                    "ims_file": _ims_file,
+                    "DO_IMS_SCF": _DO_IMS_SCF,  # Boolean to decide if IMS snow cover processing is done
+                    "DO_GHCN": _DO_GHCN,  # Boolean to decide if GHCN processing is done
+                }
+            )
+        )
 
         # Extend task_config with content of config yaml for this task
         self.task_config.update(parse_j2yaml(self.task_config.TASK_CONFIG_YAML, self.task_config))
 
         # Create JEDI object dictionary
-        expected_keys = ['scf_to_ioda', 'snowanlvar']
+        expected_keys = ["scf_to_ioda", "snowanlvar"]
         self.jedi_dict = Jedi.get_jedi_dict(self.task_config.jedi_config, self.task_config, expected_keys)
 
         # Boolean to decide if SNOCVR_SNOMAD processing is done
-        _snocvr_file = os.path.join(self.task_config.COMIN_OBS, f'{self.task_config.OPREFIX}snocvr.tm00.bufr_d')
-        _snomad_file = os.path.join(self.task_config.COMIN_OBS, f'{self.task_config.OPREFIX}snomad.tm00.bufr_d')
-        self.task_config.DO_SNOCVR_SNOMAD = (
-            "snocvr_snomad" in self.jedi_dict.snowanlvar.jcb_config.observations and
-            (os.path.exists(_snocvr_file) or os.path.exists(_snomad_file))
+        _snocvr_file = os.path.join(self.task_config.COMIN_OBS, f"{self.task_config.OPREFIX}snocvr.tm00.bufr_d")
+        _snomad_file = os.path.join(self.task_config.COMIN_OBS, f"{self.task_config.OPREFIX}snomad.tm00.bufr_d")
+        self.task_config.DO_SNOCVR_SNOMAD = "snocvr_snomad" in self.jedi_dict.snowanlvar.jcb_config.observations and (
+            os.path.exists(_snocvr_file) or os.path.exists(_snomad_file)
         )
 
     @logit(logger)
@@ -138,18 +135,18 @@ class SnowAnalysis(Analysis):
         """
 
         # Stage observation files
-        logger.info(f"Staging observation files")
-        self.jedi_dict['snowanlvar'].stage_obsdatain(self.task_config.COMIN_OBS)
+        logger.info("Staging observation files")
+        self.jedi_dict["snowanlvar"].stage_obsdatain(self.task_config.COMIN_OBS)
 
         # Stage files from COM
-        logger.info(f"Staging files from COM and creating output directories")
+        logger.info("Staging files from COM and creating output directories")
         FileHandler(self.task_config.data_in).sync()
 
         # initialize JEDI variational application
-        logger.info(f"Initializing JEDI applications")
-        self.jedi_dict['snowanlvar'].initialize(clean_empty_obsspaces=False)
+        logger.info("Initializing JEDI applications")
+        self.jedi_dict["snowanlvar"].initialize(clean_empty_obsspaces=False)
         if self.task_config.DO_IMS_SCF:
-            self.jedi_dict['scf_to_ioda'].initialize()
+            self.jedi_dict["scf_to_ioda"].initialize()
 
     @logit(logger)
     def execute(self, jedi_dict_key: str) -> None:
@@ -183,12 +180,11 @@ class SnowAnalysis(Analysis):
         """
 
         # Archive, compress, and save diag files in COM directory
-        logger.info(f"Saving observation diag files to COM")
-        self.jedi_dict['snowanlvar'].save_obsdataout(self.task_config.COMOUT_SNOW_ANALYSIS,
-                                                     f"{self.task_config.APREFIX}snow_analysis.ioda_hofx")
+        logger.info("Saving observation diag files to COM")
+        self.jedi_dict["snowanlvar"].save_obsdataout(self.task_config.COMOUT_SNOW_ANALYSIS, f"{self.task_config.APREFIX}snow_analysis.ioda_hofx")
 
         # Save files to COM
-        logger.info(f"Saving files to COM")
+        logger.info("Saving files to COM")
         FileHandler(self.task_config.data_out).sync()
 
     @logit(logger)
@@ -217,9 +213,9 @@ class SnowAnalysis(Analysis):
         # Execute obsBuilder to create the combined snocvr and snomad in IODA format
         logger.info("Create the combined snocvr and snomad data in IODA format")
 
-        input_snocvr = f'{self.task_config.OPREFIX}snocvr.tm00.bufr_d'
-        input_snomad = f'{self.task_config.OPREFIX}snomad.tm00.bufr_d'
-        output_file = f'{self.task_config.OPREFIX}snocvr_snomad.tm00.nc'
+        input_snocvr = f"{self.task_config.OPREFIX}snocvr.tm00.bufr_d"
+        input_snomad = f"{self.task_config.OPREFIX}snomad.tm00.bufr_d"
+        output_file = f"{self.task_config.OPREFIX}snocvr_snomad.tm00.nc"
         if os.path.exists(f"{os.path.join(self.task_config.DATA, output_file)}"):
             rm_p(output_file)
 
@@ -283,13 +279,13 @@ class SnowAnalysis(Analysis):
         # Execute ioda converter to create the GHCN obs data in IODA format
         logger.info("Create GHCN obs data in IODA format")
 
-        csv_file = f'{self.task_config.OPREFIX}ghcn_snow.csv'
-        station_file = f'ghcnd-stations.txt'
-        output_file = f'{self.task_config.OPREFIX}ghcn_snow.nc'
+        csv_file = f"{self.task_config.OPREFIX}ghcn_snow.csv"
+        station_file = "ghcnd-stations.txt"
+        output_file = f"{self.task_config.OPREFIX}ghcn_snow.nc"
         if os.path.exists(f"{os.path.join(self.task_config.DATA, output_file)}"):
             rm_p(output_file)
         if not os.path.isfile(csv_file):
-            logger.warning(f"WARNING: GHCN obs file not found.")
+            logger.warning("WARNING: GHCN obs file not found.")
             return
 
         logger.info("Link GHCN2IODACONV into DATA/")
@@ -341,26 +337,26 @@ class SnowAnalysis(Analysis):
         bkgtimes.append(self.task_config.current_cycle)
         anllist = []
         for bkgtime in bkgtimes:
-            template = f'{to_fv3time(bkgtime)}.sfc_data.tile{{tilenum}}.nc'
+            template = f"{to_fv3time(bkgtime)}.sfc_data.tile{{tilenum}}.nc"
             for itile in range(1, self.task_config.ntiles + 1):
                 filename = template.format(tilenum=itile)
                 src = os.path.join(self.task_config.COMIN_ATMOS_RESTART_PREV, filename)
                 dest = os.path.join(self.task_config.DATA, "anl", filename)
                 anllist.append([src, dest])
-        FileHandler({'copy': anllist}).sync()
+        FileHandler({"copy": anllist}).sync()
 
         if self.task_config.DOIAU:
             logger.info("Copying increments to beginning of window")
-            template_in = f'snowinc.{to_fv3time(self.task_config.current_cycle)}.sfc_data.tile{{tilenum}}.nc'
-            template_out = f'snowinc.{to_fv3time(self.task_config.WINDOW_BEGIN)}.sfc_data.tile{{tilenum}}.nc'
+            template_in = f"snowinc.{to_fv3time(self.task_config.current_cycle)}.sfc_data.tile{{tilenum}}.nc"
+            template_out = f"snowinc.{to_fv3time(self.task_config.WINDOW_BEGIN)}.sfc_data.tile{{tilenum}}.nc"
             inclist = []
             for itile in range(1, self.task_config.ntiles + 1):
                 filename_in = template_in.format(tilenum=itile)
                 filename_out = template_out.format(tilenum=itile)
-                src = os.path.join(self.task_config.DATA, 'anl', filename_in)
-                dest = os.path.join(self.task_config.DATA, 'anl', filename_out)
+                src = os.path.join(self.task_config.DATA, "anl", filename_in)
+                dest = os.path.join(self.task_config.DATA, "anl", filename_out)
                 inclist.append([src, dest])
-            FileHandler({'copy': inclist}).sync()
+            FileHandler({"copy": inclist}).sync()
 
         # loop over times to apply increments
         for bkgtime in bkgtimes:
@@ -368,16 +364,16 @@ class SnowAnalysis(Analysis):
             logger.info("Create namelist for APPLY_INCR_EXE")
             nml_template = self.task_config.APPLY_INCR_NML_TMPL
             nml_config = {
-                'current_cycle': bkgtime,
-                'CASE': self.task_config.CASE,
-                'DATA': self.task_config.DATA,
-                'HOMEglobal': self.task_config.HOMEglobal,
-                'OCNRES': self.task_config.OCNRES,
-                'ens_size': self.task_config.ens_size,
-                'ntiles': self.task_config.ntiles,
-                'noincr_threshold': self.task_config.noincr_threshold,
-                'print_debug': self.task_config.print_debug,
-                'truncate_incr': self.task_config.truncate_incr
+                "current_cycle": bkgtime,
+                "CASE": self.task_config.CASE,
+                "DATA": self.task_config.DATA,
+                "HOMEglobal": self.task_config.HOMEglobal,
+                "OCNRES": self.task_config.OCNRES,
+                "ens_size": self.task_config.ens_size,
+                "ntiles": self.task_config.ntiles,
+                "noincr_threshold": self.task_config.noincr_threshold,
+                "print_debug": self.task_config.print_debug,
+                "truncate_incr": self.task_config.truncate_incr,
             }
             nml_data = Jinja(nml_template, nml_config).render
             logger.debug(f"apply_incr_nml:\n{nml_data}")

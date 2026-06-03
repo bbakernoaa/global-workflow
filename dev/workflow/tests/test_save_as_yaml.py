@@ -13,7 +13,6 @@ import tempfile
 from pathlib import Path
 
 import yaml
-import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -41,9 +40,7 @@ class TestSaveAsYaml:
         cfg = {
             "suite": {"name": "gfs_v17", "ecf_home": "/path/to/ecf"},
             "defaults": {"ECF_TRIES": 2, "ECF_JOB_CMD": "uwtools submit"},
-            "cycles": [
-                {"name": "gdas", "time": "00:00 06:00 12:00 18:00"}
-            ],
+            "cycles": [{"name": "gdas", "time": "00:00 06:00 12:00 18:00"}],
         }
         path = Path(self.tmpdir) / "nested.yaml"
 

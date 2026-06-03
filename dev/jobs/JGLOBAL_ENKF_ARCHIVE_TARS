@@ -43,7 +43,7 @@ source "${USHglobal}/unset_strict.sh"
 export err=$?
 source "${USHglobal}/set_strict.sh"
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Failed to archive the ensemble COM structure"
+  err_exit "Failed to archive the ensemble COM structure"
 fi
 
 ###############################################################
@@ -56,7 +56,7 @@ fi
 # Final processing
 ##############################################
 if [[ -e "${pgmout}" ]]; then
-    cat "${pgmout}"
+  cat "${pgmout}"
 fi
 
 ##########################################
@@ -64,7 +64,7 @@ fi
 ##########################################
 cd "${DATAROOT}" || true
 if [[ "${KEEPDATA}" == "NO" ]]; then
-    rm -rf "${DATA}"
+  rm -rf "${DATA}"
 fi
 
 exit 0

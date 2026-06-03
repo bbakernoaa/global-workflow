@@ -11,35 +11,35 @@ cd "${DATA}" || exit 2
 export NTS="${HOMEglobal}/gempak/ush/restore"
 
 if [[ ${MODEL} == GDAS ]]; then
-    fcsthrs="000"
+  fcsthrs="000"
 
-    sleep_interval=20
-    max_tries=180
-    export fhr3
-    for fhr3 in ${fcsthrs}; do
-        gempak_file="${COMIN_ATMOS_GEMPAK_1p00}/${RUN}_1p00_${PDY}${cyc}f${fhr3}"
-        if ! wait_for_file "${gempak_file}" "${sleep_interval}" "${max_tries}"; then
-            export err=10
-            if [[ ${err} -ne 0 ]]; then
-                err_exit "${gempak_file} not found after ${max_tries} iterations"
-            fi
-        fi
+  sleep_interval=20
+  max_tries=180
+  export fhr3
+  for fhr3 in ${fcsthrs}; do
+    gempak_file="${COMIN_ATMOS_GEMPAK_1p00}/${RUN}_1p00_${PDY}${cyc}f${fhr3}"
+    if ! wait_for_file "${gempak_file}" "${sleep_interval}" "${max_tries}"; then
+      export err=10
+      if [[ ${err} -ne 0 ]]; then
+        err_exit "${gempak_file} not found after ${max_tries} iterations"
+      fi
+    fi
 
-        if [[ ! -f "${gempak_file}" ]]; then
-            export err=1
-            if [[ ${err} -ne 0 ]]; then
-                err_exit "Could not copy ${gempak_file}"
-            fi
-        fi
+    if [[ ! -f "${gempak_file}" ]]; then
+      export err=1
+      if [[ ${err} -ne 0 ]]; then
+        err_exit "Could not copy ${gempak_file}"
+      fi
+    fi
 
-        cpreq "${gempak_file}" "gem_grids${fhr3}.gem"
+    cpreq "${gempak_file}" "gem_grids${fhr3}.gem"
 
-        "${HOMEglobal}/gempak/ush/gempak_${RUN}_f${fhr3}_gif.sh" && true
-        export err=$?
-        if [[ ${err} -ne 0 ]]; then
-            err_exit "Failed to generate GIF for forecast hour ${fhr3}"
-        fi
-    done
+    "${HOMEglobal}/gempak/ush/gempak_${RUN}_f${fhr3}_gif.sh" && true
+    export err=$?
+    if [[ ${err} -ne 0 ]]; then
+      err_exit "Failed to generate GIF for forecast hour ${fhr3}"
+    fi
+  done
 fi
 
 exit

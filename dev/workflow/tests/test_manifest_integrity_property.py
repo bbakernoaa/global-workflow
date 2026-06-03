@@ -16,9 +16,8 @@ from __future__ import annotations
 import os
 import sys
 from datetime import datetime, timezone
-from pathlib import Path
 
-from hypothesis import given, settings, HealthCheck
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -28,7 +27,6 @@ from deployment.manifest import (
     verify_manifest,
     write_manifest,
 )
-
 
 # ---------------------------------------------------------------------------
 # Hypothesis Strategies
@@ -147,11 +145,7 @@ def test_manifest_integrity_unmodified(file_tree, tmp_path_factory):
 
     # Verify manifest integrity — should pass with no errors
     errors = verify_manifest(expdir)
-    assert errors == [], (
-        f"verify_manifest() reported errors on an unmodified EXPDIR:\n"
-        f"{errors}\n"
-        f"File tree: {[p for p, _ in file_tree]}"
-    )
+    assert errors == [], f"verify_manifest() reported errors on an unmodified EXPDIR:\n{errors}\nFile tree: {[p for p, _ in file_tree]}"
 
 
 @given(
@@ -217,12 +211,5 @@ def test_manifest_integrity_detects_modification(file_tree, modification, tmp_pa
     )
 
     # The error should reference the modified file
-    modified_file_mentioned = any(
-        target_rel_path.replace("\\", "/") in error
-        for error in errors
-    )
-    assert modified_file_mentioned, (
-        f"verify_manifest() errors do not mention the modified file "
-        f"'{target_rel_path}'.\n"
-        f"Errors: {errors}"
-    )
+    modified_file_mentioned = any(target_rel_path.replace("\\", "/") in error for error in errors)
+    assert modified_file_mentioned, f"verify_manifest() errors do not mention the modified file '{target_rel_path}'.\nErrors: {errors}"

@@ -22,15 +22,15 @@ cd "${HOMEglobal}/dev/workflow" || exit 1
 sha=$(git rev-parse --short HEAD)
 
 pslot="${TEST_NAME}_${sha}" \
-RUNTESTS="${RUNTESTS}" \
-HPC_ACCOUNT="${HPC_ACCOUNT}" \
-./create_experiment.py --yaml "${YAML_FILE}" --overwrite
+  RUNTESTS="${RUNTESTS}" \
+  HPC_ACCOUNT="${HPC_ACCOUNT}" \
+  ./create_experiment.py --yaml "${YAML_FILE}" --overwrite
 rc=$?
 if [[ "${rc}" -ne 0 ]]; then
-    set +x
-    echo "Failed to create test experiment for '${TEST_NAME}' with yaml file '${YAML_FILE}'"
-    set -x
-    exit "${rc}"
+  set +x
+  echo "Failed to create test experiment for '${TEST_NAME}' with yaml file '${YAML_FILE}'"
+  set -x
+  exit "${rc}"
 fi
 
 exit 0

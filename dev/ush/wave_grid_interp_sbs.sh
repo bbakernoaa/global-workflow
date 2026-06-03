@@ -41,28 +41,28 @@ ${NLN} "${DATA}/out_grd.${waveGRD}" "./out_grd.${waveGRD}"
 
 # Link mod_def files from DATA into interp_DATA
 for ID in ${waveGRD} ${grdID}; do
-    ${NLN} "${DATA}/mod_def.${ID}" "./mod_def.${ID}"
+  ${NLN} "${DATA}/mod_def.${ID}" "./mod_def.${ID}"
 done
 
 # Check if there is an interpolation weights file available, and copy it if so
 if [[ -f "${FIXglobal}/wave/ww3_gint.WHTGRIDINT.bin.${waveGRD}.${grdID}" ]]; then
-    echo "INFO: Interpolation weights found at: '${FIXglobal}/wave/ww3_gint.WHTGRIDINT.bin.${waveGRD}.${grdID}'"
-    cpreq "${FIXglobal}/wave/ww3_gint.WHTGRIDINT.bin.${waveGRD}.${grdID}" "./WHTGRIDINT.bin"
-    weights_found=1
+  echo "INFO: Interpolation weights found at: '${FIXglobal}/wave/ww3_gint.WHTGRIDINT.bin.${waveGRD}.${grdID}'"
+  cpreq "${FIXglobal}/wave/ww3_gint.WHTGRIDINT.bin.${waveGRD}.${grdID}" "./WHTGRIDINT.bin"
+  weights_found=1
 else
-    echo "WARNING: No weights file found at: '${FIXglobal}/wave/ww3_gint.WHTGRIDINT.bin.${waveGRD}.${grdID}'"
-    echo "INFO: Interpolation will create a new weights file"
-    weights_found=0
+  echo "WARNING: No weights file found at: '${FIXglobal}/wave/ww3_gint.WHTGRIDINT.bin.${waveGRD}.${grdID}'"
+  echo "INFO: Interpolation will create a new weights file"
+  weights_found=0
 fi
 
 # Create the input file for the interpolation code
 ymdhms="${valid_time:0:8} ${valid_time:8:2}0000"
 sed -e "s/TIME/${ymdhms}/g" \
-    -e "s/DT/${dt}/g" \
-    -e "s/NSTEPS/${nst}/g" \
-    -e "s/GRIDIN/${waveGRD}/g" \
-    -e "s/GRIDOUT/${grdID}/g" \
-    "ww3_gint.inp.tmpl" > ww3_gint.inp
+  -e "s/DT/${dt}/g" \
+  -e "s/NSTEPS/${nst}/g" \
+  -e "s/GRIDIN/${waveGRD}/g" \
+  -e "s/GRIDOUT/${grdID}/g" \
+  "ww3_gint.inp.tmpl" > ww3_gint.inp
 cat ww3_gint.inp
 
 # Run the interpolation code
@@ -72,23 +72,23 @@ echo "INFO: Executing '${pgm}'"
 "${EXECglobal}/${pgm}" > "grid_interp.${grdID}.out" 2>&1
 cat "grid_interp.${grdID}.out"
 if [[ ${err} -ne 0 ]]; then
-    echo "FATAL ERROR: '${pgm}' failed!"
-    exit 3
+  echo "FATAL ERROR: '${pgm}' failed!"
+  exit 3
 fi
 
 if [[ ${weights_found} -eq 0 ]]; then
-    echo "INFO: Interpolation created a new weights file at: '${interp_DATA}/WHTGRIDINT.bin'"
+  echo "INFO: Interpolation created a new weights file at: '${interp_DATA}/WHTGRIDINT.bin'"
 fi
 
 # Link output file (interpolated output) within DATA (this program generates this file)
 if [[ -f "./out_grd.${grdID}" ]]; then
-    if [[ -f "${DATA}/out_grd.${grdID}" ]]; then
-        echo "FATAL ERROR: '${DATA}/out_grd.${grdID}' already exists, ABORT!"
-        exit 4
-    else
-        ${NLN} "${interp_DATA}/out_grd.${grdID}" "${DATA}/out_grd.${grdID}"
-    fi
-else
-    echo "FATAL ERROR: '${pgm}' failed to generate output file at: '${interp_DATA}/out_grd.${grdID}'"
+  if [[ -f "${DATA}/out_grd.${grdID}" ]]; then
+    echo "FATAL ERROR: '${DATA}/out_grd.${grdID}' already exists, ABORT!"
     exit 4
+  else
+    ${NLN} "${interp_DATA}/out_grd.${grdID}" "${DATA}/out_grd.${grdID}"
+  fi
+else
+  echo "FATAL ERROR: '${pgm}' failed to generate output file at: '${interp_DATA}/out_grd.${grdID}'"
+  exit 4
 fi

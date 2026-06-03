@@ -16,7 +16,7 @@
 #  MODEL|CPYFIL|GAREA|GBTBLS|MAXGRD|KXKY|GRDAREA|PROJ|OUTPUT
 #
 #  NOTES: 1. Lines with a pound (#) sign in the first column
-#            are treated as comments.  
+#            are treated as comments.
 #         2. Valid entries cannot have leading whitespace.
 #         3. Valid entries are pipe (|) delimited.
 #         4. Blank lines are ignored.

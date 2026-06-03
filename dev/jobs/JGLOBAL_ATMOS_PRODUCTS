@@ -21,12 +21,12 @@ source "${USHglobal}/set_strict.sh"
 # Construct COM variables
 # shellcheck disable=SC2309
 if [[ 10#${ENSMEM:--1} -ge 0 ]]; then
-    memdir=$(printf "mem%03d" $((10#${ENSMEM})))
-    export COMIN="${ROTDIR}/${RUN}.${PDY}/${cyc}/${memdir}"
-    export COMOUT="${ROTDIR}/${RUN}.${PDY}/${cyc}/${memdir}"
+  memdir=$(printf "mem%03d" $((10#${ENSMEM})))
+  export COMIN="${ROTDIR}/${RUN}.${PDY}/${cyc}/${memdir}"
+  export COMOUT="${ROTDIR}/${RUN}.${PDY}/${cyc}/${memdir}"
 else
-    export COMIN="${ROTDIR}/${RUN}.${PDY}/${cyc}"
-    export COMOUT="${ROTDIR}/${RUN}.${PDY}/${cyc}"
+  export COMIN="${ROTDIR}/${RUN}.${PDY}/${cyc}"
+  export COMOUT="${ROTDIR}/${RUN}.${PDY}/${cyc}"
 fi
 
 # Construct COM variables from templates
@@ -35,9 +35,9 @@ declare -rx COMIN_ATMOS_HISTORY="${COMIN}/model/atmos/history"
 declare -rx COMIN_ATMOS_MASTER="${COMIN}/model/atmos/master"
 
 for grid in '0p25' '0p50' '1p00'; do
-    prod_dir="COMOUT_ATMOS_GRIB_${grid}"
-    declare -rx "COMOUT_ATMOS_GRIB_${grid}"="${COMOUT}/products/atmos/grib2/${grid}"
-    mkdir -m 775 -p "${!prod_dir}"
+  prod_dir="COMOUT_ATMOS_GRIB_${grid}"
+  declare -rx "COMOUT_ATMOS_GRIB_${grid}"="${COMOUT}/products/atmos/grib2/${grid}"
+  mkdir -m 775 -p "${!prod_dir}"
 done
 
 # Variables used in this job
@@ -48,7 +48,7 @@ export PREFIX="${RUN}.t${cyc}z."
 "${SCRglobal}/exglobal_atmos_products.sh" && true
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Failed to generate atmospheric GRIB2 products"
+  err_exit "Failed to generate atmospheric GRIB2 products"
 fi
 
 ##############################################
@@ -59,7 +59,7 @@ fi
 # Final processing
 ##############################################
 if [[ -e "${pgmout}" ]]; then
-    cat "${pgmout}"
+  cat "${pgmout}"
 fi
 
 ##########################################
@@ -67,7 +67,7 @@ fi
 ##########################################
 cd "${DATAROOT}" || exit 1
 if [[ "${KEEPDATA:-NO}" == "NO" ]]; then
-    rm -rf "${DATA}"
+  rm -rf "${DATA}"
 fi
 
 exit 0

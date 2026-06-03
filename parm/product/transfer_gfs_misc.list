@@ -29,7 +29,7 @@ com/gfs/_ENVIR_/sdm_rtdm/
 + /avgdata/obcount_30davg.gfs.current
 - *
 B 256000
- 
+
 
 com/gfs/_ENVIR_/sdm_rtdm/
 + /obcount_30day/
@@ -38,13 +38,11 @@ com/gfs/_ENVIR_/sdm_rtdm/
 + /obcount_30day/gfs/gfs._PDY_/***
 - *
 B 2000000
- 
+
 
 com/realtime/_ENVIR_/gfs._PDY_/
 B 10000000
- 
+
 
 com/realtime/_ENVIR_/gfs._PDYm1_/
 B 10000000
- 
-

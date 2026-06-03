@@ -13,8 +13,6 @@ Traces to: Requirements 8.2, 8.7, 8.8, 9.2
 
 import os
 import sys
-import tempfile
-from pathlib import Path
 
 import pytest
 
@@ -28,7 +26,6 @@ from deployment.file_stager import (
     StagingResult,
     stage_files,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -109,7 +106,7 @@ class TestBasicStaging:
 
     def test_stage_copies_jobs(self, stager, project_tree):
         project_root, expdir = project_tree
-        result = stager.stage()
+        stager.stage()
 
         assert (expdir / "jobs" / "JGFS_ATMOS_FORECAST").exists()
         assert (expdir / "jobs" / "JGDAS_ATMOS_ANALYSIS").exists()
@@ -118,31 +115,31 @@ class TestBasicStaging:
 
     def test_stage_copies_scripts(self, stager, project_tree):
         project_root, expdir = project_tree
-        result = stager.stage()
+        stager.stage()
 
         assert (expdir / "scripts" / "exgfs_atmos_forecast.sh").exists()
 
     def test_stage_copies_ush(self, stager, project_tree):
         project_root, expdir = project_tree
-        result = stager.stage()
+        stager.stage()
 
         assert (expdir / "ush" / "helper.sh").exists()
 
     def test_stage_copies_versions(self, stager, project_tree):
         project_root, expdir = project_tree
-        result = stager.stage()
+        stager.stage()
 
         assert (expdir / "versions" / "run.ver").exists()
 
     def test_stage_copies_modulefiles(self, stager, project_tree):
         project_root, expdir = project_tree
-        result = stager.stage()
+        stager.stage()
 
         assert (expdir / "modulefiles" / "hera.lua").exists()
 
     def test_stage_copies_sorc(self, stager, project_tree):
         project_root, expdir = project_tree
-        result = stager.stage()
+        stager.stage()
 
         assert (expdir / "sorc" / "build.sh").exists()
 
@@ -164,14 +161,14 @@ class TestTemplateSkipping:
 
     def test_j2_files_not_staged(self, stager, project_tree):
         project_root, expdir = project_tree
-        result = stager.stage()
+        stager.stage()
 
         # The .j2 file should NOT be copied
         assert not (expdir / "ush" / "universal_wrapper.sh.j2").exists()
 
     def test_non_j2_files_staged(self, stager, project_tree):
         project_root, expdir = project_tree
-        result = stager.stage()
+        stager.stage()
 
         # Regular files should be copied
         assert (expdir / "ush" / "helper.sh").exists()
@@ -187,13 +184,13 @@ class TestExclusion:
 
     def test_ci_excluded_by_default(self, stager, project_tree):
         project_root, expdir = project_tree
-        result = stager.stage()
+        stager.stage()
 
         assert not (expdir / "ci").exists()
 
     def test_ctests_excluded_by_default(self, stager, project_tree):
         project_root, expdir = project_tree
-        result = stager.stage()
+        stager.stage()
 
         assert not (expdir / "ctests").exists()
 
@@ -216,7 +213,7 @@ class TestExclusion:
             excludes=["dev/jobs"],
             use_uwtools=False,
         )
-        result = stager.stage()
+        stager.stage()
 
         # jobs should be excluded
         assert not (expdir / "jobs" / "JGFS_ATMOS_FORECAST").exists()
@@ -246,7 +243,7 @@ class TestAllowlist:
             allowlist=["dev/ctests"],
             use_uwtools=False,
         )
-        result = stager.stage()
+        stager.stage()
 
         # ctests should now be included
         assert (expdir / "ctests" / "CMakeLists.txt").exists()
@@ -266,7 +263,7 @@ class TestAllowlist:
             allowlist=["dev/ctests"],  # Only ctests allowed
             use_uwtools=False,
         )
-        result = stager.stage()
+        stager.stage()
 
         # ctests included, ci still excluded
         assert (expdir / "ctests" / "CMakeLists.txt").exists()
@@ -285,7 +282,7 @@ class TestAllowlist:
             allowlist=[],
             use_uwtools=False,
         )
-        result = stager.stage()
+        stager.stage()
 
         assert not (expdir / "ci").exists()
 
@@ -324,7 +321,7 @@ class TestSourceTargetMapping:
             source_target_map=custom_map,
             use_uwtools=False,
         )
-        result = stager.stage()
+        stager.stage()
 
         assert (expdir / "custom_jobs" / "JGFS_ATMOS_FORECAST").exists()
         # Other dirs not in map should not be staged
@@ -343,7 +340,7 @@ class TestSourceTargetMapping:
             expdir=expdir,
             use_uwtools=False,
         )
-        result = stager.stage()
+        stager.stage()
 
         assert (expdir / "ush" / "python" / "pygfs" / "task.py").exists()
 
@@ -361,6 +358,7 @@ class TestMissingSources:
 
         # Remove sorc dir
         import shutil
+
         shutil.rmtree(project_root / "dev" / "sorc")
 
         stager = FileStager(
@@ -369,7 +367,7 @@ class TestMissingSources:
             use_uwtools=False,
         )
         # Should not raise
-        result = stager.stage()
+        stager.stage()
         assert not (expdir / "sorc").exists()
 
     def test_stage_single_missing_file_raises(self, project_tree):
@@ -397,9 +395,7 @@ class TestStageSingle:
     def test_stage_single_file(self, stager, project_tree):
         project_root, expdir = project_tree
 
-        dst = stager.stage_single(
-            "dev/jobs/JGFS_ATMOS_FORECAST", "jobs/JGFS_ATMOS_FORECAST"
-        )
+        dst = stager.stage_single("dev/jobs/JGFS_ATMOS_FORECAST", "jobs/JGFS_ATMOS_FORECAST")
 
         assert dst.exists()
         assert dst == expdir / "jobs" / "JGFS_ATMOS_FORECAST"
@@ -443,7 +439,7 @@ class TestConvenienceFunction:
         custom_map = dict(DEFAULT_SOURCE_TARGET_MAP)
         custom_map["dev/ctests"] = "ctests"
 
-        result = stage_files(
+        stage_files(
             project_root,
             expdir,
             source_target_map=custom_map,
@@ -533,7 +529,7 @@ class TestStageUnconditionalArtifacts:
             expdir=expdir,
             use_uwtools=False,
         )
-        result = stager.stage_unconditional_artifacts()
+        stager.stage_unconditional_artifacts()
 
         dst = expdir / "sorc" / "link_workflow.sh"
         assert dst.exists()
@@ -546,7 +542,7 @@ class TestStageUnconditionalArtifacts:
             expdir=expdir,
             use_uwtools=False,
         )
-        result = stager.stage_unconditional_artifacts()
+        stager.stage_unconditional_artifacts()
 
         dst = expdir / "sorc" / "ufs_utils.fd" / "fix" / "link_fixdirs.sh"
         assert dst.exists()

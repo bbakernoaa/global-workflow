@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
 import json
-import f90nml
+from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 from typing import Dict
-from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+
+import f90nml
 
 
 def get_dict_from_nml(filename: str) -> Dict:
@@ -46,8 +47,8 @@ def compare_dicts(dict1: Dict, dict2: Dict, path: str = "") -> None:
     """
 
     result = dict()
-    for kk in dict1.keys():  # Loop over all keys of first dictionary
-        if kk in dict2.keys():  # kk is present in dict2
+    for kk in dict1:  # Loop over all keys of first dictionary
+        if kk in dict2:  # kk is present in dict2
             if isinstance(dict1[kk], dict):  # nested dictionary, go deeper
                 compare_dicts(dict1[kk], dict2[kk], path=kk)
             else:
@@ -59,7 +60,7 @@ def compare_dicts(dict1: Dict, dict2: Dict, path: str = "") -> None:
             tt = path if path else kk
             if tt not in result:
                 result[tt] = dict()
-            result[tt][kk] = [dict1[kk], 'UNDEFINED']
+            result[tt][kk] = [dict1[kk], "UNDEFINED"]
 
     def _print_diffs(diff_dict: Dict) -> None:
         """
@@ -72,25 +73,23 @@ def compare_dicts(dict1: Dict, dict2: Dict, path: str = "") -> None:
         -------
         None
         """
-        for path in diff_dict.keys():
+        for path in diff_dict:
             print(f"{path}:")
             max_len = len(max(diff_dict[path], key=len))
             for kk in diff_dict[path].keys():
-                items = diff_dict[path][kk]
                 print(f"{kk:>{max_len + 2}} : {' | '.join(map(str, diff_dict[path][kk]))}")
 
     _print_diffs(result)
 
 
 if __name__ == "__main__":
-
     parser = ArgumentParser(
         description=("Compare two Fortran namelists and display differences (left_namelist - right_namelist)"),
-        formatter_class=ArgumentDefaultsHelpFormatter)
-    parser.add_argument('left_namelist', type=str, help="Left namelist to compare")
-    parser.add_argument('right_namelist', type=str, help="Right namelist to compare")
-    parser.add_argument('-r', '--reverse', help='reverse diff (right_namelist - left_namelist)',
-                        action='store_true', required=False)
+        formatter_class=ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument("left_namelist", type=str, help="Left namelist to compare")
+    parser.add_argument("right_namelist", type=str, help="Right namelist to compare")
+    parser.add_argument("-r", "--reverse", help="reverse diff (right_namelist - left_namelist)", action="store_true", required=False)
     args = parser.parse_args()
 
     nml1, nml2 = args.left_namelist, args.right_namelist

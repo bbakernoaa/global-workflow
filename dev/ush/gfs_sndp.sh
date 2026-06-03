@@ -19,20 +19,20 @@ CCCC=KWBC
 file_list=gfs_collective${m}.list
 
 if [[ ${m} -le 2 ]]; then
-    WMOHEAD="JUSA4${m}"
+  WMOHEAD="JUSA4${m}"
 elif [[ ${m} -le 6 ]]; then
-    WMOHEAD="JUSB4${m}"
+  WMOHEAD="JUSB4${m}"
 else
-    WMOHEAD="JUSX4${m}"
+  WMOHEAD="JUSX4${m}"
 fi
 
 while IFS= read -r stn; do
-    cpreq "${COMIN_ATMOS_BUFR}/bufr.${stn}.${PDY}${cyc}" "${DATA}/${m}/bufrin"
-    export pgm=tocsbufr.x
-    #. prep_step
-    export FORT11="${DATA}/${m}/bufrin"
-    export FORT51=./bufrout
-    "${EXECglobal}/${pgm}" << EOF
+  cpreq "${COMIN_ATMOS_BUFR}/bufr.${stn}.${PDY}${cyc}" "${DATA}/${m}/bufrin"
+  export pgm=tocsbufr.x
+  #. prep_step
+  export FORT11="${DATA}/${m}/bufrin"
+  export FORT51=./bufrout
+  "${EXECglobal}/${pgm}" << EOF
  &INPUT
   BULHED="${WMOHEAD}",KWBX="${CCCC}",
   NCEP2STD=.TRUE.,
@@ -40,19 +40,19 @@ while IFS= read -r stn; do
   MAXFILESIZE=600000
  /
 EOF
-    export err=$?
-    if [[ ${err} -ne 0 ]]; then
-        echo "FATAL ERROR Failed during execution of ${pgm}"
-        exit "${err}"
-    fi
+  export err=$?
+  if [[ ${err} -ne 0 ]]; then
+    echo "FATAL ERROR Failed during execution of ${pgm}"
+    exit "${err}"
+  fi
 
-    cat "${DATA}/${m}/bufrout" >> "${DATA}/${m}/gfs_collective${m}.fil"
-    rm -f "${DATA}/${m}/bufrin" "${DATA}/${m}/bufrout"
+  cat "${DATA}/${m}/bufrout" >> "${DATA}/${m}/gfs_collective${m}.fil"
+  rm -f "${DATA}/${m}/bufrin" "${DATA}/${m}/bufrout"
 done < "${file_list}"
 
 if [[ "${SENDDBN}" == 'YES' ]]; then
-    cpfs "${DATA}/${m}/gfs_collective${m}.fil" "${COMOUT_ATMOS_WMO}/gfs_collective${m}.postsnd_${cyc}"
-    "${DBNROOT}/bin/dbn_alert" NTC_LOW BUFR "${job}" \
-        "${COMOUT_ATMOS_WMO}/gfs_collective${m}.postsnd_${cyc}"
+  cpfs "${DATA}/${m}/gfs_collective${m}.fil" "${COMOUT_ATMOS_WMO}/gfs_collective${m}.postsnd_${cyc}"
+  "${DBNROOT}/bin/dbn_alert" NTC_LOW BUFR "${job}" \
+    "${COMOUT_ATMOS_WMO}/gfs_collective${m}.postsnd_${cyc}"
 fi
 cpfs "${DATA}/${m}/gfs_collective${m}.fil" "${COMOUT_ATMOS_BUFR}/."

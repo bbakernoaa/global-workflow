@@ -15,17 +15,17 @@
 dest="${!#}"
 dest_dir=$(dirname "${dest}")
 if [[ ! -d "${dest_dir}" ]]; then
-    echo "INFO: Directory ${dest_dir} does not exist, creating..."
-    mkdir -p "${dest_dir}"
-    err=$?
-    if [[ ${err} -ne 0 ]]; then
-        echo "ERROR: Failed to create destination directory ${dest_dir}"
-        exit "${err}"
-    fi
+  echo "INFO: Directory ${dest_dir} does not exist, creating..."
+  mkdir -p "${dest_dir}"
+  err=$?
+  if [[ ${err} -ne 0 ]]; then
+    echo "ERROR: Failed to create destination directory ${dest_dir}"
+    exit "${err}"
+  fi
 fi
 cpfs "$@"
 err=$?
 if [[ ${err} -ne 0 ]]; then
-    echo "ERROR: cpfs failed to copy to ${dest}"
-    exit "${err}"
+  echo "ERROR: cpfs failed to copy to ${dest}"
+  exit "${err}"
 fi

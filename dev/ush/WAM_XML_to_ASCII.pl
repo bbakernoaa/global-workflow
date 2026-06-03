@@ -50,4 +50,3 @@ while ($counter < 56) {
        }
 
 close (MYFILE);
-

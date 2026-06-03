@@ -48,7 +48,7 @@ EXSCRIPT=${GDASMARINEANALYSIS:-${SCRglobal}/exglobal_marine_analysis_finalize.py
 ${EXSCRIPT} && true
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Failed to finalize the ocean and/or ice analyses"
+  err_exit "Failed to finalize the ocean and/or ice analyses"
 fi
 
 ##########################################
@@ -57,11 +57,11 @@ fi
 cd "${DATAROOT}" && true
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Failed to change directory to ${DATAROOT} to remove temporary data"
+  err_exit "Failed to change directory to ${DATAROOT} to remove temporary data"
 fi
 
 if [[ "${KEEPDATA}" == "NO" ]]; then
-    rm -rf "${DATAjob}"
+  rm -rf "${DATAjob}"
 fi
 
 exit 0

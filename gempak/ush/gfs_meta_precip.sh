@@ -59,34 +59,34 @@ proj_cpc="str/90;-105;0"
 #            - 8-14 Day -- No F366 file, so ended at F360. Makes a P156I, not P162I.
 
 case ${cyc} in
-    00)
-        gdattim_6to10="${PDY:2}/${cyc}00F264"
-        gdattim_8to14="${PDY:2}/${cyc}00F360"
-        gdpfun_6to10="p114i"
-        gdpfun_8to14="p156i"
-        ;;
-    06)
-        gdattim_6to10="${PDY:2}/${cyc}00F252"
-        gdattim_8to14="${PDY:2}/${cyc}00F348"
-        gdpfun_6to10="p108i"
-        gdpfun_8to14="p156i"
-        ;;
-    12)
-        gdattim_6to10="${PDY:2}/${cyc}00F276"
-        gdattim_8to14="${PDY:2}/${cyc}00F372"
-        gdpfun_6to10="p114i"
-        gdpfun_8to14="p156i"
-        ;;
-    18)
-        gdattim_6to10="${PDY:2}/${cyc}00F264"
-        gdattim_8to14="${PDY:2}/${cyc}00F360"
-        gdpfun_6to10="p108i"
-        gdpfun_8to14="p156i"
-        ;;
-    *)
-        echo "FATAL ERROR: InvaLid cycle ${cyc} passed to ${BASH_SOURCE[0]}"
-        exit 100
-        ;;
+  00)
+    gdattim_6to10="${PDY:2}/${cyc}00F264"
+    gdattim_8to14="${PDY:2}/${cyc}00F360"
+    gdpfun_6to10="p114i"
+    gdpfun_8to14="p156i"
+    ;;
+  06)
+    gdattim_6to10="${PDY:2}/${cyc}00F252"
+    gdattim_8to14="${PDY:2}/${cyc}00F348"
+    gdpfun_6to10="p108i"
+    gdpfun_8to14="p156i"
+    ;;
+  12)
+    gdattim_6to10="${PDY:2}/${cyc}00F276"
+    gdattim_8to14="${PDY:2}/${cyc}00F372"
+    gdpfun_6to10="p114i"
+    gdpfun_8to14="p156i"
+    ;;
+  18)
+    gdattim_6to10="${PDY:2}/${cyc}00F264"
+    gdattim_8to14="${PDY:2}/${cyc}00F360"
+    gdpfun_6to10="p108i"
+    gdpfun_8to14="p156i"
+    ;;
+  *)
+    echo "FATAL ERROR: InvaLid cycle ${cyc} passed to ${BASH_SOURCE[0]}"
+    exit 100
+    ;;
 esac
 
 export pgm=gdplot2_nc
@@ -254,19 +254,19 @@ err_chk
 # FOR THIS CASE HERE.
 #####################################################
 if [[ "${err}" -ne 0 ]] || [[ ! -s "${metaname}" ]] &> /dev/null; then
-    echo "FATAL ERROR: Failed to create gempak meta file ${metaname}"
-    exit $((err + 100))
+  echo "FATAL ERROR: Failed to create gempak meta file ${metaname}"
+  exit $((err + 100))
 fi
 
 cpfs "${metaname}" "${COMOUT_ATMOS_GEMPAK_META}/${mdl}_${PDY}_${cyc}_us_${metatype}"
 if [[ "${SENDDBN}" == "YES" ]]; then
+  "${DBNROOT}/bin/dbn_alert" MODEL "${DBN_ALERT_TYPE}" "${job}" \
+    "${COMOUT_ATMOS_GEMPAK_META}/${mdl}_${PDY}_${cyc}_us_${metatype}"
+  if [[ ${DBN_ALERT_TYPE} == "GFS_METAFILE_LAST" ]]; then
+    DBN_ALERT_TYPE=GFS_METAFILE
     "${DBNROOT}/bin/dbn_alert" MODEL "${DBN_ALERT_TYPE}" "${job}" \
-        "${COMOUT_ATMOS_GEMPAK_META}/${mdl}_${PDY}_${cyc}_us_${metatype}"
-    if [[ ${DBN_ALERT_TYPE} == "GFS_METAFILE_LAST" ]]; then
-        DBN_ALERT_TYPE=GFS_METAFILE
-        "${DBNROOT}/bin/dbn_alert" MODEL "${DBN_ALERT_TYPE}" "${job}" \
-            "${COMOUT_ATMOS_GEMPAK_META}/${mdl}_${PDY}_${cyc}_us_${metatype}"
-    fi
+      "${COMOUT_ATMOS_GEMPAK_META}/${mdl}_${PDY}_${cyc}_us_${metatype}"
+  fi
 fi
 
 exit

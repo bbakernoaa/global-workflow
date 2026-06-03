@@ -12,7 +12,7 @@ TYPE      F                                ! C
 FLINE     0;5;3;6;26;25;4;17;2;7;28;29;30
 CINT                                       ! 0.01;0.1;0.25;0.5;1;2;3
 FINT      0.01;0.1;0.25;0.5;0.75;1;1.5;2;3
-CLRBAR    1|.8/2/2/sw                   
+CLRBAR    1|.8/2/2/sw
 LINE      1/1/2
-TEXT      .8/3/2/c/sw 
-CONTUR    
+TEXT      .8/3/2/c/sw
+CONTUR

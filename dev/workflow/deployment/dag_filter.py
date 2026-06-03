@@ -18,12 +18,12 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .name_resolver import NameResolver, ResolvedName
-    from .pipeline import PipelineError as _PipelineError
 
 
 def _get_pipeline_error():
     """Deferred import of PipelineError to avoid circular dependency."""
     from .pipeline import PipelineError
+
     return PipelineError
 
 
@@ -40,7 +40,7 @@ class DAGReachabilitySet:
     All sets contain basenames (not full paths) for portability.
     """
 
-    jjobs: frozenset[str]                          # Application_Names (for EXPDIR staging)
+    jjobs: frozenset[str]  # Application_Names (for EXPDIR staging)
     jjob_source_map: dict[str, str] = field(default_factory=dict)  # app_name → source_name
     ex_scripts: frozenset[str] = frozenset()
     ush_scripts: frozenset[str] = frozenset()
@@ -81,9 +81,7 @@ class DAGReachabilitySet:
 
 # Pattern for jjob_header.sh -c "base fcst" invocations in J-Jobs.
 # Captures the space-separated list of config basenames from the -c flag.
-_JJOB_HEADER_PATTERN = re.compile(
-    r'jjob_header\.sh.*-c\s+"(?P<configs>[^"]+)"'
-)
+_JJOB_HEADER_PATTERN = re.compile(r'jjob_header\.sh.*-c\s+"(?P<configs>[^"]+)"')
 
 # Config files included unconditionally regardless of DAG content.
 # These provide foundational variables consumed by all tasks.
@@ -96,17 +94,11 @@ _UNCONDITIONAL_CONFIGS: set[str] = {"config.base.j2", "config.base", "config.com
 
 _EX_SCRIPT_PATTERNS = [
     # ${SCRglobal}/exaaaaa.sh or ${SCRmodel}/exaaaaa.sh or ${HOMEglobal/scripts}/ex...
-    re.compile(
-        r'\$\{(?:SCR\w+|HOMEglobal/scripts)\}/(?P<script>ex[a-z_]+\.(?:sh|py))'
-    ),
+    re.compile(r"\$\{(?:SCR\w+|HOMEglobal/scripts)\}/(?P<script>ex[a-z_]+\.(?:sh|py))"),
     # FORECASTSH:= assignment pattern — : "${FORECASTSH:=${SCRglobal}/exglobal_forecast.sh}"
-    re.compile(
-        r':\s*"\$\{(?:\w+SH):=\$\{(?:SCR\w+)\}/(?P<script>ex[a-z_]+\.(?:sh|py))\}"'
-    ),
+    re.compile(r':\s*"\$\{(?:\w+SH):=\$\{(?:SCR\w+)\}/(?P<script>ex[a-z_]+\.(?:sh|py))\}"'),
     # Direct path in variable assignment — export XXXSH="${SCRglobal}/exaaaaa.sh"
-    re.compile(
-        r'export\s+\w+SH="?\$\{(?:SCR\w+|HOMEglobal/scripts)\}/(?P<script>ex[a-z_]+\.(?:sh|py))"?'
-    ),
+    re.compile(r'export\s+\w+SH="?\$\{(?:SCR\w+|HOMEglobal/scripts)\}/(?P<script>ex[a-z_]+\.(?:sh|py))"?'),
 ]
 
 
@@ -181,9 +173,7 @@ class DAGFilter:
         # Layer 1.5: Resolve Application_Names → Source_Names via Name_Resolver
         resolved_map = self.resolve_jjobs(app_names)
         source_names = {rn.source_name for rn in resolved_map.values()}
-        jjob_source_map = {
-            app: rn.source_name for app, rn in resolved_map.items()
-        }
+        jjob_source_map = {app: rn.source_name for app, rn in resolved_map.items()}
 
         # Layer 2: Source J-Jobs → ex-scripts (uses source_names)
         ex_scripts = self.extract_ex_scripts(source_names)
@@ -197,9 +187,7 @@ class DAGFilter:
         total_jjobs = self._count_dir_entries(self.dev_root / "jobs")
         total_ex = self._count_glob(self.dev_root / "scripts", "ex*.sh")
         total_ush = self._count_glob(self.dev_root / "ush", "*.sh")
-        total_configs = self._count_rglob(
-            self.dev_root / "parm" / "config", "config.*"
-        )
+        total_configs = self._count_rglob(self.dev_root / "parm" / "config", "config.*")
 
         return DAGReachabilitySet(
             jjobs=frozenset(app_names),
@@ -271,12 +259,11 @@ class DAGFilter:
                 if not path.exists():
                     raise _get_pipeline_error()(
                         "dag_filter",
-                        f"J-Job '{jjob}' referenced in Workflow_YAML does not "
-                        f"exist at {path}",
+                        f"J-Job '{jjob}' referenced in Workflow_YAML does not exist at {path}",
                     )
         return jjobs
 
-    def resolve_jjobs(self, app_names: set[str]) -> dict[str, "ResolvedName"]:
+    def resolve_jjobs(self, app_names: set[str]) -> dict[str, ResolvedName]:
         """Resolve Application_Names to source files via Name_Resolver.
 
         If no Name_Resolver is configured, falls back to direct lookup
@@ -345,8 +332,7 @@ class DAGFilter:
             if not script_path.exists():
                 raise _get_pipeline_error()(
                     "dag_filter",
-                    f"Ex-script '{script}' referenced by J-Job does not "
-                    f"exist at {script_path}",
+                    f"Ex-script '{script}' referenced by J-Job does not exist at {script_path}",
                 )
 
         return ex_scripts
@@ -392,18 +378,12 @@ class DAGFilter:
             current = queue.popleft()
             ush_path = self.dev_root / "ush" / current
             if not ush_path.exists():
-                self._warnings.append(
-                    f"WARNING: Ush script '{current}' referenced but not "
-                    f"found at {ush_path} (may be conditionally sourced)"
-                )
+                self._warnings.append(f"WARNING: Ush script '{current}' referenced but not found at {ush_path} (may be conditionally sourced)")
                 continue
             for dep in self._parse_source_refs(ush_path):
                 if dep in visited:
                     # Already visited — circular dependency
-                    self._warnings.append(
-                        f"WARNING: Circular dependency detected: "
-                        f"{current} -> {dep}"
-                    )
+                    self._warnings.append(f"WARNING: Circular dependency detected: {current} -> {dep}")
                     continue
                 visited.add(dep)
                 queue.append(dep)

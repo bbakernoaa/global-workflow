@@ -23,47 +23,36 @@ import subprocess
 from dataclasses import dataclass, field
 from typing import Optional
 
-
 # ---------------------------------------------------------------------------
 # Regex patterns
 # ---------------------------------------------------------------------------
 
 # Extracts variable names from ${VAR} references in conditional expressions.
 # Also matches ${VAR:-default}, ${VAR:=default}, ${VAR^^}, etc.
-_CONDITIONAL_VAR_PATTERN = re.compile(
-    r'\$\{(?P<var>[A-Z_][A-Z0-9_]*)(?:[:#%^,][^}]*)?\}'
-)
+_CONDITIONAL_VAR_PATTERN = re.compile(r"\$\{(?P<var>[A-Z_][A-Z0-9_]*)(?:[:#%^,][^}]*)?\}")
 
 # Matches the start of an if-block:
 #   if [[ ... ]]; then
 #   if [[ ... ]] && [[ ... ]]; then
 #   if [[ ... ]] || [[ ... ]]; then
-_IF_BLOCK_PATTERN = re.compile(
-    r'^(?P<indent>\s*)if\s+(?P<expr>.+?)\s*;\s*then\s*$'
-)
+_IF_BLOCK_PATTERN = re.compile(r"^(?P<indent>\s*)if\s+(?P<expr>.+?)\s*;\s*then\s*$")
 
 # Matches the opening line of a case block: case ${VAR} in
 # Supports both ${VAR} and $VAR forms
 _CASE_BLOCK_PATTERN = re.compile(
-    r'^(\s*)case\s+\$\{?(?P<var>[A-Z_][A-Z0-9_]*)\}?\s+in\s*$',
+    r"^(\s*)case\s+\$\{?(?P<var>[A-Z_][A-Z0-9_]*)\}?\s+in\s*$",
     re.MULTILINE,
 )
 
 # Matches elif lines:
 #   elif [[ ... ]]; then
-_ELIF_PATTERN = re.compile(
-    r'^(?P<indent>\s*)elif\s+(?P<expr>.+?)\s*;\s*then\s*$'
-)
+_ELIF_PATTERN = re.compile(r"^(?P<indent>\s*)elif\s+(?P<expr>.+?)\s*;\s*then\s*$")
 
 # Matches else lines
-_ELSE_PATTERN = re.compile(
-    r'^(?P<indent>\s*)else\s*$'
-)
+_ELSE_PATTERN = re.compile(r"^(?P<indent>\s*)else\s*$")
 
 # Matches fi lines
-_FI_PATTERN = re.compile(
-    r'^(?P<indent>\s*)fi\s*$'
-)
+_FI_PATTERN = re.compile(r"^(?P<indent>\s*)fi\s*$")
 
 # Matches a single [[ ... ]] test expression for evaluation
 # Handles: [[ "${VAR}" == "value" ]], [[ ${VAR} == "value" ]],
@@ -77,6 +66,7 @@ _SINGLE_TEST_PATTERN = re.compile(
 # ---------------------------------------------------------------------------
 # Data models
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ConditionerResult:
@@ -108,9 +98,7 @@ class _IfBlock:
     is_deploy_time: bool
     # List of (expression_or_None, body_lines) tuples
     # None expression means 'else' branch
-    branches: list[tuple[Optional[str], list[str]]] = field(
-        default_factory=list
-    )
+    branches: list[tuple[Optional[str], list[str]]] = field(default_factory=list)
     # Indentation of the if keyword
     indent: str = ""
     # Nesting depth tracker — how many nested if blocks are inside
@@ -120,6 +108,7 @@ class _IfBlock:
 # ---------------------------------------------------------------------------
 # ConfigConditioner
 # ---------------------------------------------------------------------------
+
 
 class ConfigConditioner:
     """Evaluates deploy-time conditionals in config files.
@@ -182,15 +171,15 @@ class ConfigConditioner:
             Returns False if the expression cannot be parsed (conservative).
         """
         # Check for OR compound (lower precedence)
-        or_parts = re.split(r'\]\]\s*\|\|\s*\[\[', expr)
+        or_parts = re.split(r"\]\]\s*\|\|\s*\[\[", expr)
         if len(or_parts) > 1:
-            tests = re.findall(r'\[\[.+?\]\]', expr)
+            tests = re.findall(r"\[\[.+?\]\]", expr)
             return any(self._evaluate_single_test(t) for t in tests)
 
         # Check for AND compound
-        and_parts = re.split(r'\]\]\s*&&\s*\[\[', expr)
+        and_parts = re.split(r"\]\]\s*&&\s*\[\[", expr)
         if len(and_parts) > 1:
-            tests = re.findall(r'\[\[.+?\]\]', expr)
+            tests = re.findall(r"\[\[.+?\]\]", expr)
             return all(self._evaluate_single_test(t) for t in tests)
 
         # Single test expression
@@ -310,12 +299,10 @@ class ConfigConditioner:
             A ConditionerResult with the conditioned output and statistics.
         """
         # --- Pass 1: Case blocks ---
-        content, case_eliminated, case_preserved = self._condition_case_blocks(
-            content
-        )
+        content, case_eliminated, case_preserved = self._condition_case_blocks(content)
 
         # --- Pass 2: If blocks ---
-        lines = content.split('\n')
+        lines = content.split("\n")
         output_lines: list[str] = []
         eliminated_branches = 0
         preserved_conditionals = 0
@@ -377,9 +364,7 @@ class ConfigConditioner:
                             preserved_conditionals += 1
                             # Emit the entire block as-is by reconstructing
                             # and then skipping to fi
-                            output_lines.extend(
-                                self._reconstruct_block_header(block)
-                            )
+                            output_lines.extend(self._reconstruct_block_header(block))
                             output_lines.append(line)
                             # Continue collecting the rest normally
                             block_stack.pop()
@@ -426,9 +411,7 @@ class ConfigConditioner:
                     else:
                         # End of the deploy-time block - evaluate it
                         block_stack.pop()
-                        resolved_lines, elim_count = self._resolve_if_block(
-                            block
-                        )
+                        resolved_lines, elim_count = self._resolve_if_block(block)
                         output_lines.extend(resolved_lines)
                         eliminated_branches += elim_count
                 else:
@@ -447,7 +430,7 @@ class ConfigConditioner:
         for block in block_stack:
             output_lines.extend(self._emit_block_as_is(block))
 
-        output = '\n'.join(output_lines)
+        output = "\n".join(output_lines)
 
         # Validate shell syntax (Requirement 5.8)
         is_valid_shell = self.validate_shell_syntax(output)
@@ -459,9 +442,7 @@ class ConfigConditioner:
             is_valid_shell=is_valid_shell,
         )
 
-    def _resolve_if_block(
-        self, block: _IfBlock
-    ) -> tuple[list[str], int]:
+    def _resolve_if_block(self, block: _IfBlock) -> tuple[list[str], int]:
         """Evaluate a deploy-time if-block and return the matching branch.
 
         Evaluates each branch's condition in order. The first branch whose
@@ -554,9 +535,7 @@ class ConfigConditioner:
     # Case-block handling (task 4.3)
     # ------------------------------------------------------------------
 
-    def _condition_case_blocks(
-        self, content: str
-    ) -> tuple[str, int, int]:
+    def _condition_case_blocks(self, content: str) -> tuple[str, int, int]:
         """Resolve deploy-time case blocks in the content.
 
         Finds all ``case ${VAR} in ... esac`` blocks. For blocks where
@@ -603,10 +582,7 @@ class ConfigConditioner:
             indent = match.group(1)
             if matching_branch is not None:
                 pattern_text, body_lines = matching_branch
-                comment = (
-                    f"{indent}# Resolved: case ${{{var_name}}} \u2192 "
-                    f"{pattern_text} at deploy time ({var_name}={value})"
-                )
+                comment = f"{indent}# Resolved: case ${{{var_name}}} \u2192 {pattern_text} at deploy time ({var_name}={value})"
                 # Build replacement with body lines
                 if body_lines:
                     replacement = comment + "\n" + "\n".join(body_lines)
@@ -614,10 +590,7 @@ class ConfigConditioner:
                     replacement = comment
             else:
                 # No branch matched — replace with a comment only
-                comment = (
-                    f"{indent}# Resolved: case ${{{var_name}}} \u2014 "
-                    f"no branch matched at deploy time ({var_name}={value})"
-                )
+                comment = f"{indent}# Resolved: case ${{{var_name}}} \u2014 no branch matched at deploy time ({var_name}={value})"
                 replacement = comment
 
             output = output[:block_start] + replacement + output[block_end:]
@@ -625,9 +598,7 @@ class ConfigConditioner:
 
         return output, eliminated, preserved
 
-    def _extract_case_block(
-        self, content: str, start: int
-    ) -> Optional[tuple[int, list[tuple[str, list[str]]]]]:
+    def _extract_case_block(self, content: str, start: int) -> Optional[tuple[int, list[tuple[str, list[str]]]]]:
         """Extract the full case block from content starting at *start*.
 
         Parses from the ``case ... in`` line through to the matching
@@ -798,7 +769,7 @@ class ConfigConditioner:
             The inline body text, or None if there's no inline body.
         """
         paren_idx = self._find_case_paren(stripped)
-        after = stripped[paren_idx + 1:].strip()
+        after = stripped[paren_idx + 1 :].strip()
         if not after:
             return None
         # Remove trailing ;; if present

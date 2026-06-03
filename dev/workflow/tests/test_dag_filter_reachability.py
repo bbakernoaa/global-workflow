@@ -19,7 +19,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from deployment.dag_filter import DAGFilter, DAGReachabilitySet
 from deployment.pipeline import PipelineError
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -32,47 +31,30 @@ def full_dev_root(tmp_path: Path) -> Path:
     jobs_dir = tmp_path / "jobs"
     jobs_dir.mkdir()
     (jobs_dir / "JGLOBAL_FORECAST").write_text(
-        '#!/bin/bash\n'
-        'source "${HOMEglobal}/ush/jjob_header.sh" -e "fcst" -c "base fcst"\n'
-        ': "${FORECASTSH:=${SCRglobal}/exglobal_forecast.sh}"\n'
+        '#!/bin/bash\nsource "${HOMEglobal}/ush/jjob_header.sh" -e "fcst" -c "base fcst"\n: "${FORECASTSH:=${SCRglobal}/exglobal_forecast.sh}"\n'
     )
     (jobs_dir / "JGFS_ATMOS_POST").write_text(
-        '#!/bin/bash\n'
-        'source "${HOMEglobal}/ush/jjob_header.sh" -e "upp" -c "base upp"\n'
-        '${SCRglobal}/exgfs_atmos_post.sh\n'
+        '#!/bin/bash\nsource "${HOMEglobal}/ush/jjob_header.sh" -e "upp" -c "base upp"\n${SCRglobal}/exgfs_atmos_post.sh\n'
     )
     # Extra J-Job NOT referenced by workflow (should not appear in result)
     (jobs_dir / "JGDAS_ATMOS_ANALYSIS").write_text(
-        '#!/bin/bash\n'
-        'source "${HOMEglobal}/ush/jjob_header.sh" -e "anal" -c "base anal"\n'
-        '${SCRglobal}/exgdas_atmos_analysis.sh\n'
+        '#!/bin/bash\nsource "${HOMEglobal}/ush/jjob_header.sh" -e "anal" -c "base anal"\n${SCRglobal}/exgdas_atmos_analysis.sh\n'
     )
 
     # Create scripts directory with ex-scripts
     scripts_dir = tmp_path / "scripts"
     scripts_dir.mkdir()
     (scripts_dir / "exglobal_forecast.sh").write_text(
-        '#!/bin/bash\n'
-        'source "${USHglobal}/forecast_predet.sh"\n'
-        'source "${USHglobal}/forecast_det.sh"\n'
+        '#!/bin/bash\nsource "${USHglobal}/forecast_predet.sh"\nsource "${USHglobal}/forecast_det.sh"\n'
     )
-    (scripts_dir / "exgfs_atmos_post.sh").write_text(
-        '#!/bin/bash\n'
-        'source "${USHglobal}/atmos_post.sh"\n'
-    )
+    (scripts_dir / "exgfs_atmos_post.sh").write_text('#!/bin/bash\nsource "${USHglobal}/atmos_post.sh"\n')
     # Extra ex-script NOT referenced (should not appear in result)
-    (scripts_dir / "exgdas_atmos_analysis.sh").write_text(
-        '#!/bin/bash\n'
-        'source "${USHglobal}/analysis_helper.sh"\n'
-    )
+    (scripts_dir / "exgdas_atmos_analysis.sh").write_text('#!/bin/bash\nsource "${USHglobal}/analysis_helper.sh"\n')
 
     # Create ush directory with scripts
     ush_dir = tmp_path / "ush"
     ush_dir.mkdir()
-    (ush_dir / "forecast_predet.sh").write_text(
-        '#!/bin/bash\n'
-        'source "${USHglobal}/common_utils.sh"\n'
-    )
+    (ush_dir / "forecast_predet.sh").write_text('#!/bin/bash\nsource "${USHglobal}/common_utils.sh"\n')
     (ush_dir / "forecast_det.sh").write_text("#!/bin/bash\n")
     (ush_dir / "common_utils.sh").write_text("#!/bin/bash\n")
     (ush_dir / "atmos_post.sh").write_text("#!/bin/bash\n")
@@ -141,57 +123,43 @@ def workflow_yaml_single_task() -> dict:
 class TestComputeReachability:
     """Tests for DAGFilter.compute_reachability() orchestrator."""
 
-    def test_returns_dag_reachability_set(
-        self, full_dev_root: Path, workflow_yaml_two_tasks: dict
-    ):
+    def test_returns_dag_reachability_set(self, full_dev_root: Path, workflow_yaml_two_tasks: dict):
         """Returns a DAGReachabilitySet instance."""
         dag = DAGFilter(full_dev_root, workflow_yaml_two_tasks, "hera")
         result = dag.compute_reachability()
         assert isinstance(result, DAGReachabilitySet)
 
-    def test_jjobs_are_frozenset(
-        self, full_dev_root: Path, workflow_yaml_two_tasks: dict
-    ):
+    def test_jjobs_are_frozenset(self, full_dev_root: Path, workflow_yaml_two_tasks: dict):
         """Result jjobs field is a frozenset."""
         dag = DAGFilter(full_dev_root, workflow_yaml_two_tasks, "hera")
         result = dag.compute_reachability()
         assert isinstance(result.jjobs, frozenset)
 
-    def test_ex_scripts_are_frozenset(
-        self, full_dev_root: Path, workflow_yaml_two_tasks: dict
-    ):
+    def test_ex_scripts_are_frozenset(self, full_dev_root: Path, workflow_yaml_two_tasks: dict):
         """Result ex_scripts field is a frozenset."""
         dag = DAGFilter(full_dev_root, workflow_yaml_two_tasks, "hera")
         result = dag.compute_reachability()
         assert isinstance(result.ex_scripts, frozenset)
 
-    def test_ush_scripts_are_frozenset(
-        self, full_dev_root: Path, workflow_yaml_two_tasks: dict
-    ):
+    def test_ush_scripts_are_frozenset(self, full_dev_root: Path, workflow_yaml_two_tasks: dict):
         """Result ush_scripts field is a frozenset."""
         dag = DAGFilter(full_dev_root, workflow_yaml_two_tasks, "hera")
         result = dag.compute_reachability()
         assert isinstance(result.ush_scripts, frozenset)
 
-    def test_config_files_are_frozenset(
-        self, full_dev_root: Path, workflow_yaml_two_tasks: dict
-    ):
+    def test_config_files_are_frozenset(self, full_dev_root: Path, workflow_yaml_two_tasks: dict):
         """Result config_files field is a frozenset."""
         dag = DAGFilter(full_dev_root, workflow_yaml_two_tasks, "hera")
         result = dag.compute_reachability()
         assert isinstance(result.config_files, frozenset)
 
-    def test_warnings_are_tuple(
-        self, full_dev_root: Path, workflow_yaml_two_tasks: dict
-    ):
+    def test_warnings_are_tuple(self, full_dev_root: Path, workflow_yaml_two_tasks: dict):
         """Result warnings field is a tuple."""
         dag = DAGFilter(full_dev_root, workflow_yaml_two_tasks, "hera")
         result = dag.compute_reachability()
         assert isinstance(result.warnings, tuple)
 
-    def test_extracts_referenced_jjobs(
-        self, full_dev_root: Path, workflow_yaml_two_tasks: dict
-    ):
+    def test_extracts_referenced_jjobs(self, full_dev_root: Path, workflow_yaml_two_tasks: dict):
         """Extracts only J-Jobs referenced in the workflow YAML."""
         dag = DAGFilter(full_dev_root, workflow_yaml_two_tasks, "hera")
         result = dag.compute_reachability()
@@ -199,9 +167,7 @@ class TestComputeReachability:
         # Unreferenced J-Job should NOT be in the result
         assert "JGDAS_ATMOS_ANALYSIS" not in result.jjobs
 
-    def test_extracts_ex_scripts_from_jjobs(
-        self, full_dev_root: Path, workflow_yaml_two_tasks: dict
-    ):
+    def test_extracts_ex_scripts_from_jjobs(self, full_dev_root: Path, workflow_yaml_two_tasks: dict):
         """Extracts ex-scripts invoked by the reachable J-Jobs."""
         dag = DAGFilter(full_dev_root, workflow_yaml_two_tasks, "hera")
         result = dag.compute_reachability()
@@ -210,9 +176,7 @@ class TestComputeReachability:
         # Unreferenced ex-script should NOT be in the result
         assert "exgdas_atmos_analysis.sh" not in result.ex_scripts
 
-    def test_extracts_ush_scripts_transitively(
-        self, full_dev_root: Path, workflow_yaml_two_tasks: dict
-    ):
+    def test_extracts_ush_scripts_transitively(self, full_dev_root: Path, workflow_yaml_two_tasks: dict):
         """Extracts ush scripts transitively from ex-scripts."""
         dag = DAGFilter(full_dev_root, workflow_yaml_two_tasks, "hera")
         result = dag.compute_reachability()
@@ -225,9 +189,7 @@ class TestComputeReachability:
         assert "analysis_helper.sh" not in result.ush_scripts
         assert "unused_helper.sh" not in result.ush_scripts
 
-    def test_extracts_config_files(
-        self, full_dev_root: Path, workflow_yaml_two_tasks: dict
-    ):
+    def test_extracts_config_files(self, full_dev_root: Path, workflow_yaml_two_tasks: dict):
         """Extracts config files from jjob_header -c flags."""
         dag = DAGFilter(full_dev_root, workflow_yaml_two_tasks, "hera")
         result = dag.compute_reachability()
@@ -242,9 +204,7 @@ class TestComputeReachability:
         assert "config.resources.HERA" in result.config_files
         assert "config.resources" in result.config_files
 
-    def test_unreferenced_configs_excluded(
-        self, full_dev_root: Path, workflow_yaml_single_task: dict
-    ):
+    def test_unreferenced_configs_excluded(self, full_dev_root: Path, workflow_yaml_single_task: dict):
         """Config files not referenced by reachable J-Jobs are excluded."""
         dag = DAGFilter(full_dev_root, workflow_yaml_single_task, "hera")
         result = dag.compute_reachability()
@@ -253,53 +213,41 @@ class TestComputeReachability:
         # "anal" config also not included
         assert "config.anal" not in result.config_files
 
-    def test_statistics_total_jjobs(
-        self, full_dev_root: Path, workflow_yaml_two_tasks: dict
-    ):
+    def test_statistics_total_jjobs(self, full_dev_root: Path, workflow_yaml_two_tasks: dict):
         """Statistics count total available J-Jobs in dev/jobs/."""
         dag = DAGFilter(full_dev_root, workflow_yaml_two_tasks, "hera")
         result = dag.compute_reachability()
         # 3 J-Job files in the fixture
         assert result.total_available_jjobs == 3
 
-    def test_statistics_total_ex_scripts(
-        self, full_dev_root: Path, workflow_yaml_two_tasks: dict
-    ):
+    def test_statistics_total_ex_scripts(self, full_dev_root: Path, workflow_yaml_two_tasks: dict):
         """Statistics count total available ex-scripts in dev/scripts/."""
         dag = DAGFilter(full_dev_root, workflow_yaml_two_tasks, "hera")
         result = dag.compute_reachability()
         # 3 ex*.sh files in the fixture
         assert result.total_available_ex_scripts == 3
 
-    def test_statistics_total_ush_scripts(
-        self, full_dev_root: Path, workflow_yaml_two_tasks: dict
-    ):
+    def test_statistics_total_ush_scripts(self, full_dev_root: Path, workflow_yaml_two_tasks: dict):
         """Statistics count total available ush scripts in dev/ush/."""
         dag = DAGFilter(full_dev_root, workflow_yaml_two_tasks, "hera")
         result = dag.compute_reachability()
         # 6 .sh files in ush/ directory
         assert result.total_available_ush_scripts == 6
 
-    def test_statistics_total_configs(
-        self, full_dev_root: Path, workflow_yaml_two_tasks: dict
-    ):
+    def test_statistics_total_configs(self, full_dev_root: Path, workflow_yaml_two_tasks: dict):
         """Statistics count total available config files recursively."""
         dag = DAGFilter(full_dev_root, workflow_yaml_two_tasks, "hera")
         result = dag.compute_reachability()
         # 8 config.* files in parm/config/ (recursive)
         assert result.total_available_configs == 8
 
-    def test_is_valid_with_jjobs(
-        self, full_dev_root: Path, workflow_yaml_two_tasks: dict
-    ):
+    def test_is_valid_with_jjobs(self, full_dev_root: Path, workflow_yaml_two_tasks: dict):
         """Result is_valid is True when jjobs are present."""
         dag = DAGFilter(full_dev_root, workflow_yaml_two_tasks, "hera")
         result = dag.compute_reachability()
         assert result.is_valid is True
 
-    def test_result_is_immutable(
-        self, full_dev_root: Path, workflow_yaml_two_tasks: dict
-    ):
+    def test_result_is_immutable(self, full_dev_root: Path, workflow_yaml_two_tasks: dict):
         """DAGReachabilitySet is frozen (immutable dataclass)."""
         dag = DAGFilter(full_dev_root, workflow_yaml_two_tasks, "hera")
         result = dag.compute_reachability()
@@ -326,10 +274,7 @@ class TestComputeReachability:
         """Raises PipelineError when a referenced ex-script doesn't exist."""
         # Create a J-Job that references a non-existent ex-script
         jobs_dir = full_dev_root / "jobs"
-        (jobs_dir / "JBAD_SCRIPT_REF").write_text(
-            '#!/bin/bash\n'
-            '${SCRglobal}/exnonexistent_script.sh\n'
-        )
+        (jobs_dir / "JBAD_SCRIPT_REF").write_text("#!/bin/bash\n${SCRglobal}/exnonexistent_script.sh\n")
         yaml_data = {
             "suite": {"name": "gfs_v17"},
             "families": [
@@ -382,9 +327,7 @@ class TestComputeReachability:
         assert "config.base.j2" in result.config_files
         assert "config.com" in result.config_files
 
-    def test_contains_helper_methods(
-        self, full_dev_root: Path, workflow_yaml_two_tasks: dict
-    ):
+    def test_contains_helper_methods(self, full_dev_root: Path, workflow_yaml_two_tasks: dict):
         """contains_* helper methods work on the result."""
         dag = DAGFilter(full_dev_root, workflow_yaml_two_tasks, "hera")
         result = dag.compute_reachability()

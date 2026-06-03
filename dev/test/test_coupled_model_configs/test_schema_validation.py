@@ -16,16 +16,15 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "workflow
 
 from deployment.model_context import (
     COUPLED_REQUIRED_KEYS,
-    FatalDeploymentError,
     OCEAN_RESOLUTION_DEFAULTS,
     SUPPORTED_OCEAN_RESOLUTIONS,
     SUPPORTED_POST_SYSTEMS,
     SUPPORTED_WAVE_CURRENT_INPUT,
     SUPPORTED_WAVE_ICE_INPUT,
+    FatalDeploymentError,
     merge_ocean_resolution_defaults,
     validate_coupled_model_context,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -116,9 +115,7 @@ class TestValidContextPassesValidation:
         assert errors == []
 
     @pytest.mark.parametrize("resolution", sorted(SUPPORTED_OCEAN_RESOLUTIONS))
-    def test_all_supported_ocean_resolutions_pass(
-        self, valid_model_context, resolution
-    ):
+    def test_all_supported_ocean_resolutions_pass(self, valid_model_context, resolution):
         """All supported ocean resolutions should pass validation."""
         valid_model_context["ocean"]["resolution"] = resolution
         errors = validate_coupled_model_context(valid_model_context)
@@ -132,9 +129,7 @@ class TestValidContextPassesValidation:
         assert errors == []
 
     @pytest.mark.parametrize("current_input", sorted(SUPPORTED_WAVE_CURRENT_INPUT))
-    def test_all_supported_wave_current_input_pass(
-        self, valid_model_context, current_input
-    ):
+    def test_all_supported_wave_current_input_pass(self, valid_model_context, current_input):
         """All supported wave.current_input values should pass validation."""
         valid_model_context["wave"]["current_input"] = current_input
         errors = validate_coupled_model_context(valid_model_context)
@@ -183,9 +178,7 @@ class TestMissingRequiredKeys:
     """Tests that missing individual required keys produce FATAL ERROR."""
 
     @pytest.mark.parametrize("key", COUPLED_REQUIRED_KEYS["ocean"])
-    def test_missing_ocean_key_produces_fatal_error(
-        self, valid_model_context, key
-    ):
+    def test_missing_ocean_key_produces_fatal_error(self, valid_model_context, key):
         """Each missing ocean key should produce a FATAL ERROR."""
         del valid_model_context["ocean"][key]
         errors = validate_coupled_model_context(valid_model_context)
@@ -194,9 +187,7 @@ class TestMissingRequiredKeys:
         assert "FATAL ERROR" in matching[0]
 
     @pytest.mark.parametrize("key", COUPLED_REQUIRED_KEYS["ice"])
-    def test_missing_ice_key_produces_fatal_error(
-        self, valid_model_context, key
-    ):
+    def test_missing_ice_key_produces_fatal_error(self, valid_model_context, key):
         """Each missing ice key should produce a FATAL ERROR."""
         del valid_model_context["ice"][key]
         errors = validate_coupled_model_context(valid_model_context)
@@ -205,9 +196,7 @@ class TestMissingRequiredKeys:
         assert "FATAL ERROR" in matching[0]
 
     @pytest.mark.parametrize("key", COUPLED_REQUIRED_KEYS["wave"])
-    def test_missing_wave_key_produces_fatal_error(
-        self, valid_model_context, key
-    ):
+    def test_missing_wave_key_produces_fatal_error(self, valid_model_context, key):
         """Each missing wave key should produce a FATAL ERROR."""
         del valid_model_context["wave"][key]
         errors = validate_coupled_model_context(valid_model_context)
@@ -216,9 +205,7 @@ class TestMissingRequiredKeys:
         assert "FATAL ERROR" in matching[0]
 
     @pytest.mark.parametrize("key", COUPLED_REQUIRED_KEYS["post"])
-    def test_missing_post_key_produces_fatal_error(
-        self, valid_model_context, key
-    ):
+    def test_missing_post_key_produces_fatal_error(self, valid_model_context, key):
         """Each missing post key should produce a FATAL ERROR."""
         del valid_model_context["post"][key]
         errors = validate_coupled_model_context(valid_model_context)
@@ -255,9 +242,7 @@ class TestEnumConstraintValidation:
         """Invalid wave.current_input should produce FATAL ERROR."""
         valid_model_context["wave"]["current_input"] = "NONE"
         errors = validate_coupled_model_context(valid_model_context)
-        matching = [
-            e for e in errors if "wave.current_input" in e and "NONE" in e
-        ]
+        matching = [e for e in errors if "wave.current_input" in e and "NONE" in e]
         assert len(matching) == 1
         assert "FATAL ERROR" in matching[0]
 

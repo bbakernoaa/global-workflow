@@ -9,7 +9,7 @@ GLEVEL    850
 GVCORD    PRES
 SCALE     0
 FLINE     0;5;3;6;26;25;4;17;2;7;28
-CLRBAR    1|.8/2/2/sw                  
+CLRBAR    1|.8/2/2/sw
 LINE      1/1/2
-TEXT     .8/2/2/c/sw 
-CONTUR    
+TEXT     .8/2/2/c/sw
+CONTUR

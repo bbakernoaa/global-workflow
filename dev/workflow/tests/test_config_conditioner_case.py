@@ -10,13 +10,12 @@ Tests the case ${VAR} in ... esac block resolution logic including:
 """
 
 import pytest
-
-from deployment.config_conditioner import ConfigConditioner, ConditionerResult
-
+from deployment.config_conditioner import ConfigConditioner
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def conditioner_gfs():
@@ -33,16 +32,19 @@ def conditioner_gdas():
 @pytest.fixture
 def conditioner_multi():
     """Conditioner with multiple deploy-time variables."""
-    return ConfigConditioner(deploy_time_vars={
-        "RUN": "gfs",
-        "CASE": "C384",
-        "MACHINE": "HERA",
-    })
+    return ConfigConditioner(
+        deploy_time_vars={
+            "RUN": "gfs",
+            "CASE": "C384",
+            "MACHINE": "HERA",
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
 # Basic case block resolution
 # ---------------------------------------------------------------------------
+
 
 class TestCaseBlockResolution:
     """Test that deploy-time case blocks are resolved correctly."""
@@ -181,6 +183,7 @@ esac
 # Runtime variable preservation
 # ---------------------------------------------------------------------------
 
+
 class TestRuntimePreservation:
     """Test that case blocks on runtime variables are preserved."""
 
@@ -249,6 +252,7 @@ esac
 # Inline case patterns
 # ---------------------------------------------------------------------------
 
+
 class TestInlineCasePatterns:
     """Test inline case patterns (body on same line as pattern)."""
 
@@ -273,6 +277,7 @@ esac
 # ---------------------------------------------------------------------------
 # Multiple case blocks
 # ---------------------------------------------------------------------------
+
 
 class TestMultipleCaseBlocks:
     """Test files with multiple case blocks."""
@@ -325,7 +330,7 @@ esac
         assert "export MODE=forecast" in result.output
         assert "case ${RUN} in" not in result.output
         # Runtime block preserved (lowercase var passes through unchanged)
-        assert 'case ${step} in' in result.output
+        assert "case ${step} in" in result.output
         assert 'export walltime="00:30:00"' in result.output
         assert "esac" in result.output
         assert result.eliminated_branches == 1
@@ -336,6 +341,7 @@ esac
 # ---------------------------------------------------------------------------
 # Resolution comment format
 # ---------------------------------------------------------------------------
+
 
 class TestResolutionComments:
     """Test that resolution comments follow the expected format."""
@@ -372,6 +378,7 @@ esac
 # ---------------------------------------------------------------------------
 # Edge cases
 # ---------------------------------------------------------------------------
+
 
 class TestEdgeCases:
     """Test edge cases in case block handling."""

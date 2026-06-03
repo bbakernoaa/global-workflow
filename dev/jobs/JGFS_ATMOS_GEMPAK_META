@@ -54,7 +54,7 @@ mkdir -m 775 -p "${COMOUT_ATMOS_GEMPAK_META}"
 "${SCRglobal}/exgfs_atmos_gempak_meta.sh" && true
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Failed to generate at least one GFS GEMPAK meta product"
+  err_exit "Failed to generate at least one GFS GEMPAK meta product"
 fi
 ########################################################
 
@@ -62,12 +62,12 @@ fi
 # print exec I/O output
 ############################################
 if [[ -e "${pgmout}" ]]; then
-    cat "${pgmout}"
+  cat "${pgmout}"
 fi
 
 ###################################
 # Remove temp directories
 ###################################
 if [[ "${KEEPDATA}" != "YES" ]]; then
-    rm -rf "${DATA}"
+  rm -rf "${DATA}"
 fi

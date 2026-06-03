@@ -1,0 +1,63 @@
+[project]
+name = "global-workflow"
+version = "0.0.0"
+description = "NOAA Global Workflow"
+requires-python = ">=3.9"
+
+# ──────────────────────────────────────────────
+# Ruff — Python linter & formatter
+# https://docs.astral.sh/ruff/configuration/
+# ──────────────────────────────────────────────
+[tool.ruff]
+line-length = 150
+target-version = "py39"
+
+# Paths to exclude from linting/formatting (submodules, generated code, etc.)
+exclude = [
+    ".git",
+    ".github",
+    ".venv",
+    "venv",
+    "__pycache__",
+    "build",
+    "dist",
+    "sorc/*.fd",
+    "sorc/*.cd",
+    "sorc/wxflow",
+    "sorc/uwtools",
+    "docs/source/conf.py",
+]
+
+[tool.ruff.lint]
+# Start conservative — expand as codebase is cleaned up
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort (import ordering)
+]
+ignore = [
+    "E402",  # module level import not at top of file (existing ignore)
+    "E501",  # line too long (handled by formatter)
+    "E741",  # ambiguous variable name (common in scientific code)
+]
+
+# Stricter rules enabled only for new code in dev/workflow
+[tool.ruff.lint.per-file-ignores]
+# Legacy code gets a pass on most style issues
+"ush/**" = ["F401", "F841", "E711", "E712"]
+"scripts/**" = ["F401", "F841", "E711", "E712"]
+"sorc/**" = ["F401", "F841", "E711", "E712"]
+# Test data with long string literals
+"dev/test/test_model_configs/test_atparse_migration.py" = ["E501"]
+# New workflow code holds to higher standard
+"dev/workflow/**" = []
+
+[tool.ruff.lint.isort]
+known-first-party = ["wxflow"]
+
+[tool.ruff.format]
+# Use double quotes for strings (Google/PEP 8 convention)
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"

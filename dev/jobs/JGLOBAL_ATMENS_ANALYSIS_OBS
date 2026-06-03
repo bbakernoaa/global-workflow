@@ -33,7 +33,7 @@ EXSCRIPT=${GDASATMENSOBSSH:-${SCRglobal}/exglobal_atmens_analysis_obs.py}
 ${EXSCRIPT} && true
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Failed to complete the observer for the atmospheric ensemble analysis"
+  err_exit "Failed to complete the observer for the atmospheric ensemble analysis"
 fi
 
 ##############################################
@@ -44,7 +44,7 @@ fi
 # Final processing
 ##############################################
 if [[ -e "${pgmout}" ]]; then
-    cat "${pgmout}"
+  cat "${pgmout}"
 fi
 
 exit 0

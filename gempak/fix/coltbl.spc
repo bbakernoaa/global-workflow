@@ -1,6 +1,6 @@
 ! COLTBL.ISO
 !
-! Color table for filling isotachs 
+! Color table for filling isotachs
 !
 !Color name    Abrev   Red  Green   Blue  X color name
 WHITE           WHI    255    255    255  white

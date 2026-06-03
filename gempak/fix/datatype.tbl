@@ -190,7 +190,7 @@ F-NGM        $COMIN                    ngm_YYYYMMDDHHfFFF        CAT_GRD  SCAT_F
 F-NGMHPC     $HPCNGM                   ngm_YYYYMMDDHHfFFF        CAT_GRD  SCAT_FCT   -1     -1     -1
 NOGAPS       $MODEL/nogaps             nogaps_YYMMDDHH           CAT_GRD  SCAT_FCT   -1     -1     -1
 NWW3         $MODEL/nww3               nww3_YYMMDDHH             CAT_GRD  SCAT_FCT   -1     -1     -1
-F-NWW3       $COMIN                    nww3_YYYYMMDDHH           CAT_GRD  SCAT_FCT   -1     -1     -1 
+F-NWW3       $COMIN                    nww3_YYYYMMDDHH           CAT_GRD  SCAT_FCT   -1     -1     -1
 F-NAH        $COMIN                    nah_YYYYMMDDHH            CAT_GRD  SCAT_FCT   -1     -1     -1
 F-WNA        $COMIN                    wna_YYYYMMDDHH            CAT_GRD  SCAT_FCT   -1     -1     -1
 F-AKW        $COMIN                    akw_YYYYMMDDHH            CAT_GRD  SCAT_FCT   -1     -1     -1

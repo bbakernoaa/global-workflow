@@ -2,24 +2,16 @@
 
 import os
 import re
-from pathlib import Path
+import shutil
 from collections import defaultdict
-import xarray as xr
-from logging import getLogger
 from datetime import datetime, timedelta
-from typing import Dict, Any, Union, List
+from logging import getLogger
+from typing import Any, Dict, List, Union
+
+import xarray as xr
 from dateutil.rrule import DAILY, HOURLY, rrule
-from collections import defaultdict
-from datetime import timedelta
-from wxflow import (AttrDict,
-                    FileHandler,
-                    parse_j2yaml,
-                    logit,
-                    Task,
-                    Jinja,
-                    to_timedelta,
-                    WorkflowException,
-                    Executable)
+
+from wxflow import AttrDict, Executable, FileHandler, Jinja, Task, WorkflowException, logit, parse_j2yaml, to_timedelta
 
 # Try to import toml, fail gracefully if not installed
 try:
@@ -28,17 +20,18 @@ except ImportError:
     try:
         import tomllib as toml  # Python 3.11+
     except ImportError:
+
         class DummyTOML:
             def load(self, f):
                 return {}
+
         toml = DummyTOML()
 
-logger = getLogger(__name__.split('.')[-1])
+logger = getLogger(__name__.split(".")[-1])
 
 
 class NEXUSEmissions(Task):
-    """NEXUS Emissions pre-processing Task
-    """
+    """NEXUS Emissions pre-processing Task"""
 
     def __init__(self, config: Dict[str, Any]) -> None:
         """Constructor for the NEXUS Emissions task
@@ -55,28 +48,28 @@ class NEXUSEmissions(Task):
         super().__init__(config)
 
         # self.task_config = AttrDict(config)
-        self.AERO_INPUTS_DIR = self.task_config.get('AERO_INPUTS_DIR', None)
-        self.COMOUT_CHEM_INPUT = self.task_config.get('COMOUT_CHEM_INPUT', None)
+        self.AERO_INPUTS_DIR = self.task_config.get("AERO_INPUTS_DIR", None)
+        self.COMOUT_CHEM_INPUT = self.task_config.get("COMOUT_CHEM_INPUT", None)
 
         # get the nforecast hours - gcdas will use FHMAX and gcafs will use FHMAX_GFS
-        if 'das' in self.task_config['RUN']:
+        if "das" in self.task_config["RUN"]:
             nforecast_hours = self.task_config["FHMAX"]
         else:
             nforecast_hours = self.task_config["FHMAX_GFS"]
 
         self.start_date = self.task_config["current_cycle"]
         self.total_hrs = nforecast_hours + 1
-        self.end_date = self.task_config["current_cycle"] + to_timedelta(f'{self.total_hrs}H')
+        self.end_date = self.task_config["current_cycle"] + to_timedelta(f"{self.total_hrs}H")
 
-        logger.info(f'start_date: {self.start_date}')
-        logger.info(f'nforecast_hours: {nforecast_hours}')
-        logger.info(f'Computed end_date: {self.end_date} (total_hrs={self.total_hrs})')
+        logger.info(f"start_date: {self.start_date}")
+        logger.info(f"nforecast_hours: {nforecast_hours}")
+        logger.info(f"Computed end_date: {self.end_date} (total_hrs={self.total_hrs})")
 
         # Create the forecast dates based on start_date and end_date
         frequency = self.task_config.get("NEXUS_DIAG_FREQ", "Hourly")
         if frequency == "Hourly":
             self.forecast_dates = list(rrule(freq=HOURLY, dtstart=self.start_date, until=self.end_date))
-        elif frequency == 'Daily':
+        elif frequency == "Daily":
             self.forecast_dates = list(rrule(freq=DAILY, dtstart=self.start_date, until=self.end_date))
         else:
             raise WorkflowException(f"Unsupported NEXUS_DIAG_FREQ: {frequency}")
@@ -133,20 +126,20 @@ class NEXUSEmissions(Task):
         logger.info("Rendering NEXUS configuration files")
         # Check for required NEXUS configuration parameters
         required_nexus_params = [
-            'NEXUS_CONFIG',
-            'NEXUS_CONFIG_DIR',
-            'NEXUS_INPUT_DIR',
+            "NEXUS_CONFIG",
+            "NEXUS_CONFIG_DIR",
+            "NEXUS_INPUT_DIR",
         ]
         for param in required_nexus_params:
             if not self.task_config.get(param, None):
                 raise WorkflowException(f"{param} must be set in task configuration")
 
-        nexus_config_set = self.task_config.get('NEXUS_CONFIG', None)
-        nexus_config_dir = self.task_config.get('NEXUS_CONFIG_DIR', None)
-        nexus_input_dir = self.task_config.get('NEXUS_INPUT_DIR', None)
+        nexus_config_set = self.task_config.get("NEXUS_CONFIG", None)
+        nexus_config_dir = self.task_config.get("NEXUS_CONFIG_DIR", None)
+        nexus_input_dir = self.task_config.get("NEXUS_INPUT_DIR", None)
 
         # Default NEXUS_TSTEP to 3600 seconds (1 hour) if not set
-        nexus_tstep = self.task_config.get('NEXUS_TSTEP', 3600)
+        nexus_tstep = self.task_config.get("NEXUS_TSTEP", 3600)
 
         logger.info(f"Using NEXUS_CONFIG: {nexus_config_set}")
         logger.info(f"Using NEXUS_CONFIG_DIR: {nexus_config_dir}")
@@ -154,15 +147,7 @@ class NEXUSEmissions(Task):
         logger.info(f"Using NEXUS_TSTEP: {nexus_tstep}")
 
         # Check for grid parameters
-        required_grid_params = [
-            'NEXUS_NX',
-            'NEXUS_NY',
-            'NEXUS_NZ',
-            'NEXUS_XMIN',
-            'NEXUS_XMAX',
-            'NEXUS_YMIN',
-            'NEXUS_YMAX'
-        ]
+        required_grid_params = ["NEXUS_NX", "NEXUS_NY", "NEXUS_NZ", "NEXUS_XMIN", "NEXUS_XMAX", "NEXUS_YMIN", "NEXUS_YMAX"]
         for param in required_grid_params:
             if not self.task_config.get(param, None):
                 raise WorkflowException(f"{param} must be set in task configuration")
@@ -192,30 +177,30 @@ class NEXUSEmissions(Task):
 
         logger.info(f"Rendering NEXUS configuration from {nexus_config_dir}")
         tmpl_dict = {
-            'NEXUS_CONFIG': nexus_config_set,
-            'NEXUS_CONFIG_DIR': nexus_config_dir,
-            'NEXUS_INPUT_DIR': nexus_input_dir,
-            'NEXUS_DIAG_PREFIX': self.task_config.NEXUS_DIAG_PREFIX,
-            'NEXUS_TSTEP': nexus_tstep,
-            'NEXUS_NX': self.task_config.NEXUS_NX,
-            'NEXUS_NY': self.task_config.NEXUS_NY,
-            'NEXUS_NZ': self.task_config.NEXUS_NZ,
-            'NEXUS_XMIN': self.task_config.NEXUS_XMIN,
-            'NEXUS_XMAX': self.task_config.NEXUS_XMAX,
-            'NEXUS_YMIN': self.task_config.NEXUS_YMIN,
-            'NEXUS_YMAX': self.task_config.NEXUS_YMAX,
-            'LOCAL_INPUT_DIR': os.path.join(self.task_config.DATA, 'INPUT'),
-            'NEXUS_EXECUTABLE': os.path.join(self.task_config.get('HOMEglobal', None), "exec/nexus.x"),
+            "NEXUS_CONFIG": nexus_config_set,
+            "NEXUS_CONFIG_DIR": nexus_config_dir,
+            "NEXUS_INPUT_DIR": nexus_input_dir,
+            "NEXUS_DIAG_PREFIX": self.task_config.NEXUS_DIAG_PREFIX,
+            "NEXUS_TSTEP": nexus_tstep,
+            "NEXUS_NX": self.task_config.NEXUS_NX,
+            "NEXUS_NY": self.task_config.NEXUS_NY,
+            "NEXUS_NZ": self.task_config.NEXUS_NZ,
+            "NEXUS_XMIN": self.task_config.NEXUS_XMIN,
+            "NEXUS_XMAX": self.task_config.NEXUS_XMAX,
+            "NEXUS_YMIN": self.task_config.NEXUS_YMIN,
+            "NEXUS_YMAX": self.task_config.NEXUS_YMAX,
+            "LOCAL_INPUT_DIR": os.path.join(self.task_config.DATA, "INPUT"),
+            "NEXUS_EXECUTABLE": os.path.join(self.task_config.get("HOMEglobal", None), "exec/nexus.x"),
             "DATA": self.task_config.DATA,
-            "NEXUS_DO_MEGAN": self.task_config.get('NEXUS_DO_MEGAN', False),
-            "NEXUS_DO_CEDS2019": self.task_config.get('NEXUS_DO_CEDS2019', True),
-            "NEXUS_DO_CEDS2024": self.task_config.get('NEXUS_DO_CEDS2024', False),
-            "NEXUS_DO_HTAPv2": self.task_config.get('NEXUS_DO_HTAPv2', True),
-            "NEXUS_DO_HTAPv3": self.task_config.get('NEXUS_DO_HTAPv3', False),
-            "NEXUS_DO_CAMS": self.task_config.get('NEXUS_DO_CAMS', False),
-            "NEXUS_DO_CAMSTEMPO": self.task_config.get('NEXUS_DO_CAMSTEMPO', False),
-            "start_date": self.start_date.strftime('%Y-%m-%d %H:%M:%S'),
-            "end_date": self.end_date.strftime('%Y-%m-%d %H:%M:%S'),
+            "NEXUS_DO_MEGAN": self.task_config.get("NEXUS_DO_MEGAN", False),
+            "NEXUS_DO_CEDS2019": self.task_config.get("NEXUS_DO_CEDS2019", True),
+            "NEXUS_DO_CEDS2024": self.task_config.get("NEXUS_DO_CEDS2024", False),
+            "NEXUS_DO_HTAPv2": self.task_config.get("NEXUS_DO_HTAPv2", True),
+            "NEXUS_DO_HTAPv3": self.task_config.get("NEXUS_DO_HTAPv3", False),
+            "NEXUS_DO_CAMS": self.task_config.get("NEXUS_DO_CAMS", False),
+            "NEXUS_DO_CAMSTEMPO": self.task_config.get("NEXUS_DO_CAMSTEMPO", False),
+            "start_date": self.start_date.strftime("%Y-%m-%d %H:%M:%S"),
+            "end_date": self.end_date.strftime("%Y-%m-%d %H:%M:%S"),
             "FINAL_OUTPUT": final_output_files,
             "COMOUT_CHEM_INPUT": self.task_config.COMOUT_CHEM_INPUT,
             "COMOUT_CHEM_RESTART": self.task_config.COMOUT_CHEM_RESTART,
@@ -285,19 +270,19 @@ class NEXUSEmissions(Task):
             raise WorkflowException(f"Missing {len(missing_files)} NEXUS emission input files, cannot proceed")
 
         tmpl_dict["NEXUS_INPUT_FILES"] = found_files
-        tmpl_dict["NEXUS_COPY_TO_FILES"] = [os.path.join(self.task_config.DATA, 'INPUT', os.path.relpath(f, root_path)) for f in found_files]
-        tmpl_dict["NEXUS_INPUT_DIR"] = os.path.join(self.task_config.DATA, 'INPUT')
+        tmpl_dict["NEXUS_COPY_TO_FILES"] = [os.path.join(self.task_config.DATA, "INPUT", os.path.relpath(f, root_path)) for f in found_files]
+        tmpl_dict["NEXUS_INPUT_DIR"] = os.path.join(self.task_config.DATA, "INPUT")
         # Create all necessary directories for the destination files
         for dest_file in tmpl_dict["NEXUS_COPY_TO_FILES"]:
             dest_dir = os.path.dirname(dest_file)
             os.makedirs(dest_dir, exist_ok=True)
 
-        yaml_template = os.path.join(self.task_config.HOMEglobal, 'parm', 'chem', 'nexus_emission.yaml.j2')
+        yaml_template = os.path.join(self.task_config.HOMEglobal, "parm", "chem", "nexus_emission.yaml.j2")
         if not os.path.exists(yaml_template):
             logger.warning(f"Template file not found: {yaml_template}, using default configuration")
-            yaml_config = {'nexus_emission': {}}
+            yaml_config = {"nexus_emission": {}}
         else:
-            logger.debug(f'Parsing YAML template: {yaml_template}')
+            logger.debug(f"Parsing YAML template: {yaml_template}")
             yaml_config = parse_j2yaml(yaml_template, tmpl_dict)
         # Add yaml configuration to task_config
         self.task_config = AttrDict(**self.task_config, **yaml_config)
@@ -318,7 +303,7 @@ class NEXUSEmissions(Task):
         logger.info(f"NEXUS config file rendered successfully: written to {outfile}")
 
         # create a directory in the self.task_config.DATA/Restarts
-        os.makedirs(os.path.join(self.task_config.DATA, 'Restarts'), exist_ok=True)
+        os.makedirs(os.path.join(self.task_config.DATA, "Restarts"), exist_ok=True)
         logger.info(f"Created Restarts directory: {os.path.join(self.task_config.DATA, 'Restarts')}")
 
     @logit(logger)
@@ -361,8 +346,8 @@ class NEXUSEmissions(Task):
         if os.path.exists("nexus.x") is False:
             raise WorkflowException("NEXUS preprocessor executable 'nexus.x' not found in PATH")
 
-        arg_list = ['./nexus.x', '-c', self.task_config.NEXUS_CONFIG_NAME]
-        exe(*arg_list, output='stdout', error='stderr')
+        arg_list = ["./nexus.x", "-c", self.task_config.NEXUS_CONFIG_NAME]
+        exe(*arg_list, output="stdout", error="stderr")
 
         logger.info("Concatenating processed NEXUS files...")
 
@@ -370,7 +355,6 @@ class NEXUSEmissions(Task):
         files = sorted(self.processed_nexus_files)
 
         for i in files:
-
             if not os.path.exists(i):
                 logger.warning(f"NEXUS file not found: {i}")
                 continue
@@ -383,7 +367,7 @@ class NEXUSEmissions(Task):
         day_indexes = _get_day_indices(self.forecast_dates[:-1])  # hemco doesn't write out the last timestep
         # now loop over each days
         for date, indexes in day_indexes.items():
-            day_str = date.strftime('%Y%m%d')
+            day_str = date.strftime("%Y%m%d")
             logger.info(f"Processing NEXUS files for date: {date}")
 
             dsets = []
@@ -397,10 +381,10 @@ class NEXUSEmissions(Task):
                 ds = xr.open_dataset(files[index], decode_cf=False)
 
                 # update time coordinate
-                ds = ds.assign_coords(time=('time', [index]))
+                ds = ds.assign_coords(time=("time", [index]))
 
                 # set time units to reference start-date
-                ds.time.attrs['units'] = self.start_date.strftime('hours since %Y-%m-%d %H:00:00')
+                ds.time.attrs["units"] = self.start_date.strftime("hours since %Y-%m-%d %H:00:00")
 
                 # append
                 dsets.append(ds)
@@ -409,7 +393,7 @@ class NEXUSEmissions(Task):
             if len(dsets) == 0:
                 break
             else:
-                ds = xr.concat(dsets, dim='time')
+                ds = xr.concat(dsets, dim="time")
 
             encoding = {var: {"zlib": True, "complevel": 2} for var in ds.data_vars}
             outname = f"{self.task_config.NEXUS_DIAG_PREFIX}.{day_str}.nc"
@@ -458,7 +442,7 @@ def _write_txt_file(content: str, file_path: Union[str, os.PathLike]) -> None:
     If the directory does not exist, it will be created.
     """
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    with open(file_path, 'w') as f:
+    with open(file_path, "w") as f:
         f.write(content)
 
 
@@ -529,10 +513,10 @@ def parse_year_bounds(hemco_time_str: str) -> tuple[None | int, None | int]:
     if not hemco_time_str or hemco_time_str.strip() == "*":
         return None, None
 
-    date_part = hemco_time_str.split('/')[0].strip()
+    date_part = hemco_time_str.split("/")[0].strip()
     if "-" in date_part:
         try:
-            parts = date_part.split('-')
+            parts = date_part.split("-")
             start_y = int(parts[0])
             end_y = int(parts[-1])
             return start_y, end_y
@@ -569,13 +553,7 @@ def resolve_variables(path: str, var_definitions: dict[str, str]) -> str:
     return resolved_path
 
 
-def expand_filenames(
-    file_template: str,
-    hemco_time_str: str,
-    sector_conf: dict[str, Any],
-    start_date: datetime,
-    end_date: datetime
-) -> set[str]:
+def expand_filenames(file_template: str, hemco_time_str: str, sector_conf: dict[str, Any], start_date: datetime, end_date: datetime) -> set[str]:
     """
     Expand file templates into actual filenames for a date range and frequency.
 
@@ -619,7 +597,7 @@ def expand_filenames(
             generated_files.add(fname)
     elif freq == "monthly":
         unique_months = set((d.year, d.month) for d in daterange(start_date, end_date))
-        for (year, month) in unique_months:
+        for year, month in unique_months:
             eff_year = get_effective_year(year)
             mm = f"{month:02d}"
             fname = file_template.replace("$YYYY", eff_year).replace("$MM", mm)
@@ -628,7 +606,7 @@ def expand_filenames(
             generated_files.add(fname)
     elif freq == "representative":
         unique_months = set((d.year, d.month) for d in daterange(start_date, end_date))
-        for (year, month) in unique_months:
+        for year, month in unique_months:
             eff_year = get_effective_year(year)
             mm = f"{month:02d}"
             base_name = file_template.replace("$YYYY", eff_year).replace("$MM", mm)
@@ -676,16 +654,12 @@ def extract_dataset_name(file_path: str, root_path: str) -> str:
     except ValueError:
         parts = file_path.split(os.sep)
         for i, part in enumerate(parts):
-            if part in ['nexus', 'emissions', 'data'] and i < len(parts) - 1:
+            if part in ["nexus", "emissions", "data"] and i < len(parts) - 1:
                 return parts[i + 1]
     return "unknown"
 
 
-def copy_files_with_structure(
-    file_list: list[str],
-    root_path: str,
-    copy_dir: str
-) -> tuple[int, int]:
+def copy_files_with_structure(file_list: list[str], root_path: str, copy_dir: str) -> tuple[int, int]:
     """
     Copy files to local directory maintaining dataset structure.
 
@@ -708,27 +682,22 @@ def copy_files_with_structure(
     os.makedirs(copy_dir, exist_ok=True)
     for file_path in file_list:
         try:
-            dataset_name = extract_dataset_name(file_path, root_path)
+            _dataset_name = extract_dataset_name(file_path, root_path)  # noqa: F841
             try:
                 rel_path = os.path.relpath(file_path, root_path)
             except ValueError:
-                rel_path = file_path.lstrip('/')
+                rel_path = file_path.lstrip("/")
             dest_path = os.path.join(copy_dir, rel_path)
             dest_dir = os.path.dirname(dest_path)
             os.makedirs(dest_dir, exist_ok=True)
             shutil.copy2(file_path, dest_path)
             copied_count += 1
-        except Exception as e:
+        except Exception:
             failed_count += 1
     return copied_count, failed_count
 
 
-def parse_hemco(
-    rc_path: str,
-    toml_path: str,
-    start_date: datetime,
-    end_date: datetime
-) -> tuple[list[str], str | None]:
+def parse_hemco(rc_path: str, toml_path: str, start_date: datetime, end_date: datetime) -> tuple[list[str], str | None]:
     """
     Parse HEMCO config and return (file_list, root_path).
 
@@ -755,7 +724,7 @@ def parse_hemco(
 
     # Load sector rules with better defaults
     try:
-        with open(toml_path, 'r') as tf:
+        with open(toml_path) as tf:
             sector_rules = toml.load(tf)
     except Exception:
         # Create default rules for common patterns
@@ -763,21 +732,20 @@ def parse_hemco(
             "default": {"frequency": "monthly"},
             "CEDS": {"frequency": "yearly"},
             "GFED": {"frequency": "daily"},
-            "FINN": {"frequency": "daily"}
+            "FINN": {"frequency": "daily"},
         }
 
     defined_vars = {}
     all_files = set()
-    enabled_extensions = set()
     enabled_collections = set()
     root_path = None
 
-    var_pattern = re.compile(r'^\s*([A-Za-z0-9_]+)\s*:\s*(.*)')
+    var_pattern = re.compile(r"^\s*([A-Za-z0-9_]+)\s*:\s*(.*)")
     data_sections = ["BASE EMISSIONS", "SCALE FACTORS", "MASKS"]
     current_section = None
     in_conditional_section = None
 
-    with open(rc_path, 'r') as f:
+    with open(rc_path) as f:
         lines = f.readlines()
 
     for line in lines:
@@ -786,8 +754,7 @@ def parse_hemco(
         # Handle comments, but allow section headers that start with ###
         if not raw:
             continue
-        if (raw.startswith("!") or
-                (raw.startswith("#") and "BEGIN SECTION" not in raw and "END SECTION" not in raw)):
+        if raw.startswith("!") or (raw.startswith("#") and "BEGIN SECTION" not in raw and "END SECTION" not in raw):
             continue
 
         # Section Detection
@@ -831,7 +798,7 @@ def parse_hemco(
             match = var_pattern.match(raw)
             if match:
                 k, v = match.groups()
-                clean_val = v.split('!')[0].split('#')[0].strip()
+                clean_val = v.split("!")[0].split("#")[0].strip()
                 defined_vars[f"${k}"] = clean_val
                 # Capture ROOT path for copying functionality
                 if k == "ROOT":
@@ -853,7 +820,7 @@ def parse_hemco(
                     ext_nr = parts[0]
                     name = parts[1]
                     raw_file = parts[2]
-                    source_var = parts[3]
+                    _source_var = parts[3]  # noqa: F841
                     raw_time = parts[4]
 
                     # Skip disabled extensions (only process extension 0 and *)
@@ -862,10 +829,10 @@ def parse_hemco(
 
                 elif current_section == "SCALE FACTORS":
                     # Format: ScalID Name sourceFile sourceVar sourceTime ...
-                    scale_id = parts[0]
+                    _scale_id = parts[0]  # noqa: F841
                     name = parts[1]
                     raw_file = parts[2]
-                    source_var = parts[3]
+                    _source_var = parts[3]  # noqa: F841
                     raw_time = parts[4]
 
                 else:
@@ -873,14 +840,14 @@ def parse_hemco(
                     ext_nr = parts[0]
                     name = parts[1]
                     raw_file = parts[2]
-                    source_var = parts[3]
+                    _source_var = parts[3]  # noqa: F841
                     raw_time = parts[4]
 
                 # Common filtering for all sections
                 # Filtering garbage
-                if raw_file == '-' or raw_file.startswith("MATH:") or raw_file.upper() == "MASK" or raw_file == "1.0":
+                if raw_file == "-" or raw_file.startswith("MATH:") or raw_file.upper() == "MASK" or raw_file == "1.0":
                     continue
-                if not any(c.isalpha() or c == '$' or c == '/' for c in raw_file):
+                if not any(c.isalpha() or c == "$" or c == "/" for c in raw_file):
                     continue
 
                 # 1. Resolve Variables
@@ -888,11 +855,7 @@ def parse_hemco(
 
                 # 2. Get Rules - try exact name match first, then collection, then default
                 rules = sector_rules.get(
-                    name,
-                    sector_rules.get(
-                        in_conditional_section if in_conditional_section else "default",
-                        sector_rules.get("default", {})
-                    )
+                    name, sector_rules.get(in_conditional_section if in_conditional_section else "default", sector_rules.get("default", {}))
                 )
 
                 # 3. Expand with Year Clamping
@@ -919,24 +882,20 @@ def parse_hemco_time_file(time_file_path: str) -> tuple[datetime | None, datetim
     start_date = None
     end_date = None
     if os.path.exists(time_file_path):
-        with open(time_file_path, 'r') as f:
+        with open(time_file_path) as f:
             for line in f:
                 line = line.strip()
-                if line.startswith('START:'):
-                    date_str = line.split(':')[1].strip().split()[0]
-                    start_date = datetime.strptime(date_str, '%Y-%m-%d')
-                elif line.startswith('END:'):
-                    date_str = line.split(':')[1].strip().split()[0]
-                    end_date = datetime.strptime(date_str, '%Y-%m-%d')
+                if line.startswith("START:"):
+                    date_str = line.split(":")[1].strip().split()[0]
+                    start_date = datetime.strptime(date_str, "%Y-%m-%d")
+                elif line.startswith("END:"):
+                    date_str = line.split(":")[1].strip().split()[0]
+                    end_date = datetime.strptime(date_str, "%Y-%m-%d")
     return start_date, end_date
 
 
 def gather_emissions_files(
-    hemco_config_path: str,
-    start_date: datetime,
-    end_date: datetime,
-    toml_rules_path: str = "nexus_sectors.toml",
-    verbose: bool = False
+    hemco_config_path: str, start_date: datetime, end_date: datetime, toml_rules_path: str = "nexus_sectors.toml", verbose: bool = False
 ) -> tuple[list[str], list[str], str | None]:
     """
     Main API function to gather emissions files for a date range.
@@ -980,10 +939,7 @@ def gather_emissions_files(
 
 
 def gather_emissions_files_from_time_file(
-    hemco_config_path: str,
-    hemco_time_path: str,
-    toml_rules_path: str = "nexus_sectors.toml",
-    verbose: bool = False
+    hemco_config_path: str, hemco_time_path: str, toml_rules_path: str = "nexus_sectors.toml", verbose: bool = False
 ) -> tuple[list[str], list[str], str | None]:
     """
     Gather emissions files using dates from HEMCO time file.
@@ -1016,12 +972,7 @@ def gather_emissions_files_from_time_file(
     return gather_emissions_files(hemco_config_path, start_date, end_date, toml_rules_path, verbose)
 
 
-def copy_emissions_files(
-    file_list: list[str],
-    root_path: str,
-    destination_dir: str,
-    verbose: bool = False
-) -> tuple[int, int]:
+def copy_emissions_files(file_list: list[str], root_path: str, destination_dir: str, verbose: bool = False) -> tuple[int, int]:
     """
     Copy emission files to local directory with organized structure.
 

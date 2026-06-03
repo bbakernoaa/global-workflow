@@ -14,21 +14,21 @@ cpreq "${HOMEglobal}/gempak/fix/datatype.tbl" datatype.tbl
 export COMIN="gfs.multi"
 mkdir -p "${COMIN}"
 for cycle in $(seq -f "%02g" -s ' ' 0 "${INTERVAL_GFS}" "${cyc}"); do
-    gempak_dir="${ROTDIR}/${RUN}.${PDY}/${cycle}/products/atmos/gempak/1p00"
-    for file_in in "${gempak_dir}/gfs_1p00_${PDY}${cycle}f"*; do
-        # Only copy the file if it exists (it will not if we start on 6, 12, or 18z)
-        if [[ ! -f "${file_in}" ]]; then
-            echo "WARNING: ${file_in} does not exist, skipping"
-        else
-            file_out="${COMIN}/$(basename "${file_in}")"
-            # Only create new files, do not overwrite existing
-            if [[ ! -f "${file_out}" ]]; then
-                cpreq "${file_in}" "${file_out}"
-            else
-                echo "WARNING: ${file_out} already exists, skipping"
-            fi
-        fi
-    done
+  gempak_dir="${ROTDIR}/${RUN}.${PDY}/${cycle}/products/atmos/gempak/1p00"
+  for file_in in "${gempak_dir}/gfs_1p00_${PDY}${cycle}f"*; do
+    # Only copy the file if it exists (it will not if we start on 6, 12, or 18z)
+    if [[ ! -f "${file_in}" ]]; then
+      echo "WARNING: ${file_in} does not exist, skipping"
+    else
+      file_out="${COMIN}/$(basename "${file_in}")"
+      # Only create new files, do not overwrite existing
+      if [[ ! -f "${file_out}" ]]; then
+        cpreq "${file_in}" "${file_out}"
+      else
+        echo "WARNING: ${file_out} already exists, skipping"
+      fi
+    fi
+  done
 done
 
 #
@@ -47,102 +47,102 @@ device="nc | ${metaname}"
 
 grid="F-${MDL} | ${PDY:2}/${cyc}00"
 for garea in NAtl NPac; do
-    case ${garea} in
-        NAtl)
-            garea="natl"
-            proj=" "
-            latlon="18/2/1/1/10"
-            ;;
-        NPac)
-            garea="mpac"
-            proj=" "
-            latlon="18/2/1/1/10"
-            ;;
-        *)
-            echo "FATAL ERROR: Unknown domain"
-            exit 100
-            ;;
+  case ${garea} in
+    NAtl)
+      garea="natl"
+      proj=" "
+      latlon="18/2/1/1/10"
+      ;;
+    NPac)
+      garea="mpac"
+      proj=" "
+      latlon="18/2/1/1/10"
+      ;;
+    *)
+      echo "FATAL ERROR: Unknown domain"
+      exit 100
+      ;;
+  esac
+
+  offsets=(6 12)
+  for offset in "${offsets[@]}"; do
+    init_time=$(date --utc +%Y%m%d%H -d "${PDY} ${cyc} - ${offset} hours")
+    init_PDY=${init_time:0:8}
+    init_cyc=${init_time:8:2}
+
+    if [[ "${init_time}" -le "${SDATE}" ]]; then
+      echo "Skipping generation for ${init_time} because it is before the experiment began"
+      if [[ "${offset}" -eq "${offsets[0]}" ]]; then
+        echo "First forecast time, no metafile produced"
+        exit 0
+      fi
+      continue
+    fi
+
+    # Create symlink in DATA to sidestep gempak path limits
+    # TODO: Add only necessary files and remove unneeded ones to minimize data volume
+    # TODO: remove live links and refer https://github.com/NOAA-EMC/global-workflow/issues/4406
+    HPCGFS="${RUN}.${init_time}"
+    rm -f "${HPCGFS}"
+    source_dir="${ROTDIR}/${RUN}.${init_PDY}/${init_cyc}/products/atmos/gempak/1p00"
+    ${NLN} "${source_dir}" "${HPCGFS}"
+
+    case ${cyc} in
+      00 | 12)
+        contours=1
+        type_param="CTYPE"
+        ex=""
+        ;;
+      06 | 18)
+        contours=2
+        type_param="TYPE"
+        ex="ex"
+        ;;
+      *)
+        echo "FATAL ERROR: Invalid cycle ${cyc} passed to ${BASH_SOURCE[0]}"
+        ;;
     esac
 
-    offsets=(6 12)
-    for offset in "${offsets[@]}"; do
-        init_time=$(date --utc +%Y%m%d%H -d "${PDY} ${cyc} - ${offset} hours")
-        init_PDY=${init_time:0:8}
-        init_cyc=${init_time:8:2}
+    case ${cyc}_${init_cyc} in
+      00_*) testgfsfhr=114 ;;
+      06_00) testgfsfhr=84 ;;
+      06_18) testgfsfhr=72 ;;
+      12_00) testgfsfhr=114 ;;
+      12_06) testgfsfhr=78 ;;
+      18_06) testgfsfhr=72 ;;
+      18_12) testgfsfhr=84 ;;
+      *)
+        echo "FATAL ERROR: Undefined pairing of cycles"
+        exit 200
+        ;;
+    esac
 
-        if [[ "${init_time}" -le "${SDATE}" ]]; then
-            echo "Skipping generation for ${init_time} because it is before the experiment began"
-            if [[ "${offset}" -eq "${offsets[0]}" ]]; then
-                echo "First forecast time, no metafile produced"
-                exit 0
-            fi
-            continue
-        fi
+    for fhr in $(seq -s ' ' 0 6 126); do
+      gfsfhr=F$(printf "%02g" "${fhr}")
+      gfsoldfhr=F$(printf "%02g" $((fhr + offset)))
+      grid2="F-GFSHPC | ${init_time:2}/${init_cyc}00"
+      gdpfun1="sm5s(hght)!sm5s(hght)"
+      gdpfun2="sm5s(pmsl)!sm5s(pmsl)"
+      line="5/1/3/2/2!6/1/3/2/2"
+      hilo1="5/H#;L#//5/5;5/y!6/H#;L#//5/5;5/y"
+      hilo2="5/H#;L#/1018-1060;900-1012/5/10;10/y!6/H#;L#/1018-1060;900-1012/5/10;10/y"
+      title1="5/-2/~ ? ^ ${MDL} @ HGT (${cyc}Z YELLOW)|^${garea} ${cyc}Z vs ${init_cyc}Z 500 HGT!6/-3/~ ? ${MDL} @ HGT (${init_cyc}Z CYAN)"
+      title2="5/-2/~ ? ^ ${MDL} PMSL (${cyc}Z YELLOW)|^${garea} ${cyc}Z vs ${init_cyc}Z PMSL!6/-3/~ ? ${MDL} PMSL (${init_cyc}Z CYAN)"
+      if [[ "${fhr}" -gt "${testgfsfhr}" ]]; then
+        grid2=" "
+        gfsoldfhr=" "
+        gdpfun1="sm5s(hght)"
+        gdpfun2="sm5s(pmsl)"
+        line="5/1/3/2/2"
+        hilo1="5/H#;L#//5/5;5/y"
+        hilo2="5/H#;L#/1018-1060;900-1012/5/10;10/y"
+        title1="5/-2/~ ? ^ ${MDL} @ HGT (${cyc}Z YELLOW)|^${garea} ${cyc}Z vs ${init_cyc}Z 500 HGT"
+        title2="5/-2/~ ? ^ ${MDL} PMSL (${cyc}Z YELLOW)|^${garea} ${cyc}Z vs ${init_cyc}Z PMSL"
+      fi
 
-        # Create symlink in DATA to sidestep gempak path limits
-        # TODO: Add only necessary files and remove unneeded ones to minimize data volume
-        # TODO: remove live links and refer https://github.com/NOAA-EMC/global-workflow/issues/4406
-        HPCGFS="${RUN}.${init_time}"
-        rm -f "${HPCGFS}"
-        source_dir="${ROTDIR}/${RUN}.${init_PDY}/${init_cyc}/products/atmos/gempak/1p00"
-        ${NLN} "${source_dir}" "${HPCGFS}"
-
-        case ${cyc} in
-            00 | 12)
-                contours=1
-                type_param="CTYPE"
-                ex=""
-                ;;
-            06 | 18)
-                contours=2
-                type_param="TYPE"
-                ex="ex"
-                ;;
-            *)
-                echo "FATAL ERROR: Invalid cycle ${cyc} passed to ${BASH_SOURCE[0]}"
-                ;;
-        esac
-
-        case ${cyc}_${init_cyc} in
-            00_*) testgfsfhr=114 ;;
-            06_00) testgfsfhr=84 ;;
-            06_18) testgfsfhr=72 ;;
-            12_00) testgfsfhr=114 ;;
-            12_06) testgfsfhr=78 ;;
-            18_06) testgfsfhr=72 ;;
-            18_12) testgfsfhr=84 ;;
-            *)
-                echo "FATAL ERROR: Undefined pairing of cycles"
-                exit 200
-                ;;
-        esac
-
-        for fhr in $(seq -s ' ' 0 6 126); do
-            gfsfhr=F$(printf "%02g" "${fhr}")
-            gfsoldfhr=F$(printf "%02g" $((fhr + offset)))
-            grid2="F-GFSHPC | ${init_time:2}/${init_cyc}00"
-            gdpfun1="sm5s(hght)!sm5s(hght)"
-            gdpfun2="sm5s(pmsl)!sm5s(pmsl)"
-            line="5/1/3/2/2!6/1/3/2/2"
-            hilo1="5/H#;L#//5/5;5/y!6/H#;L#//5/5;5/y"
-            hilo2="5/H#;L#/1018-1060;900-1012/5/10;10/y!6/H#;L#/1018-1060;900-1012/5/10;10/y"
-            title1="5/-2/~ ? ^ ${MDL} @ HGT (${cyc}Z YELLOW)|^${garea} ${cyc}Z vs ${init_cyc}Z 500 HGT!6/-3/~ ? ${MDL} @ HGT (${init_cyc}Z CYAN)"
-            title2="5/-2/~ ? ^ ${MDL} PMSL (${cyc}Z YELLOW)|^${garea} ${cyc}Z vs ${init_cyc}Z PMSL!6/-3/~ ? ${MDL} PMSL (${init_cyc}Z CYAN)"
-            if [[ "${fhr}" -gt "${testgfsfhr}" ]]; then
-                grid2=" "
-                gfsoldfhr=" "
-                gdpfun1="sm5s(hght)"
-                gdpfun2="sm5s(pmsl)"
-                line="5/1/3/2/2"
-                hilo1="5/H#;L#//5/5;5/y"
-                hilo2="5/H#;L#/1018-1060;900-1012/5/10;10/y"
-                title1="5/-2/~ ? ^ ${MDL} @ HGT (${cyc}Z YELLOW)|^${garea} ${cyc}Z vs ${init_cyc}Z 500 HGT"
-                title2="5/-2/~ ? ^ ${MDL} PMSL (${cyc}Z YELLOW)|^${garea} ${cyc}Z vs ${init_cyc}Z PMSL"
-            fi
-
-            export pgm=gdplot2_nc
-            source prep_step
-            "${GEMEXE}/gdplot2_nc" << EOF
+      export pgm=gdplot2_nc
+      source prep_step
+      "${GEMEXE}/gdplot2_nc" << EOF
 DEVICE  = ${device}
 MAP     = 1/1/1/yes
 CLEAR   = yes
@@ -190,60 +190,60 @@ run
 
 ${ex}
 EOF
-            export err=$?
-            err_chk
-        done
+      export err=$?
+      err_chk
     done
+  done
 
-    if ((10#${cyc} % 12 == 0)); then
+  if ((10#${cyc} % 12 == 0)); then
 
-        #
-        # There are some differences between 00z and 12z
-        # The YEST string makes sense (but is inconsistently used)
-        # The others I'm not sure why they differ. - WCK
-        #
-        case ${cyc} in
-            00)
-                type_param="TYPE"
-                hlsym="1.2;1.2//21//hw"
-                wind=""
-                yest=" YEST"
-                run_cmd="run"
-                extra_cmd="\nHLSYM   = 1.2;1.2//21//hw\nTEXT    = s/21//hw"
-                ;;
-            12)
-                type_param="CTYPE"
-                hlsym="1;1//21//hw"
-                wind="0"
-                yest=""
-                run_cmd="ru"
-                extra_cmd=""
-                ;;
-            *)
-                echo "FATAL ERROR: Invalid cycle {cyc} in ${BASH_SOURCE[0]}"
-                exit 100
-                ;;
-        esac
+    #
+    # There are some differences between 00z and 12z
+    # The YEST string makes sense (but is inconsistently used)
+    # The others I'm not sure why they differ. - WCK
+    #
+    case ${cyc} in
+      00)
+        type_param="TYPE"
+        hlsym="1.2;1.2//21//hw"
+        wind=""
+        yest=" YEST"
+        run_cmd="run"
+        extra_cmd="\nHLSYM   = 1.2;1.2//21//hw\nTEXT    = s/21//hw"
+        ;;
+      12)
+        type_param="CTYPE"
+        hlsym="1;1//21//hw"
+        wind="0"
+        yest=""
+        run_cmd="ru"
+        extra_cmd=""
+        ;;
+      *)
+        echo "FATAL ERROR: Invalid cycle {cyc} in ${BASH_SOURCE[0]}"
+        exit 100
+        ;;
+    esac
 
-        # COMPARE THE GFS MODEL TO THE UKMET MODEL 12-HOURS PRIOR
-        ukmet_date=$(date --utc +%Y%m%d%H -d "${PDY} ${cyc} - 12 hours")
-        ukmet_PDY=${ukmet_date:0:8}
-        ukmet_cyc=${ukmet_date:8:2}
+    # COMPARE THE GFS MODEL TO THE UKMET MODEL 12-HOURS PRIOR
+    ukmet_date=$(date --utc +%Y%m%d%H -d "${PDY} ${cyc} - 12 hours")
+    ukmet_PDY=${ukmet_date:0:8}
+    ukmet_cyc=${ukmet_date:8:2}
 
-        export HPCUKMET="ukmet.${ukmet_PDY}"
-        if [[ ! -L "${HPCUKMET}" ]]; then
-            # TODO: remove live links and refer https://github.com/NOAA-EMC/global-workflow/issues/4406
-            ${NLN} "${COMINukmet}/ukmet.${ukmet_PDY}/gempak" "${HPCUKMET}"
-        fi
-        grid2="F-UKMETHPC | ${ukmet_PDY:2}/${ukmet_date}"
+    export HPCUKMET="ukmet.${ukmet_PDY}"
+    if [[ ! -L "${HPCUKMET}" ]]; then
+      # TODO: remove live links and refer https://github.com/NOAA-EMC/global-workflow/issues/4406
+      ${NLN} "${COMINukmet}/ukmet.${ukmet_PDY}/gempak" "${HPCUKMET}"
+    fi
+    grid2="F-UKMETHPC | ${ukmet_PDY:2}/${ukmet_date}"
 
-        for fhr in 00 12 24 84 108; do
-            gfsfhr=F$(printf "%02g" "${fhr}")
-            ukmetfhr=F$(printf "%02g" $((fhr + 12)))
+    for fhr in 00 12 24 84 108; do
+      gfsfhr=F$(printf "%02g" "${fhr}")
+      ukmetfhr=F$(printf "%02g" $((fhr + 12)))
 
-            export pgm=gdplot2_nc
-            source prep_step
-            "${GEMEXE}/gdplot2_nc" << EOF
+      export pgm=gdplot2_nc
+      source prep_step
+      "${GEMEXE}/gdplot2_nc" << EOF
 DEVICE  = ${device}
 MAP     = 1/1/1/yes
 CLEAR   = yes
@@ -310,30 +310,30 @@ l
 ${run_cmd}
 
 EOF
-            export err=$?
-            err_chk
-        done
+      export err=$?
+      err_chk
+    done
 
-        # COMPARE THE GFS MODEL TO THE 12 UTC ECMWF FROM YESTERDAY
-        offset=$(((10#${cyc} + 12) % 24 + 12))
-        ecmwf_date=$(date --utc +%Y%m%d%H -d "${PDY} ${cyc} - ${offset} hours")
-        ecmwf_PDY=${ecmwf_date:0:8}
-        # ecmwf_cyc=${ecmwf_date:8:2}
+    # COMPARE THE GFS MODEL TO THE 12 UTC ECMWF FROM YESTERDAY
+    offset=$(((10#${cyc} + 12) % 24 + 12))
+    ecmwf_date=$(date --utc +%Y%m%d%H -d "${PDY} ${cyc} - ${offset} hours")
+    ecmwf_PDY=${ecmwf_date:0:8}
+    # ecmwf_cyc=${ecmwf_date:8:2}
 
-        HPCECMWF=ecmwf.${PDY}
-        if [[ ! -L "${HPCECMWF}" ]]; then
-            # TODO: remove live links and refer https://github.com/NOAA-EMC/global-workflow/issues/4406
-            ${NLN} "${COMINecmwf}/ecmwf.${ecmwf_PDY}/gempak" "${HPCECMWF}"
-        fi
-        grid2="${HPCECMWF}/ecmwf_glob_${ecmwf_date}"
+    HPCECMWF=ecmwf.${PDY}
+    if [[ ! -L "${HPCECMWF}" ]]; then
+      # TODO: remove live links and refer https://github.com/NOAA-EMC/global-workflow/issues/4406
+      ${NLN} "${COMINecmwf}/ecmwf.${ecmwf_PDY}/gempak" "${HPCECMWF}"
+    fi
+    grid2="${HPCECMWF}/ecmwf_glob_${ecmwf_date}"
 
-        for fhr in $(seq -s ' ' $((offset % 24)) 24 120); do
-            gfsfhr=F$(printf "%02g" "${fhr}")
-            ecmwffhr=F$(printf "%02g" $((fhr + 24)))
+    for fhr in $(seq -s ' ' $((offset % 24)) 24 120); do
+      gfsfhr=F$(printf "%02g" "${fhr}")
+      ecmwffhr=F$(printf "%02g" $((fhr + 24)))
 
-            export pgm=gdplot2_nc
-            source prep_step
-            "${GEMEXE}/gdplot2_nc" << EOF
+      export pgm=gdplot2_nc
+      source prep_step
+      "${GEMEXE}/gdplot2_nc" << EOF
 DEVICE  = ${device}
 MAP     = 1/1/1/yes
 CLEAR   = yes
@@ -400,17 +400,17 @@ l
 run
 
 EOF
-            export err=$?
-            err_chk
-        done
+      export err=$?
+      err_chk
+    done
 
-        # COMPARE THE GFS MODEL TO THE NAM and NGM
-        grid2="F-NAMHPC | ${PDY:2}/${cyc}00"
-        for fhr in $(seq -s ' ' 0 6 84); do
-            gfsfhr=F$(printf "%02g" "${fhr}")
-            namfhr=F$(printf "%02g" "${fhr}")
+    # COMPARE THE GFS MODEL TO THE NAM and NGM
+    grid2="F-NAMHPC | ${PDY:2}/${cyc}00"
+    for fhr in $(seq -s ' ' 0 6 84); do
+      gfsfhr=F$(printf "%02g" "${fhr}")
+      namfhr=F$(printf "%02g" "${fhr}")
 
-            "${GEMEXE}/gdplot2_nc" << EOF
+      "${GEMEXE}/gdplot2_nc" << EOF
 DEVICE  = ${device}
 MAP     = 1/1/1/yes
 CLEAR   = yes
@@ -477,10 +477,10 @@ l
 run
 
 EOF
-            export err=$?
-            err_chk
-        done
-    fi
+      export err=$?
+      err_chk
+    done
+  fi
 done
 
 #####################################################
@@ -489,14 +489,14 @@ done
 # FOR THIS CASE HERE.
 #####################################################
 if [[ "${err}" -ne 0 ]] || [[ ! -s "${metaname}" ]] &> /dev/null; then
-    echo "FATAL ERROR: Failed to create gempak meta file ${metaname}"
-    exit $((err + 100))
+  echo "FATAL ERROR: Failed to create gempak meta file ${metaname}"
+  exit $((err + 100))
 fi
 
 cpfs "${metaname}" "${COMOUT_ATMOS_GEMPAK_META}/${mdl}_${PDY}_${cyc}_mar_comp"
 if [[ "${SENDDBN}" == "YES" ]]; then
-    "${DBNROOT}/bin/dbn_alert MODEL" "${DBN_ALERT_TYPE}" "${job}" \
-        "${COMOUT_ATMOS_GEMPAK_META}/${mdl}_${PDY}_${cyc}_mar_comp"
+  "${DBNROOT}/bin/dbn_alert MODEL" "${DBN_ALERT_TYPE}" "${job}" \
+    "${COMOUT_ATMOS_GEMPAK_META}/${mdl}_${PDY}_${cyc}_mar_comp"
 fi
 
 exit

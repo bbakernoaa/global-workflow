@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 
 import pytest
-from hypothesis import given, settings, HealthCheck
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "workflow"))
@@ -287,8 +287,7 @@ class TestNoSymlinksInEXPDIR:
                 if filepath.is_symlink():
                     link_target = str(os.readlink(filepath))
                     assert SORC_SYMLINK_TARGET not in link_target, (
-                        f"Found symlink to sorc/ufs_model.fd/tests/parm/ "
-                        f"in EXPDIR: {filepath} -> {link_target}"
+                        f"Found symlink to sorc/ufs_model.fd/tests/parm/ in EXPDIR: {filepath} -> {link_target}"
                     )
 
         # --- Assertion 2: All coupled-model config files are regular files ---
@@ -301,14 +300,8 @@ class TestNoSymlinksInEXPDIR:
             for root, dirs, files in os.walk(coupled_dir):
                 for filename in files:
                     filepath = Path(root) / filename
-                    assert not filepath.is_symlink(), (
-                        f"Expected regular file but found symlink at "
-                        f"{filepath} (target: {os.readlink(filepath)})"
-                    )
-                    assert filepath.is_file(), (
-                        f"Expected regular file at {filepath}, "
-                        f"but it is not a regular file"
-                    )
+                    assert not filepath.is_symlink(), f"Expected regular file but found symlink at {filepath} (target: {os.readlink(filepath)})"
+                    assert filepath.is_file(), f"Expected regular file at {filepath}, but it is not a regular file"
 
     @settings(
         max_examples=100,
@@ -316,9 +309,7 @@ class TestNoSymlinksInEXPDIR:
         deadline=None,
     )
     @given(model_context=valid_deployment_config())
-    def test_rendered_files_are_regular_files_in_manifest(
-        self, model_context: dict, tmp_path_factory
-    ):
+    def test_rendered_files_are_regular_files_in_manifest(self, model_context: dict, tmp_path_factory):
         """Assert all RenderedFile entries point to regular files, not symlinks.
 
         **Validates: Requirements 14.1, 14.2**
@@ -333,20 +324,11 @@ class TestNoSymlinksInEXPDIR:
         try:
             results = renderer.render_all(model_context, expdir)
         except TemplateRenderError as e:
-            pytest.fail(
-                f"render_all() failed: {e}"
-            )
+            pytest.fail(f"render_all() failed: {e}")
 
         # Every rendered file must be a regular file (not a symlink)
         for rendered_file in results:
             path = rendered_file.path
-            assert path.exists(), (
-                f"Rendered file does not exist: {path}"
-            )
-            assert not path.is_symlink(), (
-                f"Rendered file is a symlink (should be regular file): "
-                f"{path} -> {os.readlink(path)}"
-            )
-            assert path.is_file(), (
-                f"Rendered file is not a regular file: {path}"
-            )
+            assert path.exists(), f"Rendered file does not exist: {path}"
+            assert not path.is_symlink(), f"Rendered file is a symlink (should be regular file): {path} -> {os.readlink(path)}"
+            assert path.is_file(), f"Rendered file is not a regular file: {path}"

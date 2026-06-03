@@ -12,8 +12,6 @@ from __future__ import annotations
 import os
 import sys
 
-import pytest
-
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from deployment.deploy_time_vars import (
@@ -21,7 +19,6 @@ from deployment.deploy_time_vars import (
     DeployTimeVariable,
     get_deploy_time_values,
 )
-
 
 # ---------------------------------------------------------------------------
 # Required variable names per Requirement 11.3
@@ -57,9 +54,7 @@ class TestDeployTimeRegistry:
     def test_registry_contains_all_15_required_variables(self):
         """All 15 required deploy-time variables are present in the registry."""
         registry_names = {var.name for var in DEPLOY_TIME_REGISTRY}
-        assert REQUIRED_VARIABLES.issubset(registry_names), (
-            f"Missing variables: {REQUIRED_VARIABLES - registry_names}"
-        )
+        assert REQUIRED_VARIABLES.issubset(registry_names), f"Missing variables: {REQUIRED_VARIABLES - registry_names}"
 
     def test_registry_has_exactly_15_entries(self):
         """The registry contains exactly 15 entries (no extras, no gaps)."""
@@ -74,9 +69,7 @@ class TestDeployTimeRegistry:
         """Every entry has a source of 'workflow_yaml', 'platform', or 'derived'."""
         valid_sources = {"workflow_yaml", "platform", "derived"}
         for var in DEPLOY_TIME_REGISTRY:
-            assert var.source in valid_sources, (
-                f"{var.name} has invalid source: {var.source}"
-            )
+            assert var.source in valid_sources, f"{var.name} has invalid source: {var.source}"
 
     def test_registry_is_deterministic(self):
         """Repeated access to the registry yields the same order."""
@@ -104,9 +97,9 @@ class TestGetDeployTimeValues:
             "RUN": "gfs",
             "NET": "gfs",
             "MACHINE": "HERA",
-            "PDY": "20250101",       # runtime variable — should be excluded
-            "cyc": "00",             # runtime variable — should be excluded
-            "SOME_OTHER": "value",   # not in registry — should be excluded
+            "PDY": "20250101",  # runtime variable — should be excluded
+            "cyc": "00",  # runtime variable — should be excluded
+            "SOME_OTHER": "value",  # not in registry — should be excluded
         }
         result = get_deploy_time_values(context)
         assert "RUN" in result

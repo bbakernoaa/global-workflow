@@ -50,7 +50,7 @@ class PrefixRegistry:
     registry: dict[str, list[str]]  # prefix -> ordered search prefixes
 
     @classmethod
-    def load(cls, path: Path) -> "PrefixRegistry":
+    def load(cls, path: Path) -> PrefixRegistry:
         """Load registry from YAML file.
 
         Args:
@@ -71,7 +71,7 @@ class PrefixRegistry:
             )
 
         try:
-            with open(path, "r") as f:
+            with open(path) as f:
                 data: Any = yaml.safe_load(f)
         except yaml.YAMLError as e:
             raise PipelineError(
@@ -108,7 +108,7 @@ class PrefixRegistry:
         return cls(registry=registry)
 
     @classmethod
-    def default(cls) -> "PrefixRegistry":
+    def default(cls) -> PrefixRegistry:
         """Return the built-in default registry (for tests/fallback).
 
         Returns:
@@ -225,36 +225,23 @@ class DryRunReport:
         lines.append("Name Resolution Report:")
 
         # Top border
-        lines.append(
-            f"\u250c{'─' * (col1_width + 2)}\u252c{'─' * (col2_width + 2)}\u252c{'─' * (col3_width + 2)}\u2510"
-        )
+        lines.append(f"\u250c{'─' * (col1_width + 2)}\u252c{'─' * (col2_width + 2)}\u252c{'─' * (col3_width + 2)}\u2510")
 
         # Header row
-        lines.append(
-            f"\u2502 {col1_header:<{col1_width}} \u2502 {col2_header:<{col2_width}} \u2502 {col3_header:<{col3_width}} \u2502"
-        )
+        lines.append(f"\u2502 {col1_header:<{col1_width}} \u2502 {col2_header:<{col2_width}} \u2502 {col3_header:<{col3_width}} \u2502")
 
         # Header separator
-        lines.append(
-            f"\u251c{'─' * (col1_width + 2)}\u253c{'─' * (col2_width + 2)}\u253c{'─' * (col3_width + 2)}\u2524"
-        )
+        lines.append(f"\u251c{'─' * (col1_width + 2)}\u253c{'─' * (col2_width + 2)}\u253c{'─' * (col3_width + 2)}\u2524")
 
         # Data rows
         for app_name, source_name, status in rows:
-            lines.append(
-                f"\u2502 {app_name:<{col1_width}} \u2502 {source_name:<{col2_width}} \u2502 {status:<{col3_width}} \u2502"
-            )
+            lines.append(f"\u2502 {app_name:<{col1_width}} \u2502 {source_name:<{col2_width}} \u2502 {status:<{col3_width}} \u2502")
 
         # Bottom border
-        lines.append(
-            f"\u2514{'─' * (col1_width + 2)}\u2534{'─' * (col2_width + 2)}\u2534{'─' * (col3_width + 2)}\u2518"
-        )
+        lines.append(f"\u2514{'─' * (col1_width + 2)}\u2534{'─' * (col2_width + 2)}\u2534{'─' * (col3_width + 2)}\u2518")
 
         # Summary line
-        lines.append(
-            f"Summary: {self.resolvable_count} resolvable, "
-            f"{self.unresolvable_count} unresolvable ({self.total_count} total)"
-        )
+        lines.append(f"Summary: {self.resolvable_count} resolvable, {self.unresolvable_count} unresolvable ({self.total_count} total)")
 
         return "\n".join(lines)
 
@@ -327,14 +314,13 @@ class NameResolver:
         for prefix in sorted(self._registry.known_prefixes(), key=len, reverse=True):
             if application_name.startswith(prefix):
                 app_prefix = prefix
-                suffix = application_name[len(prefix):]
+                suffix = application_name[len(prefix) :]
                 break
 
         if app_prefix is None:
             raise PipelineError(
                 "name_resolution",
-                f"Unknown prefix in application name '{application_name}'. "
-                f"Known prefixes: {sorted(self._registry.known_prefixes())}",
+                f"Unknown prefix in application name '{application_name}'. Known prefixes: {sorted(self._registry.known_prefixes())}",
             )
 
         # Step 3: Ordered search through shared prefixes
@@ -365,8 +351,7 @@ class NameResolver:
         candidates.append(application_name)
         raise PipelineError(
             "name_resolution",
-            f"Cannot resolve '{application_name}': "
-            f"searched [{', '.join(candidates)}] in dev/jobs/",
+            f"Cannot resolve '{application_name}': searched [{', '.join(candidates)}] in dev/jobs/",
         )
 
     def resolve_all(self, application_names: set[str]) -> dict[str, ResolvedName]:

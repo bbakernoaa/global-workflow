@@ -25,14 +25,11 @@ from deployment.dag_filter import DAGReachabilitySet
 from deployment.model_config_renderer import (
     ModelConfigRenderer,
     RenderedFile,
-    _UFS_COMPONENT_FLAGS,
-    _UFS_COMPONENT_KEYWORDS,
     _is_truthy,
 )
 from deployment.pipeline import PipelineError
 from deployment.template_renderer import TemplateRenderError
 from deployment.validators import NamelistValidator
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -80,33 +77,16 @@ def tmp_dev_root(tmp_path: Path) -> Path:
     )
 
     # Ocean template
-    (ocean_dir / "MOM_input.j2").write_text(
-        "! MOM6 parameter file\n"
-        "DT = {{ model.ocean.dt_ocean | default(900) }}\n"
-    )
+    (ocean_dir / "MOM_input.j2").write_text("! MOM6 parameter file\nDT = {{ model.ocean.dt_ocean | default(900) }}\n")
 
     # Ice template
-    (ice_dir / "ice_in.j2").write_text(
-        "&setup_nml\n"
-        "  dt = {{ model.ice.dt_ice | default(900) }}\n"
-        "/\n"
-    )
+    (ice_dir / "ice_in.j2").write_text("&setup_nml\n  dt = {{ model.ice.dt_ice | default(900) }}\n/\n")
 
     # Wave template
-    (wave_dir / "ww3_shel.nml.j2").write_text(
-        "&domain_nml\n"
-        "  dt = {{ model.wave.dt_wave | default(3600) }}\n"
-        "/\n"
-    )
+    (wave_dir / "ww3_shel.nml.j2").write_text("&domain_nml\n  dt = {{ model.wave.dt_wave | default(3600) }}\n/\n")
 
     # GOCART template
-    (gocart_dir / "AERO_HISTORY.rc.j2").write_text(
-        "# GOCART history\n"
-        "VERSION: 1\n"
-        "EXPID:  gocart\n"
-        "COLLECTIONS::\n"
-        "::\n"
-    )
+    (gocart_dir / "AERO_HISTORY.rc.j2").write_text("# GOCART history\nVERSION: 1\nEXPID:  gocart\nCOLLECTIONS::\n::\n")
 
     # Top-level UFS configure template (always included)
     (ufs_dir / "ufs.configure.j2").write_text(
@@ -357,9 +337,7 @@ class TestDetermineActiveComponents:
 class TestRenderForDag:
     """Tests for the render_for_dag method."""
 
-    def test_renders_only_fv3_when_no_coupled_tasks(
-        self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path
-    ):
+    def test_renders_only_fv3_when_no_coupled_tasks(self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path):
         """When only atmosphere tasks are reachable, only fv3 templates render."""
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
         reachability = _make_reachability_set(
@@ -380,9 +358,7 @@ class TestRenderForDag:
         assert not any("wave" in p for p in rendered_paths)
         assert not any("gocart" in p for p in rendered_paths)
 
-    def test_renders_wave_when_wave_task_reachable(
-        self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path
-    ):
+    def test_renders_wave_when_wave_task_reachable(self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path):
         """When wave tasks are reachable, wave templates are rendered."""
         # Add wave context needed for rendering
         valid_model_context["wave"] = {"dt_wave": 3600}
@@ -398,9 +374,7 @@ class TestRenderForDag:
         assert "parm/ufs/wave/ww3_shel.nml" in rendered_paths
         assert "parm/ufs/fv3/model_configure" in rendered_paths
 
-    def test_renders_gocart_when_aero_task_reachable(
-        self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path
-    ):
+    def test_renders_gocart_when_aero_task_reachable(self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path):
         """When aero tasks are reachable, gocart templates are rendered."""
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
         reachability = _make_reachability_set(
@@ -412,9 +386,7 @@ class TestRenderForDag:
         rendered_paths = {str(r.path.relative_to(expdir)) for r in results}
         assert "parm/ufs/gocart/AERO_HISTORY.rc" in rendered_paths
 
-    def test_skips_wave_when_no_wave_tasks(
-        self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path
-    ):
+    def test_skips_wave_when_no_wave_tasks(self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path):
         """Wave templates are skipped when no wave tasks are reachable."""
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
         reachability = _make_reachability_set(
@@ -426,9 +398,7 @@ class TestRenderForDag:
         rendered_paths = {str(r.path.relative_to(expdir)) for r in results}
         assert not any("wave" in p for p in rendered_paths)
 
-    def test_renders_ocean_via_context_flag(
-        self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path
-    ):
+    def test_renders_ocean_via_context_flag(self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path):
         """Ocean templates rendered when DO_OCN flag is set in context."""
         valid_model_context["DO_OCN"] = "YES"
         valid_model_context["ocean"] = {"dt_ocean": 900, "resolution": "100"}
@@ -443,9 +413,7 @@ class TestRenderForDag:
         rendered_paths = {str(r.path.relative_to(expdir)) for r in results}
         assert "parm/ufs/ocean/MOM_input" in rendered_paths
 
-    def test_all_rendered_files_exist(
-        self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path
-    ):
+    def test_all_rendered_files_exist(self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path):
         """All returned RenderedFile instances point to existing files."""
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
         reachability = _make_reachability_set(
@@ -459,9 +427,7 @@ class TestRenderForDag:
             assert r.sha256, "SHA-256 hash should be non-empty"
             assert r.method in ("render", "copy")
 
-    def test_top_level_templates_always_included(
-        self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path
-    ):
+    def test_top_level_templates_always_included(self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path):
         """Top-level templates (ufs.configure) are always rendered."""
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
         reachability = _make_reachability_set(
@@ -473,9 +439,7 @@ class TestRenderForDag:
         rendered_paths = {str(r.path.relative_to(expdir)) for r in results}
         assert "parm/ufs/ufs.configure" in rendered_paths
 
-    def test_static_files_filtered_by_component(
-        self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path
-    ):
+    def test_static_files_filtered_by_component(self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path):
         """Static files under inactive components are not copied."""
         # Add a static file under wave/
         wave_static = tmp_dev_root / "parm" / "ufs" / "wave" / "ww3_grid.inp"
@@ -506,36 +470,20 @@ class TestVerifyNoUnresolvedTokens:
 
         # Create a clean rendered file
         output = tmp_path / "clean_output.nml"
-        output.write_text(
-            "&fv_core_nml\n"
-            "  npx = 97\n"
-            "  npy = 97\n"
-            "  dt_atmos = 450\n"
-            "/\n"
-        )
-        rendered_files = [
-            RenderedFile(path=output, sha256="abc123", source="fv3/input.nml.j2", method="render")
-        ]
+        output.write_text("&fv_core_nml\n  npx = 97\n  npy = 97\n  dt_atmos = 450\n/\n")
+        rendered_files = [RenderedFile(path=output, sha256="abc123", source="fv3/input.nml.j2", method="render")]
 
         # Should not raise
         renderer.verify_no_unresolved_tokens(rendered_files)
 
     def test_detects_unresolved_variable_token(self, tmp_dev_root: Path, tmp_path: Path):
         """Raises PipelineError when {{ is found in rendered output."""
-        from deployment.pipeline import PipelineError
 
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
 
         output = tmp_path / "bad_output.nml"
-        output.write_text(
-            "&fv_core_nml\n"
-            "  npx = {{ model.fv3.npx }}\n"
-            "  npy = 97\n"
-            "/\n"
-        )
-        rendered_files = [
-            RenderedFile(path=output, sha256="abc123", source="fv3/input.nml.j2", method="render")
-        ]
+        output.write_text("&fv_core_nml\n  npx = {{ model.fv3.npx }}\n  npy = 97\n/\n")
+        rendered_files = [RenderedFile(path=output, sha256="abc123", source="fv3/input.nml.j2", method="render")]
 
         with pytest.raises(PipelineError) as exc_info:
             renderer.verify_no_unresolved_tokens(rendered_files)
@@ -546,20 +494,12 @@ class TestVerifyNoUnresolvedTokens:
 
     def test_detects_unresolved_block_token(self, tmp_dev_root: Path, tmp_path: Path):
         """Raises PipelineError when {% is found in rendered output."""
-        from deployment.pipeline import PipelineError
 
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
 
         output = tmp_path / "bad_block.nml"
-        output.write_text(
-            "# Config file\n"
-            "{% if model.do_wave %}\n"
-            "WAVE=YES\n"
-            "{% endif %}\n"
-        )
-        rendered_files = [
-            RenderedFile(path=output, sha256="abc123", source="config.j2", method="render")
-        ]
+        output.write_text("# Config file\n{% if model.do_wave %}\nWAVE=YES\n{% endif %}\n")
+        rendered_files = [RenderedFile(path=output, sha256="abc123", source="config.j2", method="render")]
 
         with pytest.raises(PipelineError) as exc_info:
             renderer.verify_no_unresolved_tokens(rendered_files)
@@ -569,19 +509,12 @@ class TestVerifyNoUnresolvedTokens:
 
     def test_detects_unresolved_comment_token(self, tmp_dev_root: Path, tmp_path: Path):
         """Raises PipelineError when {# is found in rendered output."""
-        from deployment.pipeline import PipelineError
 
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
 
         output = tmp_path / "bad_comment.nml"
-        output.write_text(
-            "# Config\n"
-            "VALUE=42\n"
-            "{# This is a Jinja2 comment #}\n"
-        )
-        rendered_files = [
-            RenderedFile(path=output, sha256="abc123", source="config.j2", method="render")
-        ]
+        output.write_text("# Config\nVALUE=42\n{# This is a Jinja2 comment #}\n")
+        rendered_files = [RenderedFile(path=output, sha256="abc123", source="config.j2", method="render")]
 
         with pytest.raises(PipelineError) as exc_info:
             renderer.verify_no_unresolved_tokens(rendered_files)
@@ -594,35 +527,20 @@ class TestVerifyNoUnresolvedTokens:
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
 
         output = tmp_path / "shell_vars.sh"
-        output.write_text(
-            "#!/bin/bash\n"
-            "export WORKDIR=${DATA}/forecast\n"
-            "cpreq ${ROTDIR}/input.nml ${DATA}/input.nml\n"
-        )
-        rendered_files = [
-            RenderedFile(path=output, sha256="abc123", source="script.sh.j2", method="render")
-        ]
+        output.write_text("#!/bin/bash\nexport WORKDIR=${DATA}/forecast\ncpreq ${ROTDIR}/input.nml ${DATA}/input.nml\n")
+        rendered_files = [RenderedFile(path=output, sha256="abc123", source="script.sh.j2", method="render")]
 
         # Should not raise — ${} is shell, not Jinja2
         renderer.verify_no_unresolved_tokens(rendered_files)
 
     def test_error_message_includes_file_line_token(self, tmp_dev_root: Path, tmp_path: Path):
         """PipelineError message includes file path, line number, and token."""
-        from deployment.pipeline import PipelineError
 
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
 
         output = tmp_path / "error_detail.cfg"
-        output.write_text(
-            "LINE1=ok\n"
-            "LINE2=ok\n"
-            "LINE3=ok\n"
-            "LINE4={{ undefined_var }}\n"
-            "LINE5=ok\n"
-        )
-        rendered_files = [
-            RenderedFile(path=output, sha256="abc123", source="test.j2", method="render")
-        ]
+        output.write_text("LINE1=ok\nLINE2=ok\nLINE3=ok\nLINE4={{ undefined_var }}\nLINE5=ok\n")
+        rendered_files = [RenderedFile(path=output, sha256="abc123", source="test.j2", method="render")]
 
         with pytest.raises(PipelineError) as exc_info:
             renderer.verify_no_unresolved_tokens(rendered_files)
@@ -650,7 +568,6 @@ class TestVerifyNoUnresolvedTokens:
 
     def test_multiple_files_first_error_reported(self, tmp_dev_root: Path, tmp_path: Path):
         """When multiple files have issues, the first one encountered raises."""
-        from deployment.pipeline import PipelineError
 
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
 
@@ -684,14 +601,8 @@ class TestVerifyShellVarsPreserved:
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
 
         output = tmp_path / "forecast_config.sh"
-        output.write_text(
-            "#!/bin/bash\n"
-            "export WORKDIR=${DATA}/forecast\n"
-            "cpreq ${ROTDIR}/input.nml ${DATA}/input.nml\n"
-        )
-        rendered_files = [
-            RenderedFile(path=output, sha256="abc123", source="config.j2", method="render")
-        ]
+        output.write_text("#!/bin/bash\nexport WORKDIR=${DATA}/forecast\ncpreq ${ROTDIR}/input.nml ${DATA}/input.nml\n")
+        rendered_files = [RenderedFile(path=output, sha256="abc123", source="config.j2", method="render")]
 
         # Should not raise — both DATA and ROTDIR are present
         renderer.verify_shell_vars_preserved(rendered_files, {"DATA", "ROTDIR"})
@@ -702,9 +613,7 @@ class TestVerifyShellVarsPreserved:
 
         output = tmp_path / "config.sh"
         output.write_text("VALUE=42\n")
-        rendered_files = [
-            RenderedFile(path=output, sha256="abc123", source="config.j2", method="render")
-        ]
+        rendered_files = [RenderedFile(path=output, sha256="abc123", source="config.j2", method="render")]
 
         # Should not raise — nothing to check
         renderer.verify_shell_vars_preserved(rendered_files, set())
@@ -714,14 +623,8 @@ class TestVerifyShellVarsPreserved:
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
 
         output = tmp_path / "simple.cfg"
-        output.write_text(
-            "# Simple config\n"
-            "npx = 97\n"
-            "npy = 97\n"
-        )
-        rendered_files = [
-            RenderedFile(path=output, sha256="abc123", source="simple.j2", method="render")
-        ]
+        output.write_text("# Simple config\nnpx = 97\nnpy = 97\n")
+        rendered_files = [RenderedFile(path=output, sha256="abc123", source="simple.j2", method="render")]
 
         # DATA is not in this file at all — should not raise
         renderer.verify_shell_vars_preserved(rendered_files, {"DATA"})
@@ -731,14 +634,8 @@ class TestVerifyShellVarsPreserved:
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
 
         output = tmp_path / "script.sh"
-        output.write_text(
-            "#!/bin/bash\n"
-            "cp ${DATA}/input.nml .\n"
-            "ls ${ROTDIR}/\n"
-        )
-        rendered_files = [
-            RenderedFile(path=output, sha256="abc123", source="script.j2", method="render")
-        ]
+        output.write_text("#!/bin/bash\ncp ${DATA}/input.nml .\nls ${ROTDIR}/\n")
+        rendered_files = [RenderedFile(path=output, sha256="abc123", source="script.j2", method="render")]
 
         # Both vars present — should pass
         renderer.verify_shell_vars_preserved(rendered_files, {"DATA", "ROTDIR"})
@@ -764,20 +661,11 @@ class TestVerifyShellVarsPreserved:
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
 
         output = tmp_path / "multi_var.sh"
-        output.write_text(
-            "#!/bin/bash\n"
-            "WORKDIR=${DATA}/work\n"
-            "COMOUT=${ROTDIR}/com\n"
-            "COMIN=${COMINgfs}/input\n"
-        )
-        rendered_files = [
-            RenderedFile(path=output, sha256="abc123", source="multi.j2", method="render")
-        ]
+        output.write_text("#!/bin/bash\nWORKDIR=${DATA}/work\nCOMOUT=${ROTDIR}/com\nCOMIN=${COMINgfs}/input\n")
+        rendered_files = [RenderedFile(path=output, sha256="abc123", source="multi.j2", method="render")]
 
         # All three vars present
-        renderer.verify_shell_vars_preserved(
-            rendered_files, {"DATA", "ROTDIR", "COMINgfs"}
-        )
+        renderer.verify_shell_vars_preserved(rendered_files, {"DATA", "ROTDIR", "COMINgfs"})
 
 
 # ---------------------------------------------------------------------------
@@ -795,9 +683,7 @@ class TestFortranNamelistParseability:
     Traces to: Requirements 14.1, 14.2, 14.4
     """
 
-    def test_rendered_input_nml_is_parseable(
-        self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path
-    ):
+    def test_rendered_input_nml_is_parseable(self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path):
         """Rendered input.nml passes NamelistValidator without errors."""
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
         reachability = _make_reachability_set(
@@ -816,9 +702,7 @@ class TestFortranNamelistParseability:
         errors = validator.validate(content, str(input_nml_files[0].path))
         assert errors == [], f"NamelistValidator errors: {errors}"
 
-    def test_rendered_namelist_has_group_structure(
-        self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path
-    ):
+    def test_rendered_namelist_has_group_structure(self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path):
         """Rendered namelist contains proper &group_name / structure."""
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
         reachability = _make_reachability_set(
@@ -836,15 +720,11 @@ class TestFortranNamelistParseability:
         assert "&fv_core_nml" in content
         # Each group must be closed with /
         lines = content.splitlines()
-        group_opens = sum(1 for l in lines if l.strip().startswith("&"))
-        group_closes = sum(1 for l in lines if l.strip() == "/")
-        assert group_opens == group_closes, (
-            f"Mismatched groups: {group_opens} opens vs {group_closes} closes"
-        )
+        group_opens = sum(1 for ln in lines if ln.strip().startswith("&"))
+        group_closes = sum(1 for ln in lines if ln.strip() == "/")
+        assert group_opens == group_closes, f"Mismatched groups: {group_opens} opens vs {group_closes} closes"
 
-    def test_rendered_namelist_contains_resolved_values(
-        self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path
-    ):
+    def test_rendered_namelist_contains_resolved_values(self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path):
         """Rendered namelist contains resolved numeric values, not Jinja2 tokens."""
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
         reachability = _make_reachability_set(
@@ -865,9 +745,7 @@ class TestFortranNamelistParseability:
         assert "{{" not in content
         assert "{%" not in content
 
-    def test_ice_in_namelist_parseable_when_active(
-        self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path
-    ):
+    def test_ice_in_namelist_parseable_when_active(self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path):
         """Rendered ice_in namelist passes NamelistValidator when ice is active."""
         valid_model_context["DO_ICE"] = "YES"
         valid_model_context["ice"] = {"dt_ice": 900}
@@ -887,9 +765,7 @@ class TestFortranNamelistParseability:
         errors = validator.validate(content, str(ice_in_files[0].path))
         assert errors == [], f"NamelistValidator errors for ice_in: {errors}"
 
-    def test_wave_namelist_parseable_when_active(
-        self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path
-    ):
+    def test_wave_namelist_parseable_when_active(self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path):
         """Rendered ww3_shel.nml passes NamelistValidator when wave is active."""
         valid_model_context["DO_WAVE"] = "YES"
         valid_model_context["wave"] = {"dt_wave": 3600}
@@ -923,18 +799,7 @@ class TestFortranNamelistParseability:
         """NamelistValidator accepts properly structured namelist content."""
         validator = NamelistValidator()
 
-        good_content = (
-            "&atmos_model_nml\n"
-            "  blocksize = 32\n"
-            "/\n"
-            "\n"
-            "&fv_core_nml\n"
-            "  npx = 97\n"
-            "  npy = 97\n"
-            "  npz = 127\n"
-            "  dt_atmos = 450\n"
-            "/\n"
-        )
+        good_content = "&atmos_model_nml\n  blocksize = 32\n/\n\n&fv_core_nml\n  npx = 97\n  npy = 97\n  npz = 127\n  dt_atmos = 450\n/\n"
         errors = validator.validate(good_content, "good.nml")
         assert errors == []
 
@@ -954,9 +819,7 @@ class TestFatalErrorOnUndefinedVariable:
     Traces to: Requirement 6.6
     """
 
-    def test_undefined_variable_raises_template_render_error(
-        self, tmp_dev_root: Path, expdir: Path
-    ):
+    def test_undefined_variable_raises_template_render_error(self, tmp_dev_root: Path, expdir: Path):
         """Undefined Jinja2 variable raises TemplateRenderError with FATAL ERROR."""
         # Use a complete context that passes schema validation
         context = {
@@ -983,10 +846,7 @@ class TestFatalErrorOnUndefinedVariable:
         # Add a template that references an undefined variable
         # (one that passes schema validation but fails at render time)
         ufs_dir = tmp_dev_root / "parm" / "ufs" / "fv3"
-        (ufs_dir / "custom_config.j2").write_text(
-            "# Custom config\n"
-            "VALUE = {{ model.fv3.completely_undefined_variable }}\n"
-        )
+        (ufs_dir / "custom_config.j2").write_text("# Custom config\nVALUE = {{ model.fv3.completely_undefined_variable }}\n")
 
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
         reachability = _make_reachability_set(
@@ -1000,9 +860,7 @@ class TestFatalErrorOnUndefinedVariable:
         error_msg = str(exc_info.value)
         assert "FATAL ERROR" in error_msg
 
-    def test_undefined_variable_error_names_the_variable(
-        self, tmp_dev_root: Path, expdir: Path
-    ):
+    def test_undefined_variable_error_names_the_variable(self, tmp_dev_root: Path, expdir: Path):
         """Error message includes information about the undefined variable."""
         context = {
             "resolution": "C96",
@@ -1027,10 +885,7 @@ class TestFatalErrorOnUndefinedVariable:
 
         # Template referencing a top-level undefined variable (not nested dict access)
         ufs_dir = tmp_dev_root / "parm" / "ufs" / "fv3"
-        (ufs_dir / "broken_template.j2").write_text(
-            "# Broken template\n"
-            "MISSING = {{ totally_undefined_var }}\n"
-        )
+        (ufs_dir / "broken_template.j2").write_text("# Broken template\nMISSING = {{ totally_undefined_var }}\n")
 
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
         reachability = _make_reachability_set(
@@ -1045,9 +900,7 @@ class TestFatalErrorOnUndefinedVariable:
         # The error should name the undefined variable
         assert "totally_undefined_var" in error_msg
 
-    def test_undefined_variable_error_names_the_file(
-        self, tmp_dev_root: Path, expdir: Path
-    ):
+    def test_undefined_variable_error_names_the_file(self, tmp_dev_root: Path, expdir: Path):
         """Error message includes the template file path."""
         context = {
             "resolution": "C96",
@@ -1072,9 +925,7 @@ class TestFatalErrorOnUndefinedVariable:
 
         # Template with undefined variable
         ufs_dir = tmp_dev_root / "parm" / "ufs" / "fv3"
-        (ufs_dir / "named_template.j2").write_text(
-            "VALUE = {{ model.fv3.missing_var }}\n"
-        )
+        (ufs_dir / "named_template.j2").write_text("VALUE = {{ model.fv3.missing_var }}\n")
 
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
         reachability = _make_reachability_set(
@@ -1089,9 +940,7 @@ class TestFatalErrorOnUndefinedVariable:
         # The error should reference the template file
         assert "named_template.j2" in error_msg
 
-    def test_all_variables_defined_no_error(
-        self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path
-    ):
+    def test_all_variables_defined_no_error(self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path):
         """No error raised when all Jinja2 variables are defined in context."""
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
         reachability = _make_reachability_set(
@@ -1118,17 +967,12 @@ class TestShellVarPreservedInRenderedOutput:
     Traces to: Requirement 6.5
     """
 
-    def test_shell_var_in_template_preserved_after_render(
-        self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path
-    ):
+    def test_shell_var_in_template_preserved_after_render(self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path):
         """Shell variables ${DATA} and ${ROTDIR} in templates survive rendering."""
         # Create a template that contains shell variables
         fv3_dir = tmp_dev_root / "parm" / "ufs" / "fv3"
         (fv3_dir / "runtime_paths.j2").write_text(
-            "# Runtime paths for forecast\n"
-            "WORKDIR=${DATA}/forecast\n"
-            "INPUT_DIR=${ROTDIR}/input\n"
-            "RESOLUTION={{ model.resolution }}\n"
+            "# Runtime paths for forecast\nWORKDIR=${DATA}/forecast\nINPUT_DIR=${ROTDIR}/input\nRESOLUTION={{ model.resolution }}\n"
         )
 
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)
@@ -1150,17 +994,11 @@ class TestShellVarPreservedInRenderedOutput:
         assert "C96" in content
         assert "{{" not in content
 
-    def test_mixed_shell_and_jinja2_vars_both_handled(
-        self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path
-    ):
+    def test_mixed_shell_and_jinja2_vars_both_handled(self, tmp_dev_root: Path, valid_model_context: dict, expdir: Path):
         """Templates with both ${SHELL} and {{ jinja2 }} vars render correctly."""
         fv3_dir = tmp_dev_root / "parm" / "ufs" / "fv3"
         (fv3_dir / "mixed_vars.j2").write_text(
-            "# Mixed variable types\n"
-            "NPX={{ model.fv3.npx }}\n"
-            "OUTDIR=${COMOUT}/output\n"
-            "DT={{ model.dt_atmos }}\n"
-            "INDIR=${COMINgfs}/input\n"
+            "# Mixed variable types\nNPX={{ model.fv3.npx }}\nOUTDIR=${COMOUT}/output\nDT={{ model.dt_atmos }}\nINDIR=${COMINgfs}/input\n"
         )
 
         renderer = ModelConfigRenderer(dev_root=tmp_dev_root)

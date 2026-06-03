@@ -51,12 +51,12 @@ cat << EOF
 Making ice fields.
 EOF
 
-if [[ -z "${YMDH}" ]] || [[ -z "${cycle}" ]] ||
-    [[ -z "${COMOUT_WAVE_PREP}" ]] || [[ -z "${FIXglobal}" ]] || [[ -z "${EXECglobal}" ]] ||
-    [[ -z "${WAV_MOD_TAG}" ]] || [[ -z "${WAVEICE_FID}" ]] || [[ -z "${COMIN_OBS}" ]]; then
+if [[ -z "${YMDH}" ]] || [[ -z "${cycle}" ]] \
+  || [[ -z "${COMOUT_WAVE_PREP}" ]] || [[ -z "${FIXglobal}" ]] || [[ -z "${EXECglobal}" ]] \
+  || [[ -z "${WAV_MOD_TAG}" ]] || [[ -z "${WAVEICE_FID}" ]] || [[ -z "${COMIN_OBS}" ]]; then
 
-    echo 'ERROR: EXPORTED VARIABLES IN preprocessor NOT SET ***'
-    exit 1
+  echo 'ERROR: EXPORTED VARIABLES IN preprocessor NOT SET ***'
+  exit 1
 fi
 
 # 0.c Links to working directory
@@ -70,15 +70,15 @@ ${NLN} "${DATA}/mod_def.${WAVEICE_FID}" mod_def.ww3
 file="${COMIN_OBS}/${WAVICEFILE}"
 
 if [[ -f "${file}" ]]; then
-    cpreq "${file}" ice.grib
+  cpreq "${file}" ice.grib
 fi
 
 if [[ -f ice.grib ]]; then
-    echo "   ice.grib copied (${file})."
+  echo "   ice.grib copied (${file})."
 else
-    msg="FATAL ERROR: NO ICE FILE ${file}"
-    export err=2
-    err_exit "${msg}"
+  msg="FATAL ERROR: NO ICE FILE ${file}"
+  export err=2
+  err_exit "${msg}"
 fi
 
 # --------------------------------------------------------------------------- #
@@ -92,9 +92,9 @@ ${WGRIB2} ice.grib -netcdf icean_5m.nc wgrib.out 2>&1
 err=$?
 
 if [[ "${err}" -ne 0 ]]; then
-    cat wgrib.out
-    echo 'ERROR: FAILURE WHILE UNPACKING GRIB ICE FILE *** '
-    exit 3
+  cat wgrib.out
+  echo 'ERROR: FAILURE WHILE UNPACKING GRIB ICE FILE *** '
+  exit 3
 fi
 
 rm -f wgrib.out
@@ -113,9 +113,9 @@ source prep_step
 "${EXECglobal}/${pgm}" 1> "prnc_${WAVEICE_FID}_${cycle}.out" 2>&1
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    cat "prnc_${WAVEICE_FID}_${cycle}.out"
-    msg="FATAL ERROR: failure in ${pgm}"
-    err_exit "${msg}"
+  cat "prnc_${WAVEICE_FID}_${cycle}.out"
+  msg="FATAL ERROR: failure in ${pgm}"
+  err_exit "${msg}"
 fi
 
 rm -f wave_prep.out ww3_prep.inp ice.raw mod_def.ww3
@@ -127,9 +127,9 @@ rm -f wave_prep.out ww3_prep.inp ice.raw mod_def.ww3
 # and only WAV_MOD_ID if WW3ATMIENS=F
 #
 if [[ "${WW3ATMIENS}" == "T" ]]; then
-    icefile="${WAV_MOD_TAG}.${WAVEICE_FID}.${cycle}.ice"
+  icefile="${WAV_MOD_TAG}.${WAVEICE_FID}.${cycle}.ice"
 elif [[ "${WW3ATMIENS}" == "F" ]]; then
-    icefile="${RUN}.wave.${WAVEICE_FID}.${cycle}.ice"
+  icefile="${RUN}.wave.${WAVEICE_FID}.${cycle}.ice"
 fi
 
 echo "   Saving ice.ww3 as ${COMOUT_WAVE_PREP}/${icefile}"

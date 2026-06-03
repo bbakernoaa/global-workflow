@@ -16,20 +16,19 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "workflow"))
 
 from deployment.atparse_migration import (
+    _ATPARSE_PATTERN,
+    _SHELL_VAR_PATTERN,
+    AERO_HISTORY_MAPPING,
+    DEFAULT_VAR_MAPPING,
+    DIAG_TABLE_MAPPING,
+    MODEL_CONFIGURE_MAPPING,
+    UFS_CONFIGURE_MAPPING,
+    MigrationResult,
     atparse_to_jinja2,
     get_mapping_for_file,
     list_atparse_variables,
     validate_no_atparse_remaining,
-    MigrationResult,
-    DEFAULT_VAR_MAPPING,
-    MODEL_CONFIGURE_MAPPING,
-    UFS_CONFIGURE_MAPPING,
-    DIAG_TABLE_MAPPING,
-    AERO_HISTORY_MAPPING,
-    _ATPARSE_PATTERN,
-    _SHELL_VAR_PATTERN,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -190,8 +189,8 @@ class TestShellVariablePreservation:
         """Shell variables inside quotes should be preserved."""
         content = 'base_dtg = "${PDY}${cyc}"'
         result = atparse_to_jinja2(content, simple_mapping)
-        assert '${PDY}' in result.content
-        assert '${cyc}' in result.content
+        assert "${PDY}" in result.content
+        assert "${cyc}" in result.content
 
 
 # ---------------------------------------------------------------------------
@@ -280,9 +279,15 @@ class TestDefaultMapping:
     def test_model_configure_has_key_variables(self):
         """model_configure mapping should have essential variables."""
         essential = [
-            "TOTAL_TASKS", "DT_ATMOS", "RESTART_INTERVAL",
-            "QUILTING", "WRITE_GROUP", "WRTTASK_PER_GROUP",
-            "IMO", "JMO", "OUTPUT_FH",
+            "TOTAL_TASKS",
+            "DT_ATMOS",
+            "RESTART_INTERVAL",
+            "QUILTING",
+            "WRITE_GROUP",
+            "WRTTASK_PER_GROUP",
+            "IMO",
+            "JMO",
+            "OUTPUT_FH",
         ]
         for var in essential:
             assert var in MODEL_CONFIGURE_MAPPING
@@ -290,8 +295,10 @@ class TestDefaultMapping:
     def test_ufs_configure_has_pet_bounds(self):
         """ufs.configure mapping should have PET bound variables."""
         pet_vars = [
-            "atm_petlist_bounds", "ocn_petlist_bounds",
-            "ice_petlist_bounds", "wav_petlist_bounds",
+            "atm_petlist_bounds",
+            "ocn_petlist_bounds",
+            "ice_petlist_bounds",
+            "wav_petlist_bounds",
         ]
         for var in pet_vars:
             assert var in UFS_CONFIGURE_MAPPING
@@ -299,7 +306,9 @@ class TestDefaultMapping:
     def test_aero_history_has_frequency_vars(self):
         """AERO_HISTORY mapping should have collection frequency variables."""
         freq_vars = [
-            "inst_aod_freq", "inst_du_ss_freq", "tavg_2d_rad_freq",
+            "inst_aod_freq",
+            "inst_du_ss_freq",
+            "tavg_2d_rad_freq",
         ]
         for var in freq_vars:
             assert var in AERO_HISTORY_MAPPING

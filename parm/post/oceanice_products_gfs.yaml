@@ -34,7 +34,7 @@ ocean:
     {% elif model_grid == 'mx500' %}
     ocean_levels: [2.5, 7.5, 12.5, 17.5, 116]
     {% endif %}
-  subset: 
+  subset:
     variables: ['SSH', 'MLD_003', 'SST', 'SSS', 'temp', 'tob', 'so', 'uo', 'vo']
     compress_with: 'zlib'
     compress: True
@@ -72,7 +72,7 @@ ice:
     sinvar: ""
     cosvar: ""
     angvar: "ANGLET"
-  subset: 
+  subset:
     variables: ['hi_h', 'hs_h', 'aice_h', 'Tsfc_h', 'uvel_h', 'vvel_h', 'albsni_h', 'tarea', 'tmask']
     compress_with: 'zlib'
     compress: True

@@ -9,18 +9,18 @@ cd "${HOMEglobal_}/sorc" || exit 1
 PDLIB="ON"
 
 while getopts ":j:a:dvw" option; do
-    case "${option}" in
-        d) BUILD_TYPE="Debug" ;;
-        j) BUILD_JOBS="${OPTARG}" ;;
-        v) export BUILD_VERBOSE="YES" ;;
-        w) PDLIB="OFF" ;;
-        :)
-            echo "[${BASH_SOURCE[0]}]: ${option} requires an argument"
-            ;;
-        *)
-            echo "[${BASH_SOURCE[0]}]: Unrecognized option: ${option}"
-            ;;
-    esac
+  case "${option}" in
+    d) BUILD_TYPE="Debug" ;;
+    j) BUILD_JOBS="${OPTARG}" ;;
+    v) export BUILD_VERBOSE="YES" ;;
+    w) PDLIB="OFF" ;;
+    :)
+      echo "[${BASH_SOURCE[0]}]: ${option} requires an argument"
+      ;;
+    *)
+      echo "[${BASH_SOURCE[0]}]: Unrecognized option: ${option}"
+      ;;
+  esac
 done
 
 # Determine machine and load modules
@@ -38,19 +38,19 @@ export WW3_DIR
 
 # Determine which switch to use
 if [[ "${PDLIB}" == "ON" ]]; then
-    ww3switch="model/bin/switch_meshcap_pdlib"
-    path_build="${WW3_DIR}/build/pdlib_ON"
-    path_install="${WW3_DIR}/install/pdlib_ON"
+  ww3switch="model/bin/switch_meshcap_pdlib"
+  path_build="${WW3_DIR}/build/pdlib_ON"
+  path_install="${WW3_DIR}/install/pdlib_ON"
 else
-    ww3switch="model/bin/switch_meshcap"
-    path_build="${WW3_DIR}/build/pdlib_OFF"
-    path_install="${WW3_DIR}/install/pdlib_OFF"
+  ww3switch="model/bin/switch_meshcap"
+  path_build="${WW3_DIR}/build/pdlib_OFF"
+  path_install="${WW3_DIR}/install/pdlib_OFF"
 fi
 export SWITCHFILE="${WW3_DIR}/${ww3switch}"
 
 #create build directory:
 if [[ -d "${path_build}" ]]; then
-    rm -rf "${path_build}"
+  rm -rf "${path_build}"
 fi
 mkdir -p "${path_build}" || exit 1
 cd "${path_build}" || exit 1
@@ -61,17 +61,17 @@ buildswitch="${path_build}/switch"
 cat "${SWITCHFILE}" > "${path_build}/tempswitch"
 
 sed -e "s/DIST/SHRD/g" \
-    -e "s/OMPG / /g" \
-    -e "s/OMPH / /g" \
-    -e "s/MPIT / /g" \
-    -e "s/MPI / /g" \
-    -e "s/PIO / /g" \
-    -e "s/B4B / /g" \
-    -e "s/PDLIB / /g" \
-    -e "s/SCOTCH / /g" \
-    -e "s/METIS / /g" \
-    -e "s/NOGRB/NCEP2/g" \
-    "${path_build}/tempswitch" > "${path_build}/switch"
+  -e "s/OMPG / /g" \
+  -e "s/OMPH / /g" \
+  -e "s/MPIT / /g" \
+  -e "s/MPI / /g" \
+  -e "s/PIO / /g" \
+  -e "s/B4B / /g" \
+  -e "s/PDLIB / /g" \
+  -e "s/SCOTCH / /g" \
+  -e "s/METIS / /g" \
+  -e "s/NOGRB/NCEP2/g" \
+  "${path_build}/tempswitch" > "${path_build}/switch"
 rm "${path_build}/tempswitch"
 
 echo "Switch file is ${buildswitch} with switches:"
@@ -80,7 +80,7 @@ cat "${buildswitch}"
 #define cmake build options
 MAKE_OPT="-DCMAKE_INSTALL_PREFIX=${path_install}"
 if [[ "${BUILD_TYPE:-"Release"}" == "Debug" ]]; then
-    MAKE_OPT+=" -DCMAKE_BUILD_TYPE=Debug"
+  MAKE_OPT+=" -DCMAKE_BUILD_TYPE=Debug"
 fi
 
 #Build executables:
@@ -88,22 +88,22 @@ fi
 cmake "${WW3_DIR}" -DSWITCH="${buildswitch}" ${MAKE_OPT}
 rc=$?
 if ((rc != 0)); then
-    echo "Fatal error in cmake."
-    exit "${rc}"
+  echo "Fatal error in cmake."
+  exit "${rc}"
 fi
 
 make -j "${BUILD_JOBS:-8}"
 rc=$?
 if ((rc != 0)); then
-    echo "Fatal error in make."
-    exit "${rc}"
+  echo "Fatal error in make."
+  exit "${rc}"
 fi
 
 make install
 rc=$?
 if ((rc != 0)); then
-    echo "Fatal error in make install."
-    exit "${rc}"
+  echo "Fatal error in make install."
+  exit "${rc}"
 fi
 
 exit 0

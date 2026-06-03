@@ -28,18 +28,17 @@ import sys
 import tempfile
 from pathlib import Path
 
-import pytest
 import yaml
-from hypothesis import given, settings, HealthCheck
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from deployment.pipeline import run, SubmodulePolicy
+from deployment.pipeline import SubmodulePolicy, run
 
 # Committed Submodule_Fixture tree (Req 6.2, 6.7). Resolved relative to this
 # test file so it works regardless of the current working directory.
-FIXTURE_ROOT = (Path(__file__).resolve().parent / "fixtures" / "submodules")
+FIXTURE_ROOT = Path(__file__).resolve().parent / "fixtures" / "submodules"
 
 
 # ---------------------------------------------------------------------------
@@ -51,10 +50,10 @@ UNRESOLVED_TOKENS = ("{{", "{%", "{#")
 # Files/patterns that are NOT rendered templates and may legitimately
 # contain Jinja2-like syntax (ecFlow variable references, raw config, metadata)
 EXCLUDED_PATTERNS = (
-    "parm/workflow/",       # Workflow config YAML (staged verbatim, not rendered)
-    "ecf/defs/",           # ecFlow .def files (generated, contain ecFlow vars)
+    "parm/workflow/",  # Workflow config YAML (staged verbatim, not rendered)
+    "ecf/defs/",  # ecFlow .def files (generated, contain ecFlow vars)
     "workflow/provenance",  # Provenance metadata (records raw config values)
-    "manifest.yaml",       # Deployment manifest (generated metadata)
+    "manifest.yaml",  # Deployment manifest (generated metadata)
 )
 
 
@@ -168,9 +167,7 @@ def _create_dev_tree(tmp_path: Path, config: dict) -> dict:
 ${EXPDIR}/ush/universal_wrapper.sh {{ task.jjob }}
 %include <tail.h>
 """
-    (dev_root / "workflow" / "ecflow" / "templates" / "task.ecf.j2").write_text(
-        template
-    )
+    (dev_root / "workflow" / "ecflow" / "templates" / "task.ecf.j2").write_text(template)
 
     # Create a .git directory to mark repo root
     (tmp_path / ".git").mkdir()
@@ -296,12 +293,8 @@ def test_no_unresolved_tokens_property(config: dict):
         # Scan all rendered files for unresolved Jinja2 tokens
         violations = _scan_for_unresolved_tokens(expdir)
 
-        assert violations == [], (
-            "Unresolved Jinja2 tokens found in rendered EXPDIR files:\n"
-            + "\n".join(
-                f"  {path}:{line} contains '{token}'"
-                for path, token, line in violations
-            )
+        assert violations == [], "Unresolved Jinja2 tokens found in rendered EXPDIR files:\n" + "\n".join(
+            f"  {path}:{line} contains '{token}'" for path, token, line in violations
         )
 
 
@@ -388,10 +381,6 @@ def test_no_unresolved_tokens_forecast_only():
         # Scan all rendered files for unresolved Jinja2 tokens
         violations = _scan_for_unresolved_tokens(expdir)
 
-        assert violations == [], (
-            "Unresolved Jinja2 tokens found in rendered EXPDIR files:\n"
-            + "\n".join(
-                f"  {path}:{line} contains '{token}'"
-                for path, token, line in violations
-            )
+        assert violations == [], "Unresolved Jinja2 tokens found in rendered EXPDIR files:\n" + "\n".join(
+            f"  {path}:{line} contains '{token}'" for path, token, line in violations
         )

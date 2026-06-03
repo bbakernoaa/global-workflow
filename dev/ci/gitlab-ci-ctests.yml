@@ -30,10 +30,10 @@
   stage: setup_tests
   script: |
     echo "Setting up for ctests pipeline building in ${GW_HOMEgfs} on ${machine}"
-    
+
     # Load platform-specific configuration
     source "${GW_HOMEgfs}/dev/ci/platforms/config.${machine}"
-    
+
     source "${GW_HOMEgfs}/dev/ush/gw_setup.sh"
     source "${GW_HOMEgfs}/dev/ci/platforms/config.${machine}"
     cd "${GW_HOMEgfs}/dev/ctests" || exit 1
@@ -50,13 +50,13 @@
 
 # Main template for CTest execution jobs
 .run_ctests_template:
-  extends: 
+  extends:
     - .base_config
     - .failure_cleanup_template
   stage: run_tests
   script: |
     echo "Using build directory ${GW_HOMEgfs} for running CTests"
-    
+
     source "${GW_HOMEgfs}/dev/ush/gw_setup.sh"
     # Load platform-specific configuration
     source "${GW_HOMEgfs}/dev/ci/platforms/config.${machine}"

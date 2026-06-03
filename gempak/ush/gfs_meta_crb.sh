@@ -248,27 +248,27 @@ export err=$?
 err_chk
 
 if [[ ${cyc} == 00 ]]; then
-    export HPCECMWF=ecmwf.${PDY}
-    HPCECMWF_m1=ecmwf.${PDY}
-    export HPCUKMET=ukmet.${PDYm1}
-    rm -f "${HPCECMWF}"
-    # TODO: remove live links and refer https://github.com/NOAA-EMC/global-workflow/issues/4406
-    ${NLN} "${COMINecmwf}/ecmwf.${PDY}/gempak" "${HPCECMWF}"
-    rm -f "${HPCECMWF_m1}"
-    ${NLN} "${COMINecmwf}/ecmwf.${PDYm1}/gempak" "${HPCECMWF_m1}"
-    rm -f "${HPCUKMET}"
-    ${NLN} "${COMINukmet}/ukmet.${PDYm1}/gempak" "${HPCUKMET}"
+  export HPCECMWF=ecmwf.${PDY}
+  HPCECMWF_m1=ecmwf.${PDY}
+  export HPCUKMET=ukmet.${PDYm1}
+  rm -f "${HPCECMWF}"
+  # TODO: remove live links and refer https://github.com/NOAA-EMC/global-workflow/issues/4406
+  ${NLN} "${COMINecmwf}/ecmwf.${PDY}/gempak" "${HPCECMWF}"
+  rm -f "${HPCECMWF_m1}"
+  ${NLN} "${COMINecmwf}/ecmwf.${PDYm1}/gempak" "${HPCECMWF_m1}"
+  rm -f "${HPCUKMET}"
+  ${NLN} "${COMINukmet}/ukmet.${PDYm1}/gempak" "${HPCUKMET}"
 
-    grid1="F-${MDL} | ${PDY:2}/${cyc}00"
-    grid2="${HPCECMWF_m1}/ecmwf_glob_${PDYm1}12"
-    grid3="F-UKMETHPC | ${PDYm1:2}/1200"
-    for fhr in $(seq -s ' ' 12 24 108); do
-        gfsfhr=F$(printf "%02g" "${fhr}")
-        ecmwffhr=F$(printf "%02g" $((fhr + 12)))
+  grid1="F-${MDL} | ${PDY:2}/${cyc}00"
+  grid2="${HPCECMWF_m1}/ecmwf_glob_${PDYm1}12"
+  grid3="F-UKMETHPC | ${PDYm1:2}/1200"
+  for fhr in $(seq -s ' ' 12 24 108); do
+    gfsfhr=F$(printf "%02g" "${fhr}")
+    ecmwffhr=F$(printf "%02g" $((fhr + 12)))
 
-        export pgm=gdplot2_nc
-        source prep_step
-        "${GEMEXE}/gdplot2_nc" << EOF10
+    export pgm=gdplot2_nc
+    source prep_step
+    "${GEMEXE}/gdplot2_nc" << EOF10
 GDFILE  = ${grid1} !${grid2}
 GDATTIM = ${gfsfhr}!${ecmwffhr}
 DEVICE  = ${device}
@@ -324,17 +324,17 @@ r
 
 ex
 EOF10
-        export err=$?
-        err_chk
+    export err=$?
+    err_chk
 
-    done
-    for fhr in 0 12 24 36 48 60 84 108 132; do
-        gfsfhr=F$(printf "%02g" "${fhr}")
-        ukmetfhr=F$(printf "%02g" $((fhr + 12)))
+  done
+  for fhr in 0 12 24 36 48 60 84 108 132; do
+    gfsfhr=F$(printf "%02g" "${fhr}")
+    ukmetfhr=F$(printf "%02g" $((fhr + 12)))
 
-        export pgm=gdplot2_nc
-        source prep_step
-        "${GEMEXE}/gdplot2_nc" << EOF25
+    export pgm=gdplot2_nc
+    source prep_step
+    "${GEMEXE}/gdplot2_nc" << EOF25
 DEVICE  = ${device}
 PANEL   = 0
 TEXT    = 1/21//hw
@@ -388,10 +388,10 @@ r
 
 ex
 EOF25
-        export err=$?
-        err_chk
+    export err=$?
+    err_chk
 
-    done
+  done
 fi
 
 #####################################################
@@ -400,19 +400,19 @@ fi
 # FOR THIS CASE HERE.
 #####################################################
 if [[ "${err}" -ne 0 ]] || [[ ! -s "${metaname}" ]] &> /dev/null; then
-    echo "FATAL ERROR: Failed to create gempak meta file ${metaname}"
-    exit $((err + 100))
+  echo "FATAL ERROR: Failed to create gempak meta file ${metaname}"
+  exit $((err + 100))
 fi
 
 cpfs "${metaname}" "${COMOUT_ATMOS_GEMPAK_META}/${mdl}_${PDY}_${cyc}_${metatype}"
 if [[ "${SENDDBN}" == "YES" ]]; then
+  "${DBNROOT}/bin/dbn_alert" MODEL "${DBN_ALERT_TYPE}" "${job}" \
+    "${COMOUT_ATMOS_GEMPAK_META}/${mdl}_${PDY}_${cyc}_${metatype}"
+  if [[ ${DBN_ALERT_TYPE} == "GFS_METAFILE_LAST" ]]; then
+    DBN_ALERT_TYPE=GFS_METAFILE
     "${DBNROOT}/bin/dbn_alert" MODEL "${DBN_ALERT_TYPE}" "${job}" \
-        "${COMOUT_ATMOS_GEMPAK_META}/${mdl}_${PDY}_${cyc}_${metatype}"
-    if [[ ${DBN_ALERT_TYPE} == "GFS_METAFILE_LAST" ]]; then
-        DBN_ALERT_TYPE=GFS_METAFILE
-        "${DBNROOT}/bin/dbn_alert" MODEL "${DBN_ALERT_TYPE}" "${job}" \
-            "${COMOUT_ATMOS_GEMPAK_META}/${mdl}_${PDY}_${cyc}_${metatype}"
-    fi
+      "${COMOUT_ATMOS_GEMPAK_META}/${mdl}_${PDY}_${cyc}_${metatype}"
+  fi
 fi
 
 exit

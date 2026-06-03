@@ -22,13 +22,12 @@ import tempfile
 from collections import deque
 from pathlib import Path
 
-from hypothesis import given, settings, HealthCheck
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from deployment.dag_filter import DAGFilter
-
 
 # ---------------------------------------------------------------------------
 # Hypothesis Strategies for generating random dependency graphs
@@ -203,14 +202,10 @@ def test_ush_transitive_reachability_property(graph):
 
     with tempfile.TemporaryDirectory() as tmp_str:
         tmp_dir = Path(tmp_str)
-        dev_root = _create_temp_filesystem(
-            tmp_dir, ex_names, ush_names, seed_edges, inter_edges
-        )
+        dev_root = _create_temp_filesystem(tmp_dir, ex_names, ush_names, seed_edges, inter_edges)
 
         # Compute expected result independently
-        expected = _compute_expected_transitive_closure(
-            ush_names, seed_edges, inter_edges
-        )
+        expected = _compute_expected_transitive_closure(ush_names, seed_edges, inter_edges)
 
         # Run the DAGFilter's extract_ush_scripts
         dag_filter = DAGFilter(
@@ -253,9 +248,7 @@ def test_ush_cycles_terminate_with_warnings(graph):
 
     with tempfile.TemporaryDirectory() as tmp_str:
         tmp_dir = Path(tmp_str)
-        dev_root = _create_temp_filesystem(
-            tmp_dir, ex_names, ush_names, seed_edges, inter_edges
-        )
+        dev_root = _create_temp_filesystem(tmp_dir, ex_names, ush_names, seed_edges, inter_edges)
 
         dag_filter = DAGFilter(
             dev_root=dev_root,
@@ -272,23 +265,16 @@ def test_ush_cycles_terminate_with_warnings(graph):
             assert isinstance(item, str)
 
         # Check for cycle warnings if cycles exist among reachable nodes
-        expected_reachable = _compute_expected_transitive_closure(
-            ush_names, seed_edges, inter_edges
-        )
+        expected_reachable = _compute_expected_transitive_closure(ush_names, seed_edges, inter_edges)
 
         # Detect if there are cycles among reachable ush scripts
         # A cycle exists if any inter-edge goes to an already-visited node
         # that is in the reachable set
-        reachable_with_back_edges = _has_cycles_in_reachable(
-            ush_names, seed_edges, inter_edges, expected_reachable
-        )
+        reachable_with_back_edges = _has_cycles_in_reachable(ush_names, seed_edges, inter_edges, expected_reachable)
 
         if reachable_with_back_edges:
             # If cycles exist among reachable scripts, warnings should be present
-            circular_warnings = [
-                w for w in dag_filter._warnings
-                if "Circular dependency" in w
-            ]
+            circular_warnings = [w for w in dag_filter._warnings if "Circular dependency" in w]
             assert len(circular_warnings) > 0, (
                 f"Expected circular dependency warnings but got none.\n"
                 f"Warnings: {dag_filter._warnings}\n"

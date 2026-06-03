@@ -14,9 +14,9 @@ rm -f "${COMIN}"
 ${NLN} "${COMIN_ATMOS_GEMPAK_1p00}" "${COMIN}"
 
 if [[ "${envir}" == "para" ]]; then
-    export m_title="GDASP"
+  export m_title="GDASP"
 else
-    export m_title="GDAS"
+  export m_title="GDAS"
 fi
 
 export pgm=gdplot2_nc
@@ -93,18 +93,18 @@ export err=$?
 # FOR THIS CASE HERE.
 #####################################################
 if [[ "${err}" -ne 0 ]] || [[ ! -s gdas.meta ]] &> /dev/null; then
-    echo "FATAL ERROR: Failed to create gempak meta file for North America"
-    exit "${err}"
+  echo "FATAL ERROR: Failed to create gempak meta file for North America"
+  exit "${err}"
 fi
 
 cpfs gdas.meta "${COMOUT_ATMOS_GEMPAK_META}/gdas_${PDY}_${cyc}_na"
 export err=$?
 if [[ "${err}" -ne 0 ]]; then
-    echo "FATAL ERROR: Failed to move meta file to ${COMOUT_ATMOS_GEMPAK_META}/gdas_${PDY}_${cyc}_na"
-    exit "${err}"
+  echo "FATAL ERROR: Failed to move meta file to ${COMOUT_ATMOS_GEMPAK_META}/gdas_${PDY}_${cyc}_na"
+  exit "${err}"
 fi
 
 if [[ "${SENDDBN}" == "YES" ]]; then
-    "${DBNROOT}/bin/dbn_alert" MODEL "${DBN_ALERT_TYPE}" "${job}" \
-        "${COMOUT_ATMOS_GEMPAK_META}/gdas_${PDY}_${cyc}_na"
+  "${DBNROOT}/bin/dbn_alert" MODEL "${DBN_ALERT_TYPE}" "${job}" \
+    "${COMOUT_ATMOS_GEMPAK_META}/gdas_${PDY}_${cyc}_na"
 fi

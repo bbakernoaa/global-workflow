@@ -26,13 +26,13 @@ export gcyc=${GDATE:8:2}
 
 # Generate COM variables from templates
 if [[ "${RUN_ENVIR:-emc}" == "nco" ]]; then
-    COMINobsproc=$(compath.py "${envir}/obsproc/${obsproc_ver}")/"${RUN}.${PDY}/${cyc}/atmos"
-    declare -rx COMINobsproc
-    COMINobsproc_PREV=$(compath.py "${envir}/obsproc/${obsproc_ver}")/"${RUN}.${gPDY}/${gcyc}/atmos"
-    declare -rx COMINobsproc_PREV
+  COMINobsproc=$(compath.py "${envir}/obsproc/${obsproc_ver}")/"${RUN}.${PDY}/${cyc}/atmos"
+  declare -rx COMINobsproc
+  COMINobsproc_PREV=$(compath.py "${envir}/obsproc/${obsproc_ver}")/"${RUN}.${gPDY}/${gcyc}/atmos"
+  declare -rx COMINobsproc_PREV
 else
-    declare -rx COMINobsproc="${DMPDIR}/${RUN}.${PDY}/${cyc}/atmos"
-    declare -rx COMINobsproc_PREV="${DMPDIR}/${RUN}.${gPDY}/${gcyc}/atmos"
+  declare -rx COMINobsproc="${DMPDIR}/${RUN}.${PDY}/${cyc}/atmos"
+  declare -rx COMINobsproc_PREV="${DMPDIR}/${RUN}.${gPDY}/${gcyc}/atmos"
 fi
 declare -rx COMOUT_OBS="${ROTDIR}/${RUN}.${PDY}/${cyc}/obs"
 
@@ -45,7 +45,7 @@ mkdir -p "${COMOUT_OBS}"
 "${SCRglobal}/exglobal_prep_sfc.sh"
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Surface observation preparation failed!"
+  err_exit "Surface observation preparation failed!"
 fi
 
 ##############################################
@@ -56,7 +56,7 @@ fi
 # Final processing
 ##############################################
 if [[ -e "${pgmout}" ]]; then
-    cat "${pgmout}"
+  cat "${pgmout}"
 fi
 
 ##########################################
@@ -64,7 +64,7 @@ fi
 ##########################################
 cd "${DATAROOT}" || true
 if [[ "${KEEPDATA}" == "NO" ]]; then
-    rm -rf "${DATA}"
+  rm -rf "${DATA}"
 fi
 
 exit 0

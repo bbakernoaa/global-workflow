@@ -37,10 +37,7 @@ class Violation:
 
     def format(self) -> str:
         """Format as a FATAL ERROR message."""
-        return (
-            f"FATAL ERROR: EE2 violation [{self.category}]: "
-            f"{self.file} — {self.description}"
-        )
+        return f"FATAL ERROR: EE2 violation [{self.category}]: {self.file} — {self.description}"
 
 
 @dataclass
@@ -56,9 +53,7 @@ class ScanResult:
 
     def add(self, category: str, file: str, description: str) -> None:
         """Add a violation to the result."""
-        self.violations.append(
-            Violation(category=category, file=file, description=description)
-        )
+        self.violations.append(Violation(category=category, file=file, description=description))
 
 
 # EE2 required environment variables that must be set in J-Jobs
@@ -97,7 +92,7 @@ def _read_file_content(filepath: Path) -> Optional[str]:
     """Read file content, returning None if unreadable."""
     try:
         return filepath.read_text(encoding="utf-8", errors="replace")
-    except (OSError, IOError):
+    except OSError:
         return None
 
 
@@ -117,7 +112,6 @@ def check_error_handling(filepath: Path, content: str, result: ScanResult) -> No
     and pass the same structural checks. (Requirement 6.3)
     """
     relpath = str(filepath)
-    lines = content.splitlines()
 
     # Only check shell scripts (bash)
     if not _is_shell_script(content):
@@ -137,38 +131,32 @@ def check_error_handling(filepath: Path, content: str, result: ScanResult) -> No
 
     # Look for executable invocations that capture $? or set err=$?
     # but don't follow up with err_chk or err_exit
-    err_assignment_pattern = re.compile(
-        r'^\s*(?:export\s+)?err\s*=\s*\$\?', re.MULTILINE
-    )
+    err_assignment_pattern = re.compile(r"^\s*(?:export\s+)?err\s*=\s*\$\?", re.MULTILINE)
     err_assignments = list(err_assignment_pattern.finditer(content))
 
     if err_assignments and not has_err_chk and not has_err_exit:
         result.add(
             "error_handling",
             relpath,
-            "Script captures exit status in 'err' variable but never calls "
-            "'err_chk' or 'err_exit' to handle errors",
+            "Script captures exit status in 'err' variable but never calls 'err_chk' or 'err_exit' to handle errors",
         )
 
     # The script has no err_chk / err_exit, no cpreq / cpfs, and no explicit
     # FATAL ERROR + exit. If it nonetheless invokes executables, flag it.
     exec_patterns = [
-        re.compile(r'^\s*\$\{?[A-Z_]+\}?\s', re.MULTILINE),  # ${EXEC} args
+        re.compile(r"^\s*\$\{?[A-Z_]+\}?\s", re.MULTILINE),  # ${EXEC} args
     ]
     for pattern in exec_patterns:
         if pattern.search(content):
             result.add(
                 "error_handling",
                 relpath,
-                "Script appears to invoke executables but contains neither "
-                "'err_chk' nor 'err_exit' for error handling",
+                "Script appears to invoke executables but contains neither 'err_chk' nor 'err_exit' for error handling",
             )
             break
 
 
-def check_environment_variables(
-    filepath: Path, content: str, result: ScanResult
-) -> None:
+def check_environment_variables(filepath: Path, content: str, result: ScanResult) -> None:
     """Check environment_variables compliance.
 
     Verifies that J-Jobs set the required EE2 environment variables:
@@ -195,14 +183,10 @@ def check_environment_variables(
     for var in REQUIRED_ENV_VARS:
         # Check if the variable is set/exported or sourced from a known setup script
         # Patterns: export VAR=, VAR=, ${VAR}, or sourced from jjob_header/standard_vars
-        var_set_pattern = re.compile(
-            rf'(?:export\s+)?{re.escape(var)}\s*=', re.MULTILINE
-        )
+        var_set_pattern = re.compile(rf"(?:export\s+)?{re.escape(var)}\s*=", re.MULTILINE)
         # Also accept if the script sources jjob_header.sh or jjob_standard_vars.sh
         # which set these variables
-        sources_header = (
-            "jjob_header.sh" in content or "jjob_standard_vars.sh" in content
-        )
+        sources_header = "jjob_header.sh" in content or "jjob_standard_vars.sh" in content
 
         if not var_set_pattern.search(content) and not sources_header:
             missing_vars.append(var)
@@ -211,8 +195,7 @@ def check_environment_variables(
         result.add(
             "environment_variables",
             relpath,
-            f"J-Job does not set required EE2 environment variables: "
-            f"{', '.join(missing_vars)}",
+            f"J-Job does not set required EE2 environment variables: {', '.join(missing_vars)}",
         )
 
 
@@ -249,9 +232,7 @@ def check_file_naming(filepath: Path, content: str, result: ScanResult) -> None:
             )
 
 
-def check_shebang_compliance(
-    filepath: Path, content: str, result: ScanResult
-) -> None:
+def check_shebang_compliance(filepath: Path, content: str, result: ScanResult) -> None:
     """Check shebang_compliance.
 
     Verifies that scripts have a valid shebang line:
@@ -266,11 +247,7 @@ def check_shebang_compliance(
     filename = filepath.name
 
     # Only check executable script files
-    if not (
-        filename.endswith(".sh")
-        or filename.endswith(".py")
-        or "/jobs/" in relpath
-    ):
+    if not (filename.endswith(".sh") or filename.endswith(".py") or "/jobs/" in relpath):
         return
 
     lines = content.splitlines()
@@ -304,8 +281,7 @@ def check_shebang_compliance(
         result.add(
             "shebang_compliance",
             relpath,
-            f"Invalid shebang '{shebang}' — must be one of: "
-            f"{', '.join(VALID_SHEBANGS)}",
+            f"Invalid shebang '{shebang}' — must be one of: {', '.join(VALID_SHEBANGS)}",
         )
 
 
@@ -494,7 +470,4 @@ def run_compliance_scan(
     if not result.passed:
         error_messages = [v.format() for v in result.violations]
         error_output = "\n".join(error_messages)
-        raise SystemExit(
-            f"EE2 Compliance Scan FAILED with {len(result.violations)} "
-            f"violation(s):\n{error_output}"
-        )
+        raise SystemExit(f"EE2 Compliance Scan FAILED with {len(result.violations)} violation(s):\n{error_output}")

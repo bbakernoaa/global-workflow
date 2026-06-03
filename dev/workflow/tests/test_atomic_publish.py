@@ -13,10 +13,7 @@ Traces to: Requirements 7.1, 7.2, 7.3, 7.4, 7.5
 
 import os
 import subprocess
-import tempfile
 from pathlib import Path
-
-import pytest
 
 # Path to the atomic_publish.sh script
 SCRIPT_PATH = Path(__file__).parents[2] / "ush" / "atomic_publish.sh"
@@ -31,12 +28,7 @@ def _make_test_env(tmp_path: Path) -> dict:
 
     # Create a mock err_exit function and cpfs function
     mock_utils = tmp_path / "mock_utils.sh"
-    mock_utils.write_text(
-        '#!/usr/bin/env bash\n'
-        'err_exit() { echo "ERR_EXIT: $*" >&2; exit 1; }\n'
-        'cpfs() { cp "$1" "$2"; }\n'
-        'export -f err_exit cpfs\n'
-    )
+    mock_utils.write_text('#!/usr/bin/env bash\nerr_exit() { echo "ERR_EXIT: $*" >&2; exit 1; }\ncpfs() { cp "$1" "$2"; }\nexport -f err_exit cpfs\n')
 
     env = os.environ.copy()
     env["COMOUT"] = str(comout)
@@ -47,8 +39,7 @@ def _make_test_env(tmp_path: Path) -> dict:
     return env
 
 
-def _run_atomic_publish(tmp_path: Path, files: list, env: dict,
-                        extra_env: dict = None) -> subprocess.CompletedProcess:
+def _run_atomic_publish(tmp_path: Path, files: list, env: dict, extra_env: dict = None) -> subprocess.CompletedProcess:
     """Run atomic_publish.sh with the given files and environment."""
     if extra_env:
         env.update(extra_env)
@@ -56,11 +47,7 @@ def _run_atomic_publish(tmp_path: Path, files: list, env: dict,
     # Build a wrapper script that sources mock utilities then sources atomic_publish
     wrapper = tmp_path / "run_test.sh"
     file_args = " ".join(f'"{f}"' for f in files)
-    wrapper.write_text(
-        f'#!/usr/bin/env bash\n'
-        f'source "{env["MOCK_UTILS"]}"\n'
-        f'source "{SCRIPT_PATH}" {file_args}\n'
-    )
+    wrapper.write_text(f'#!/usr/bin/env bash\nsource "{env["MOCK_UTILS"]}"\nsource "{SCRIPT_PATH}" {file_args}\n')
     wrapper.chmod(0o755)
 
     result = subprocess.run(
@@ -152,11 +139,8 @@ class TestAtomicPublishVerification:
     def test_missing_source_file_causes_failure(self, tmp_path: Path):
         """A non-existent source file should trigger err_exit."""
         env = _make_test_env(tmp_path)
-        comout = Path(env["COMOUT"])
 
-        result = _run_atomic_publish(
-            tmp_path, ["/nonexistent/file.grib2"], env
-        )
+        result = _run_atomic_publish(tmp_path, ["/nonexistent/file.grib2"], env)
         assert result.returncode != 0
         assert "ERR_EXIT" in result.stderr
 
@@ -172,16 +156,10 @@ class TestAtomicPublishVerification:
         # Override cpfs to corrupt the staged file
         mock_utils = tmp_path / "mock_utils.sh"
         mock_utils.write_text(
-            '#!/usr/bin/env bash\n'
-            'err_exit() { echo "ERR_EXIT: $*" >&2; exit 1; }\n'
-            'cpfs() { echo "corrupted" > "$2"; }\n'
-            'export -f err_exit cpfs\n'
+            '#!/usr/bin/env bash\nerr_exit() { echo "ERR_EXIT: $*" >&2; exit 1; }\ncpfs() { echo "corrupted" > "$2"; }\nexport -f err_exit cpfs\n'
         )
 
-        result = _run_atomic_publish(
-            tmp_path, [str(src_file)], env,
-            extra_env={"ATOMIC_PUBLISH_HASH_CHECK": "YES"}
-        )
+        result = _run_atomic_publish(tmp_path, [str(src_file)], env, extra_env={"ATOMIC_PUBLISH_HASH_CHECK": "YES"})
         assert result.returncode != 0
         assert "ERR_EXIT" in result.stderr
 
@@ -205,9 +183,7 @@ class TestAtomicPublishDBNAlert:
         dbn_root = tmp_path / "dbn" / "bin"
         dbn_root.mkdir(parents=True)
         dbn_alert = dbn_root / "dbn_alert"
-        dbn_alert.write_text(
-            f'#!/usr/bin/env bash\necho "$@" >> "{alert_log}"\n'
-        )
+        dbn_alert.write_text(f'#!/usr/bin/env bash\necho "$@" >> "{alert_log}"\n')
         dbn_alert.chmod(0o755)
 
         env["SENDDBN"] = "NO"
@@ -233,9 +209,7 @@ class TestAtomicPublishDBNAlert:
         dbn_root = tmp_path / "dbn" / "bin"
         dbn_root.mkdir(parents=True)
         dbn_alert = dbn_root / "dbn_alert"
-        dbn_alert.write_text(
-            f'#!/usr/bin/env bash\necho "$@" >> "{alert_log}"\n'
-        )
+        dbn_alert.write_text(f'#!/usr/bin/env bash\necho "$@" >> "{alert_log}"\n')
         dbn_alert.chmod(0o755)
 
         env["SENDDBN"] = "YES"
@@ -284,11 +258,7 @@ class TestAtomicPublishEnvironment:
 
         # Run with no file arguments
         wrapper = tmp_path / "run_test.sh"
-        wrapper.write_text(
-            f'#!/usr/bin/env bash\n'
-            f'source "{env["MOCK_UTILS"]}"\n'
-            f'source "{SCRIPT_PATH}"\n'
-        )
+        wrapper.write_text(f'#!/usr/bin/env bash\nsource "{env["MOCK_UTILS"]}"\nsource "{SCRIPT_PATH}"\n')
         wrapper.chmod(0o755)
 
         result = subprocess.run(

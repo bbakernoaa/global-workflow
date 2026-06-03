@@ -38,14 +38,14 @@ export PS4='+ $(basename ${BASH_SOURCE[0]})[${LINENO}]'
 
 source "${ROOT_DIR}/ush/detect_machine.sh"
 case ${MACHINE_ID} in
-    hera | orion | hercules | wcoss2 | gaea)
-        echo "Running Automated Testing on ${MACHINE_ID}"
-        source "${ROOT_DIR}/ci/platforms/config.${MACHINE_ID}"
-        ;;
-    *)
-        echo "Unsupported platform. Exiting with error."
-        exit 1
-        ;;
+  hera | orion | hercules | wcoss2 | gaea)
+    echo "Running Automated Testing on ${MACHINE_ID}"
+    source "${ROOT_DIR}/ci/platforms/config.${MACHINE_ID}"
+    ;;
+  *)
+    echo "Unsupported platform. Exiting with error."
+    exit 1
+    ;;
 esac
 
 ######################################################
@@ -89,7 +89,7 @@ set +e
 git ls-remote --exit-code "${REMOTE_NAME}" "${branch}"
 ci_status=$?
 if [[ "${ci_status}" == '0' ]]; then
-    git push "${REMOTE_NAME}" --delete "${branch}"
+  git push "${REMOTE_NAME}" --delete "${branch}"
 fi
 set -e
 
@@ -111,7 +111,7 @@ PULL_REQUEST_LABELS=("CI/CD" "CI-Orion-Ready" "CI-Hera-Ready")
 
 # Add labels to the pull request
 for label in "${PULL_REQUEST_LABELS[@]}"; do
-    "${GH}" pr edit --add-label "${label}"
+  "${GH}" pr edit --add-label "${label}"
 done
 cd "${GFS_BASH_CI_ROOT}"
 rm -Rf "${develop_dir}"

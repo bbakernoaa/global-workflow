@@ -28,7 +28,7 @@ export COMPONENT="atmos"
 declare -rx COMIN_ATMOS_GRIB_0p25="${ROTDIR}/${RUN}.${PDY}/${cyc}/products/atmos/grib2/0p25"
 declare -rx COMOUT="${ROTDIR}/${RUN}.${PDY}/${cyc}/products/atmos/wmo"
 if [[ ! -d "${COMOUT}" ]]; then
-    mkdir -m 775 -p "${COMOUT}"
+  mkdir -m 775 -p "${COMOUT}"
 fi
 
 ########################################################
@@ -36,7 +36,7 @@ fi
 "${SCRglobal}/exgfs_atmos_fbwind.sh" && true
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Failed to generate Pacific WMO wind products"
+  err_exit "Failed to generate Pacific WMO wind products"
 fi
 ########################################################
 
@@ -44,12 +44,12 @@ fi
 # print exec I/O output
 ############################################
 if [[ -e "${pgmout}" ]]; then
-    cat "${pgmout}"
+  cat "${pgmout}"
 fi
 
 ###################################
 # Remove temp directories
 ###################################
 if [[ "${KEEPDATA}" != "YES" ]]; then
-    rm -rf "${DATA}"
+  rm -rf "${DATA}"
 fi

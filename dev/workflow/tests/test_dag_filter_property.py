@@ -19,17 +19,15 @@ import sys
 import tempfile
 from pathlib import Path
 
-from hypothesis import given, settings, HealthCheck
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from deployment.dag_filter import (
-    DAGFilter,
-    DAGReachabilitySet,
     _UNCONDITIONAL_CONFIGS,
+    DAGFilter,
 )
-
 
 # ---------------------------------------------------------------------------
 # JAAAAA naming pattern (from Requirements 1.4, 10.2)
@@ -104,9 +102,7 @@ def _workflow_yaml_with_jjobs(draw, jjob_names: set[str] | None = None):
 
     for idx, jjob in enumerate(jjob_list):
         family_idx = idx % num_families
-        families[family_idx]["tasks"].append(
-            {"name": f"task_{idx}", "jjob": jjob}
-        )
+        families[family_idx]["tasks"].append({"name": f"task_{idx}", "jjob": jjob})
 
     return {"families": families}
 
@@ -268,9 +264,7 @@ def test_dag_filter_completeness(data):
 
         # Additional: extracted set should be exactly the referenced set
         assert extracted_jjobs == referenced_jjobs, (
-            f"Extracted set does not match referenced set exactly.\n"
-            f"Expected: {referenced_jjobs}\n"
-            f"Got: {extracted_jjobs}"
+            f"Extracted set does not match referenced set exactly.\nExpected: {referenced_jjobs}\nGot: {extracted_jjobs}"
         )
 
 
@@ -327,9 +321,7 @@ def test_unconditional_config_inclusion(data):
 
 # Strategy: generate valid JAAAAA names — J followed by uppercase letters/underscores
 # Must have at least one uppercase letter after J
-_st_valid_jjob = st.from_regex(r"J[A-Z][A-Z_]{0,14}", fullmatch=True).filter(
-    lambda s: not s.endswith("_")
-)
+_st_valid_jjob = st.from_regex(r"J[A-Z][A-Z_]{0,14}", fullmatch=True).filter(lambda s: not s.endswith("_"))
 
 # Strategy: generate invalid names (various violations)
 _st_invalid_jjob = st.one_of(
@@ -367,10 +359,7 @@ def test_jaaaaa_naming_accepts_valid(name):
 
     **Validates: Requirements 1.4, 10.2**
     """
-    assert is_valid_jjob_name(name), (
-        f"Valid JAAAAA name '{name}' was rejected by the validator.\n"
-        f"Pattern: ^J[A-Z][A-Z_]*$"
-    )
+    assert is_valid_jjob_name(name), f"Valid JAAAAA name '{name}' was rejected by the validator.\nPattern: ^J[A-Z][A-Z_]*$"
 
 
 @given(name=_st_invalid_jjob)
@@ -389,7 +378,5 @@ def test_jaaaaa_naming_rejects_invalid(name):
     **Validates: Requirements 1.4, 10.2**
     """
     assert not is_valid_jjob_name(name), (
-        f"Invalid JAAAAA name '{name}' was ACCEPTED by the validator.\n"
-        f"Pattern: ^J[A-Z][A-Z_]*$\n"
-        f"This name should have been rejected."
+        f"Invalid JAAAAA name '{name}' was ACCEPTED by the validator.\nPattern: ^J[A-Z][A-Z_]*$\nThis name should have been rejected."
     )

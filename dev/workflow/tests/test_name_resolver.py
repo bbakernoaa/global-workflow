@@ -13,13 +13,11 @@ Traces to: Requirements 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 8.1, 8.2
 from __future__ import annotations
 
 import re
+from pathlib import Path
 
 import pytest
 import yaml
-from pathlib import Path
-
-from deployment.name_resolver import NameResolver, PrefixRegistry, ResolvedName
-from deployment.name_resolver import DryRunReport
+from deployment.name_resolver import DryRunReport, NameResolver, PrefixRegistry, ResolvedName
 from deployment.pipeline import PipelineError
 
 
@@ -87,9 +85,7 @@ class TestNameResolverInit:
 class TestNameResolverDirectCheck:
     """Step 1: Direct check — file exists directly in dev/jobs/."""
 
-    def test_direct_match_passthrough(
-        self, tmp_dev_root: Path, default_registry: PrefixRegistry
-    ):
+    def test_direct_match_passthrough(self, tmp_dev_root: Path, default_registry: PrefixRegistry):
         """A file that exists directly should be a pass-through."""
         (tmp_dev_root / "jobs" / "JGLOBAL_FORECAST").touch()
         resolver = NameResolver(tmp_dev_root, default_registry)
@@ -100,9 +96,7 @@ class TestNameResolverDirectCheck:
         assert result.source_name == "JGLOBAL_FORECAST"
         assert result.is_passthrough is True
 
-    def test_direct_match_application_name_exists(
-        self, tmp_dev_root: Path, default_registry: PrefixRegistry
-    ):
+    def test_direct_match_application_name_exists(self, tmp_dev_root: Path, default_registry: PrefixRegistry):
         """An application-named file that exists directly is pass-through."""
         (tmp_dev_root / "jobs" / "JGDAS_AERO_ANALYSIS_GENERATE_BMATRIX").touch()
         resolver = NameResolver(tmp_dev_root, default_registry)
@@ -117,9 +111,7 @@ class TestNameResolverDirectCheck:
 class TestNameResolverPrefixResolution:
     """Steps 2-3: Prefix identification and ordered search."""
 
-    def test_gcafs_resolves_to_global(
-        self, tmp_dev_root: Path, default_registry: PrefixRegistry
-    ):
+    def test_gcafs_resolves_to_global(self, tmp_dev_root: Path, default_registry: PrefixRegistry):
         """JGCAFS_FORECAST should resolve to JGLOBAL_FORECAST."""
         (tmp_dev_root / "jobs" / "JGLOBAL_FORECAST").touch()
         resolver = NameResolver(tmp_dev_root, default_registry)
@@ -130,9 +122,7 @@ class TestNameResolverPrefixResolution:
         assert result.source_name == "JGLOBAL_FORECAST"
         assert result.is_passthrough is False
 
-    def test_gcdas_resolves_to_global_first(
-        self, tmp_dev_root: Path, default_registry: PrefixRegistry
-    ):
+    def test_gcdas_resolves_to_global_first(self, tmp_dev_root: Path, default_registry: PrefixRegistry):
         """JGCDAS_ searches JGLOBAL_ first, then JGDAS_."""
         (tmp_dev_root / "jobs" / "JGLOBAL_FORECAST").touch()
         (tmp_dev_root / "jobs" / "JGDAS_FORECAST").touch()
@@ -144,9 +134,7 @@ class TestNameResolverPrefixResolution:
         assert result.source_name == "JGLOBAL_FORECAST"
         assert result.is_passthrough is False
 
-    def test_gcdas_falls_back_to_gdas(
-        self, tmp_dev_root: Path, default_registry: PrefixRegistry
-    ):
+    def test_gcdas_falls_back_to_gdas(self, tmp_dev_root: Path, default_registry: PrefixRegistry):
         """JGCDAS_ falls back to JGDAS_ when JGLOBAL_ doesn't exist."""
         (tmp_dev_root / "jobs" / "JGDAS_AERO_ANALYSIS_INITIALIZE").touch()
         resolver = NameResolver(tmp_dev_root, default_registry)
@@ -156,9 +144,7 @@ class TestNameResolverPrefixResolution:
         assert result.source_name == "JGDAS_AERO_ANALYSIS_INITIALIZE"
         assert result.is_passthrough is False
 
-    def test_gfs_resolves_to_global_first(
-        self, tmp_dev_root: Path, default_registry: PrefixRegistry
-    ):
+    def test_gfs_resolves_to_global_first(self, tmp_dev_root: Path, default_registry: PrefixRegistry):
         """JGFS_ searches JGLOBAL_ first, then JGFS_."""
         (tmp_dev_root / "jobs" / "JGLOBAL_STAGE_IC").touch()
         resolver = NameResolver(tmp_dev_root, default_registry)
@@ -168,9 +154,7 @@ class TestNameResolverPrefixResolution:
         assert result.source_name == "JGLOBAL_STAGE_IC"
         assert result.is_passthrough is False
 
-    def test_gefs_resolves_to_global_first(
-        self, tmp_dev_root: Path, default_registry: PrefixRegistry
-    ):
+    def test_gefs_resolves_to_global_first(self, tmp_dev_root: Path, default_registry: PrefixRegistry):
         """JGEFS_ searches JGLOBAL_ first."""
         (tmp_dev_root / "jobs" / "JGLOBAL_FORECAST").touch()
         resolver = NameResolver(tmp_dev_root, default_registry)
@@ -187,10 +171,12 @@ class TestNameResolverPrefixResolution:
         is registered (and not confuse with shorter prefixes).
         """
         # Create a registry with both JGDAS_ and JGDA_ to test longest match
-        registry = PrefixRegistry(registry={
-            "JGD_": ["JGLOBAL_"],
-            "JGDAS_": ["JGLOBAL_", "JGDAS_"],
-        })
+        registry = PrefixRegistry(
+            registry={
+                "JGD_": ["JGLOBAL_"],
+                "JGDAS_": ["JGLOBAL_", "JGDAS_"],
+            }
+        )
         (tmp_dev_root / "jobs" / "JGLOBAL_FORECAST").touch()
         resolver = NameResolver(tmp_dev_root, registry)
 
@@ -205,7 +191,8 @@ class TestNameResolverDirectFallback:
     """Step 4: Direct fallback — application_name exists (but wasn't found in step 1)."""
 
     def test_direct_fallback_after_prefix_search_fails(
-        self, tmp_dev_root: Path,
+        self,
+        tmp_dev_root: Path,
     ):
         """When shared prefix search fails but direct name exists -> pass-through.
 
@@ -213,9 +200,11 @@ class TestNameResolverDirectFallback:
         logic for completeness (step 4 in algorithm).
         """
         # Use a custom registry where the search prefix won't find anything
-        registry = PrefixRegistry(registry={
-            "JTEST_": ["JSHARED_"],
-        })
+        registry = PrefixRegistry(
+            registry={
+                "JTEST_": ["JSHARED_"],
+            }
+        )
         # Don't create JSHARED_FOO, but do create JTEST_FOO
         (tmp_dev_root / "jobs" / "JTEST_FOO").touch()
         resolver = NameResolver(tmp_dev_root, registry)
@@ -229,9 +218,7 @@ class TestNameResolverDirectFallback:
 class TestNameResolverFatalError:
     """Step 5: FATAL error when no source file can be found."""
 
-    def test_unknown_prefix_raises(
-        self, tmp_dev_root: Path, default_registry: PrefixRegistry
-    ):
+    def test_unknown_prefix_raises(self, tmp_dev_root: Path, default_registry: PrefixRegistry):
         """An unknown prefix should raise PipelineError."""
         resolver = NameResolver(tmp_dev_root, default_registry)
 
@@ -241,9 +228,7 @@ class TestNameResolverFatalError:
         assert "Unknown prefix" in str(exc_info.value)
         assert "JUNKNOWN_FORECAST" in str(exc_info.value)
 
-    def test_no_source_found_raises(
-        self, tmp_dev_root: Path, default_registry: PrefixRegistry
-    ):
+    def test_no_source_found_raises(self, tmp_dev_root: Path, default_registry: PrefixRegistry):
         """A known prefix but no matching source raises PipelineError."""
         resolver = NameResolver(tmp_dev_root, default_registry)
 
@@ -254,9 +239,7 @@ class TestNameResolverFatalError:
         assert "JGCAFS_NONEXISTENT" in str(exc_info.value)
         assert "JGLOBAL_NONEXISTENT" in str(exc_info.value)
 
-    def test_error_includes_searched_paths(
-        self, tmp_dev_root: Path, default_registry: PrefixRegistry
-    ):
+    def test_error_includes_searched_paths(self, tmp_dev_root: Path, default_registry: PrefixRegistry):
         """FATAL error message lists all searched candidates."""
         resolver = NameResolver(tmp_dev_root, default_registry)
 
@@ -272,9 +255,7 @@ class TestNameResolverFatalError:
 class TestNameResolverBackwardCompat:
     """Backward compatibility: shared names pass through (Req 8.1, 8.2)."""
 
-    def test_shared_name_passthrough(
-        self, tmp_dev_root: Path, default_registry: PrefixRegistry
-    ):
+    def test_shared_name_passthrough(self, tmp_dev_root: Path, default_registry: PrefixRegistry):
         """A shared name like JGLOBAL_FORECAST passes through directly."""
         (tmp_dev_root / "jobs" / "JGLOBAL_FORECAST").touch()
         resolver = NameResolver(tmp_dev_root, default_registry)
@@ -285,9 +266,7 @@ class TestNameResolverBackwardCompat:
         assert result.source_name == "JGLOBAL_FORECAST"
         assert result.application_name == "JGLOBAL_FORECAST"
 
-    def test_mixed_mode_works(
-        self, tmp_dev_root: Path, default_registry: PrefixRegistry
-    ):
+    def test_mixed_mode_works(self, tmp_dev_root: Path, default_registry: PrefixRegistry):
         """Both application names and shared names resolve correctly."""
         (tmp_dev_root / "jobs" / "JGLOBAL_FORECAST").touch()
         (tmp_dev_root / "jobs" / "JGDAS_AERO_ANALYSIS_GENERATE_BMATRIX").touch()
@@ -312,9 +291,7 @@ class TestNameResolverBackwardCompat:
 class TestResolveAll:
     """Tests for NameResolver.resolve_all() — production mode (fail-fast)."""
 
-    def test_resolve_all_success(
-        self, tmp_dev_root: Path, default_registry: PrefixRegistry
-    ):
+    def test_resolve_all_success(self, tmp_dev_root: Path, default_registry: PrefixRegistry):
         """All names resolvable → returns complete dict."""
         (tmp_dev_root / "jobs" / "JGLOBAL_FORECAST").touch()
         (tmp_dev_root / "jobs" / "JGLOBAL_STAGE_IC").touch()
@@ -326,9 +303,7 @@ class TestResolveAll:
         assert result["JGCAFS_FORECAST"].source_name == "JGLOBAL_FORECAST"
         assert result["JGCAFS_STAGE_IC"].source_name == "JGLOBAL_STAGE_IC"
 
-    def test_resolve_all_raises_on_first_failure(
-        self, tmp_dev_root: Path, default_registry: PrefixRegistry
-    ):
+    def test_resolve_all_raises_on_first_failure(self, tmp_dev_root: Path, default_registry: PrefixRegistry):
         """Raises PipelineError on the first unresolvable name."""
         (tmp_dev_root / "jobs" / "JGLOBAL_FORECAST").touch()
         # JGLOBAL_NONEXISTENT does NOT exist
@@ -340,26 +315,24 @@ class TestResolveAll:
         assert "Cannot resolve" in str(exc_info.value)
         assert "JGCAFS_NONEXISTENT" in str(exc_info.value)
 
-    def test_resolve_all_empty_set(
-        self, tmp_dev_root: Path, default_registry: PrefixRegistry
-    ):
+    def test_resolve_all_empty_set(self, tmp_dev_root: Path, default_registry: PrefixRegistry):
         """Empty input → empty dict."""
         resolver = NameResolver(tmp_dev_root, default_registry)
         result = resolver.resolve_all(set())
         assert result == {}
 
-    def test_resolve_all_mixed_passthrough_and_resolved(
-        self, tmp_dev_root: Path, default_registry: PrefixRegistry
-    ):
+    def test_resolve_all_mixed_passthrough_and_resolved(self, tmp_dev_root: Path, default_registry: PrefixRegistry):
         """Mix of passthrough and prefix-resolved names."""
         (tmp_dev_root / "jobs" / "JGLOBAL_FORECAST").touch()
         (tmp_dev_root / "jobs" / "JGDAS_AERO_ANALYSIS_GENERATE_BMATRIX").touch()
         resolver = NameResolver(tmp_dev_root, default_registry)
 
-        result = resolver.resolve_all({
-            "JGCAFS_FORECAST",
-            "JGDAS_AERO_ANALYSIS_GENERATE_BMATRIX",
-        })
+        result = resolver.resolve_all(
+            {
+                "JGCAFS_FORECAST",
+                "JGDAS_AERO_ANALYSIS_GENERATE_BMATRIX",
+            }
+        )
 
         assert result["JGCAFS_FORECAST"].is_passthrough is False
         assert result["JGDAS_AERO_ANALYSIS_GENERATE_BMATRIX"].is_passthrough is True
@@ -368,9 +341,7 @@ class TestResolveAll:
 class TestResolveAllDryRun:
     """Tests for NameResolver.resolve_all_dry_run() — accumulates all errors."""
 
-    def test_dry_run_all_resolvable(
-        self, tmp_dev_root: Path, default_registry: PrefixRegistry
-    ):
+    def test_dry_run_all_resolvable(self, tmp_dev_root: Path, default_registry: PrefixRegistry):
         """All resolvable → no errors."""
         (tmp_dev_root / "jobs" / "JGLOBAL_FORECAST").touch()
         (tmp_dev_root / "jobs" / "JGLOBAL_STAGE_IC").touch()
@@ -385,18 +356,18 @@ class TestResolveAllDryRun:
         assert "JGCAFS_FORECAST" in report.resolved
         assert "JGCAFS_STAGE_IC" in report.resolved
 
-    def test_dry_run_accumulates_errors(
-        self, tmp_dev_root: Path, default_registry: PrefixRegistry
-    ):
+    def test_dry_run_accumulates_errors(self, tmp_dev_root: Path, default_registry: PrefixRegistry):
         """Unresolvable names are accumulated, not raised."""
         (tmp_dev_root / "jobs" / "JGLOBAL_FORECAST").touch()
         resolver = NameResolver(tmp_dev_root, default_registry)
 
-        report = resolver.resolve_all_dry_run({
-            "JGCAFS_FORECAST",
-            "JGCAFS_NONEXISTENT",
-            "JGCAFS_ALSO_MISSING",
-        })
+        report = resolver.resolve_all_dry_run(
+            {
+                "JGCAFS_FORECAST",
+                "JGCAFS_NONEXISTENT",
+                "JGCAFS_ALSO_MISSING",
+            }
+        )
 
         assert report.total_count == 3
         assert report.resolvable_count == 1
@@ -404,24 +375,22 @@ class TestResolveAllDryRun:
         assert len(report.errors) == 2
         assert "JGCAFS_FORECAST" in report.resolved
 
-    def test_dry_run_counts_invariant(
-        self, tmp_dev_root: Path, default_registry: PrefixRegistry
-    ):
+    def test_dry_run_counts_invariant(self, tmp_dev_root: Path, default_registry: PrefixRegistry):
         """resolvable_count + unresolvable_count == total_count."""
         (tmp_dev_root / "jobs" / "JGLOBAL_FORECAST").touch()
         resolver = NameResolver(tmp_dev_root, default_registry)
 
-        report = resolver.resolve_all_dry_run({
-            "JGCAFS_FORECAST",
-            "JGCAFS_MISSING1",
-            "JGCAFS_MISSING2",
-        })
+        report = resolver.resolve_all_dry_run(
+            {
+                "JGCAFS_FORECAST",
+                "JGCAFS_MISSING1",
+                "JGCAFS_MISSING2",
+            }
+        )
 
         assert report.resolvable_count + report.unresolvable_count == report.total_count
 
-    def test_dry_run_empty_set(
-        self, tmp_dev_root: Path, default_registry: PrefixRegistry
-    ):
+    def test_dry_run_empty_set(self, tmp_dev_root: Path, default_registry: PrefixRegistry):
         """Empty input → empty report with zeroes."""
         resolver = NameResolver(tmp_dev_root, default_registry)
         report = resolver.resolve_all_dry_run(set())
@@ -432,16 +401,16 @@ class TestResolveAllDryRun:
         assert report.resolved == {}
         assert report.errors == []
 
-    def test_dry_run_all_unresolvable(
-        self, tmp_dev_root: Path, default_registry: PrefixRegistry
-    ):
+    def test_dry_run_all_unresolvable(self, tmp_dev_root: Path, default_registry: PrefixRegistry):
         """All names fail → all in errors, none resolved."""
         resolver = NameResolver(tmp_dev_root, default_registry)
 
-        report = resolver.resolve_all_dry_run({
-            "JGCAFS_MISSING1",
-            "JGCAFS_MISSING2",
-        })
+        report = resolver.resolve_all_dry_run(
+            {
+                "JGCAFS_MISSING1",
+                "JGCAFS_MISSING2",
+            }
+        )
 
         assert report.total_count == 2
         assert report.resolvable_count == 0
@@ -556,7 +525,6 @@ class TestDryRunReport:
         assert "Status" in table
 
 
-
 class TestGcafsYamlMigration:
     """Unit tests verifying gcafs.yaml migration correctness.
 
@@ -576,9 +544,7 @@ class TestGcafsYamlMigration:
     @pytest.fixture(autouse=True)
     def load_yaml(self):
         """Load gcafs.yaml once for all tests in this class."""
-        assert self.GCAFS_YAML_PATH.exists(), (
-            f"gcafs.yaml not found at {self.GCAFS_YAML_PATH}"
-        )
+        assert self.GCAFS_YAML_PATH.exists(), f"gcafs.yaml not found at {self.GCAFS_YAML_PATH}"
         with open(self.GCAFS_YAML_PATH) as f:
             self.yaml_data = yaml.safe_load(f)
 
@@ -601,9 +567,7 @@ class TestGcafsYamlMigration:
         for jjob in gcdas_jjobs:
             if jjob in self.GCDAS_EXCEPTIONS:
                 continue
-            assert jjob.startswith("JGCDAS_"), (
-                f"jjob '{jjob}' under gcdas/ path does not use JGCDAS_ prefix"
-            )
+            assert jjob.startswith("JGCDAS_"), f"jjob '{jjob}' under gcdas/ path does not use JGCDAS_ prefix"
 
     def test_gcafs_tasks_use_jgcafs_prefix(self):
         """All jjob values under gcafs/ paths use JGCAFS_ prefix."""
@@ -612,9 +576,7 @@ class TestGcafsYamlMigration:
         assert len(gcafs_jjobs) > 0, "Expected at least one jjob under gcafs/ paths"
 
         for jjob in gcafs_jjobs:
-            assert jjob.startswith("JGCAFS_"), (
-                f"jjob '{jjob}' under gcafs/ path does not use JGCAFS_ prefix"
-            )
+            assert jjob.startswith("JGCAFS_"), f"jjob '{jjob}' under gcafs/ path does not use JGCAFS_ prefix"
 
     def test_all_jjobs_match_jaaaaa_convention(self):
         """Every jjob value in gcafs.yaml matches ^J[A-Z][A-Z0-9_]*$ regex."""
@@ -626,10 +588,7 @@ class TestGcafsYamlMigration:
         assert len(all_jjobs) > 0, "Expected at least one jjob in gcafs.yaml"
 
         for jjob in all_jjobs:
-            assert self.JAAAAA_PATTERN.match(jjob), (
-                f"jjob '{jjob}' does not match JAAAAA_Convention "
-                f"(^J[A-Z][A-Z0-9_]*$)"
-            )
+            assert self.JAAAAA_PATTERN.match(jjob), f"jjob '{jjob}' does not match JAAAAA_Convention (^J[A-Z][A-Z0-9_]*$)"
 
 
 # ---------------------------------------------------------------------------
@@ -759,11 +718,13 @@ class TestDryRunReportOutputFormat:
         (tmp_dev_root / "jobs" / "JGLOBAL_FORECAST").touch()
         resolver = NameResolver(tmp_dev_root, default_registry)
 
-        report = resolver.resolve_all_dry_run({
-            "JGCAFS_FORECAST",
-            "JGCAFS_MISSING_ONE",
-            "JGCAFS_MISSING_TWO",
-        })
+        report = resolver.resolve_all_dry_run(
+            {
+                "JGCAFS_FORECAST",
+                "JGCAFS_MISSING_ONE",
+                "JGCAFS_MISSING_TWO",
+            }
+        )
         table = report.format_table()
 
         # Resolved name should be in the table
@@ -816,16 +777,12 @@ class TestEndToEndPipelineApplicationNaming:
     Traces to: Requirements 5.5, 7.1, 7.2, 7.3
     """
 
-    def test_name_resolver_wiring_produces_correct_resolution_map(
-        self, tmp_dev_root: Path, default_registry: PrefixRegistry
-    ):
+    def test_name_resolver_wiring_produces_correct_resolution_map(self, tmp_dev_root: Path, default_registry: PrefixRegistry):
         """NameResolver produces a resolution_map suitable for FileStager."""
         # Set up source files
         (tmp_dev_root / "jobs" / "JGLOBAL_FORECAST").write_text("#!/bin/bash\n# forecast")
         (tmp_dev_root / "jobs" / "JGLOBAL_STAGE_IC").write_text("#!/bin/bash\n# stage ic")
-        (tmp_dev_root / "jobs" / "JGDAS_AERO_ANALYSIS_GENERATE_BMATRIX").write_text(
-            "#!/bin/bash\n# aero bmat"
-        )
+        (tmp_dev_root / "jobs" / "JGDAS_AERO_ANALYSIS_GENERATE_BMATRIX").write_text("#!/bin/bash\n# aero bmat")
 
         resolver = NameResolver(tmp_dev_root, default_registry)
 
@@ -844,14 +801,10 @@ class TestEndToEndPipelineApplicationNaming:
         assert resolution_map["JGCAFS_STAGE_IC"].source_name == "JGLOBAL_STAGE_IC"
         assert resolution_map["JGCAFS_STAGE_IC"].is_passthrough is False
         # Direct match: JGDAS_AERO_ANALYSIS_GENERATE_BMATRIX exists directly
-        assert resolution_map["JGDAS_AERO_ANALYSIS_GENERATE_BMATRIX"].source_name == (
-            "JGDAS_AERO_ANALYSIS_GENERATE_BMATRIX"
-        )
+        assert resolution_map["JGDAS_AERO_ANALYSIS_GENERATE_BMATRIX"].source_name == ("JGDAS_AERO_ANALYSIS_GENERATE_BMATRIX")
         assert resolution_map["JGDAS_AERO_ANALYSIS_GENERATE_BMATRIX"].is_passthrough is True
 
-    def test_file_stager_with_resolution_map_produces_application_named_expdir(
-        self, tmp_path: Path
-    ):
+    def test_file_stager_with_resolution_map_produces_application_named_expdir(self, tmp_path: Path):
         """FileStager.stage_jjobs_with_rename produces EXPDIR with application names."""
         from deployment.file_stager import FileStager
 
@@ -890,9 +843,7 @@ class TestEndToEndPipelineApplicationNaming:
         # Verify no JGLOBAL_ files in EXPDIR
         expdir_jobs = list((expdir / "jobs").iterdir())
         for f in expdir_jobs:
-            assert not f.name.startswith("JGLOBAL_"), (
-                f"EXPDIR should not contain shared-prefix files, found {f.name}"
-            )
+            assert not f.name.startswith("JGLOBAL_"), f"EXPDIR should not contain shared-prefix files, found {f.name}"
 
     def test_end_to_end_resolve_and_stage(self, tmp_path: Path):
         """Full end-to-end: load registry → resolve names → stage with rename."""
@@ -934,6 +885,7 @@ class TestEndToEndPipelineApplicationNaming:
 
         # Verify all filenames match JAAAAA_Convention
         import re
+
         jjob_pattern = re.compile(r"^J[A-Z][A-Z0-9_]*$")
         for f in (expdir / "jobs").iterdir():
             assert jjob_pattern.match(f.name), f"File {f.name} doesn't match JAAAAA convention"

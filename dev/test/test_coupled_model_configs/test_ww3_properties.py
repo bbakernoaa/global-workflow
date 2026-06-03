@@ -15,8 +15,7 @@ import os
 import sys
 from pathlib import Path
 
-import pytest
-from hypothesis import given, settings, HealthCheck
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "workflow"))
@@ -53,24 +52,20 @@ def valid_wave_model_context(draw: st.DrawFn) -> dict:
     ice_input = draw(st.sampled_from(["CPL", "YES"]))
     current_input = draw(st.sampled_from(["CPL", "YES"]))
     output_params = draw(
-        st.sampled_from([
-            "HS FP DP PHS PTP PDIR CHA",
-            "HS FP DP",
-            "HS LM T02 T01 DIR DP SPR",
-            "HS FP DP PHS PTP PDIR CHA UST CUR",
-        ])
+        st.sampled_from(
+            [
+                "HS FP DP PHS PTP PDIR CHA",
+                "HS FP DP",
+                "HS LM T02 T01 DIR DP SPR",
+                "HS FP DP PHS PTP PDIR CHA UST CUR",
+            ]
+        )
     )
     dt_field_output = draw(st.integers(min_value=1, max_value=86400))
     dt_point_output = draw(st.integers(min_value=1, max_value=86400))
-    grid_output_dir = draw(
-        st.sampled_from(["./", "./OUTPUT/", "/scratch/wave/grid/"])
-    )
-    point_output_dir = draw(
-        st.sampled_from(["./", "./OUTPUT/", "/scratch/wave/point/"])
-    )
-    restart_output_dir = draw(
-        st.sampled_from(["./RESTART/", "./restart/", "/scratch/wave/restart/"])
-    )
+    grid_output_dir = draw(st.sampled_from(["./", "./OUTPUT/", "/scratch/wave/grid/"]))
+    point_output_dir = draw(st.sampled_from(["./", "./OUTPUT/", "/scratch/wave/point/"]))
+    restart_output_dir = draw(st.sampled_from(["./RESTART/", "./restart/", "/scratch/wave/restart/"]))
 
     wave_context = {
         "ice_input": ice_input,
@@ -145,13 +140,10 @@ class TestWW3ForcingModeMapping:
             return  # Only test CPL mapping in this assertion
 
         rendered = _render_ww3_template(context)
-        assert "ICE_CONC" in rendered, (
-            "ICE_CONC not found in rendered ww3_shel.nml"
-        )
+        assert "ICE_CONC" in rendered, "ICE_CONC not found in rendered ww3_shel.nml"
         # Check that ICE_CONC is set to 'C' for coupled mode
         assert "'C'" in rendered.split("ICE_CONC")[1].split("\n")[0], (
-            f"Expected ICE_CONC = 'C' for ice_input='CPL', "
-            f"got: {rendered.split('ICE_CONC')[1].split(chr(10))[0]}"
+            f"Expected ICE_CONC = 'C' for ice_input='CPL', got: {rendered.split('ICE_CONC')[1].split(chr(10))[0]}"
         )
 
     @settings(
@@ -170,13 +162,10 @@ class TestWW3ForcingModeMapping:
             return  # Only test YES mapping in this assertion
 
         rendered = _render_ww3_template(context)
-        assert "ICE_CONC" in rendered, (
-            "ICE_CONC not found in rendered ww3_shel.nml"
-        )
+        assert "ICE_CONC" in rendered, "ICE_CONC not found in rendered ww3_shel.nml"
         # Check that ICE_CONC is set to 'T' for file input mode
         assert "'T'" in rendered.split("ICE_CONC")[1].split("\n")[0], (
-            f"Expected ICE_CONC = 'T' for ice_input='YES', "
-            f"got: {rendered.split('ICE_CONC')[1].split(chr(10))[0]}"
+            f"Expected ICE_CONC = 'T' for ice_input='YES', got: {rendered.split('ICE_CONC')[1].split(chr(10))[0]}"
         )
 
     @settings(
@@ -195,13 +184,10 @@ class TestWW3ForcingModeMapping:
             return  # Only test CPL mapping in this assertion
 
         rendered = _render_ww3_template(context)
-        assert "CURRENTS" in rendered, (
-            "CURRENTS not found in rendered ww3_shel.nml"
-        )
+        assert "CURRENTS" in rendered, "CURRENTS not found in rendered ww3_shel.nml"
         # Check that CURRENTS is set to 'C' for coupled mode
         assert "'C'" in rendered.split("CURRENTS")[1].split("\n")[0], (
-            f"Expected CURRENTS = 'C' for current_input='CPL', "
-            f"got: {rendered.split('CURRENTS')[1].split(chr(10))[0]}"
+            f"Expected CURRENTS = 'C' for current_input='CPL', got: {rendered.split('CURRENTS')[1].split(chr(10))[0]}"
         )
 
     @settings(
@@ -220,13 +206,10 @@ class TestWW3ForcingModeMapping:
             return  # Only test YES mapping in this assertion
 
         rendered = _render_ww3_template(context)
-        assert "CURRENTS" in rendered, (
-            "CURRENTS not found in rendered ww3_shel.nml"
-        )
+        assert "CURRENTS" in rendered, "CURRENTS not found in rendered ww3_shel.nml"
         # Check that CURRENTS is set to 'T' for file input mode
         assert "'T'" in rendered.split("CURRENTS")[1].split("\n")[0], (
-            f"Expected CURRENTS = 'T' for current_input='YES', "
-            f"got: {rendered.split('CURRENTS')[1].split(chr(10))[0]}"
+            f"Expected CURRENTS = 'T' for current_input='YES', got: {rendered.split('CURRENTS')[1].split(chr(10))[0]}"
         )
 
     @settings(
@@ -253,16 +236,12 @@ class TestWW3ForcingModeMapping:
         assert "ICE_CONC" in rendered, "ICE_CONC not found in rendered output"
         ice_conc_line = rendered.split("ICE_CONC")[1].split("\n")[0]
         assert expected_ice_flag in ice_conc_line, (
-            f"Expected ICE_CONC = {expected_ice_flag} for "
-            f"ice_input='{wave['ice_input']}', "
-            f"got line: 'ICE_CONC{ice_conc_line}'"
+            f"Expected ICE_CONC = {expected_ice_flag} for ice_input='{wave['ice_input']}', got line: 'ICE_CONC{ice_conc_line}'"
         )
 
         # Extract the CURRENTS line
         assert "CURRENTS" in rendered, "CURRENTS not found in rendered output"
         currents_line = rendered.split("CURRENTS")[1].split("\n")[0]
         assert expected_current_flag in currents_line, (
-            f"Expected CURRENTS = {expected_current_flag} for "
-            f"current_input='{wave['current_input']}', "
-            f"got line: 'CURRENTS{currents_line}'"
+            f"Expected CURRENTS = {expected_current_flag} for current_input='{wave['current_input']}', got line: 'CURRENTS{currents_line}'"
         )

@@ -2,284 +2,284 @@
 
 # Determine HOMEglobal_ and source machine detection early
 if [[ -z "${HOMEglobal_}" ]]; then
-    HOMEglobal_="$(cd "$(dirname "${BASH_SOURCE[0]}")" && git rev-parse --show-toplevel)"
+  HOMEglobal_="$(cd "$(dirname "${BASH_SOURCE[0]}")" && git rev-parse --show-toplevel)"
 fi
 source "${HOMEglobal_}/ush/detect_machine.sh"
 
 # --- Existing functions ---
 
 function determine_scheduler() {
-    if command -v sbatch &> /dev/null; then
-        echo "slurm"
-    elif command -v qsub &> /dev/null; then
-        echo "torque"
-    else
-        echo "unknown"
-    fi
+  if command -v sbatch &> /dev/null; then
+    echo "slurm"
+  elif command -v qsub &> /dev/null; then
+    echo "torque"
+  else
+    echo "unknown"
+  fi
 }
 
 function cancel_batch_jobs() {
-    # Usage: cancel_batch_jobs <substring>
-    # Example: cancel_batch_jobs "C48_ATM_3c4e7f74"
-    #
-    # Cancel all batch jobs that have the given substring in their name
-    # So like in the example all jobs with "C48_ATM_3c4e7f74"
-    # in their name will be canceled
+  # Usage: cancel_batch_jobs <substring>
+  # Example: cancel_batch_jobs "C48_ATM_3c4e7f74"
+  #
+  # Cancel all batch jobs that have the given substring in their name
+  # So like in the example all jobs with "C48_ATM_3c4e7f74"
+  # in their name will be canceled
 
-    local substring=$1
-    local job_ids
+  local substring=$1
+  local job_ids
 
-    scheduler=$(determine_scheduler)
+  scheduler=$(determine_scheduler)
 
-    if [[ "${scheduler}" == "torque" ]]; then
-        job_ids=$(qstat -u "${USER}" | awk '{print $1}') || true
+  if [[ "${scheduler}" == "torque" ]]; then
+    job_ids=$(qstat -u "${USER}" | awk '{print $1}') || true
 
-        for job_id in ${job_ids}; do
-            job_name=$(qstat -f "${job_id}" | grep Job_Name | awk '{print $3}') || true
-            if [[ "${job_name}" =~ ${substring} ]]; then
-                echo "Canceling PBS Job ${job_name} with: qdel ${job_id}"
-                qdel "${job_id}"
-                continue
-            fi
-        done
+    for job_id in ${job_ids}; do
+      job_name=$(qstat -f "${job_id}" | grep Job_Name | awk '{print $3}') || true
+      if [[ "${job_name}" =~ ${substring} ]]; then
+        echo "Canceling PBS Job ${job_name} with: qdel ${job_id}"
+        qdel "${job_id}"
+        continue
+      fi
+    done
 
-    elif [[ "${scheduler}" == "slurm" ]]; then
+  elif [[ "${scheduler}" == "slurm" ]]; then
 
-        job_ids=$(squeue -u "${USER}" -h -o "%i")
+    job_ids=$(squeue -u "${USER}" -h -o "%i")
 
-        for job_id in ${job_ids}; do
-            job_name=$(sacct -j "${job_id}" --format=JobName%100 | head -3 | tail -1 | sed -r 's/\s+//g') || true
-            if [[ "${job_name}" =~ ${substring} ]]; then
-                echo "Canceling Slurm Job ${job_name} with: scancel ${job_id}"
-                scancel "${job_id}"
-                continue
-            fi
-        done
+    for job_id in ${job_ids}; do
+      job_name=$(sacct -j "${job_id}" --format=JobName%100 | head -3 | tail -1 | sed -r 's/\s+//g') || true
+      if [[ "${job_name}" =~ ${substring} ]]; then
+        echo "Canceling Slurm Job ${job_name} with: scancel ${job_id}"
+        scancel "${job_id}"
+        continue
+      fi
+    done
 
-    else
-        echo "FATAL: Unknown/unsupported job scheduler"
-        exit 1
-    fi
+  else
+    echo "FATAL: Unknown/unsupported job scheduler"
+    exit 1
+  fi
 }
 
 function get_pr_case_list() {
 
-    #############################################################
-    # loop over every yaml file in the PR's ci/cases
-    # and create an run directory for each one for this PR loop
-    #############################################################
-    for yaml_config in "${HOMEglobal_}/dev/ci/cases/pr/"*.yaml; do
-        case=$(basename "${yaml_config}" .yaml) || true
-        echo "${case}"
-    done
+  #############################################################
+  # loop over every yaml file in the PR's ci/cases
+  # and create an run directory for each one for this PR loop
+  #############################################################
+  for yaml_config in "${HOMEglobal_}/dev/ci/cases/pr/"*.yaml; do
+    case=$(basename "${yaml_config}" .yaml) || true
+    echo "${case}"
+  done
 }
 
 function get_pslot_list() {
 
-    local RUNTESTS="${1}"
+  local RUNTESTS="${1}"
 
-    #############################################################
-    # loop over expdir directories in RUNTESTS
-    # and create list of the directory names (pslot) with the hash tag
-    #############################################################
-    for pslot_dir in "${RUNTESTS}/EXPDIR/"*; do
-        pslot=$(basename "${pslot_dir}") || true
-        echo "${pslot}"
-    done
+  #############################################################
+  # loop over expdir directories in RUNTESTS
+  # and create list of the directory names (pslot) with the hash tag
+  #############################################################
+  for pslot_dir in "${RUNTESTS}/EXPDIR/"*; do
+    pslot=$(basename "${pslot_dir}") || true
+    echo "${pslot}"
+  done
 
 }
 
 function get_pslot() {
 
-    local RUNTESTS="${1}"
-    local case="${2}"
+  local RUNTESTS="${1}"
+  local case="${2}"
 
-    #############################################################
-    # loop over expdir directories in RUNTESTS
-    # and return the name of the pslot with its tag that matches the case
-    #############################################################
-    # shellcheck disable=SC2045
-    for pslot_dir in $(ls -td "${RUNTESTS}/EXPDIR/"*); do
-        pslot=$(basename "${pslot_dir}")
-        check_case=$(echo "${pslot}" | rev | cut -d"_" -f2- | rev) || true
-        if [[ "${check_case}" == "${case}" ]]; then
-            echo "${pslot}"
-            break
-        fi
-    done
+  #############################################################
+  # loop over expdir directories in RUNTESTS
+  # and return the name of the pslot with its tag that matches the case
+  #############################################################
+  # shellcheck disable=SC2045
+  for pslot_dir in $(ls -td "${RUNTESTS}/EXPDIR/"*); do
+    pslot=$(basename "${pslot_dir}")
+    check_case=$(echo "${pslot}" | rev | cut -d"_" -f2- | rev) || true
+    if [[ "${check_case}" == "${case}" ]]; then
+      echo "${pslot}"
+      break
+    fi
+  done
 
 }
 
 function cancel_all_batch_jobs() {
-    local RUNTESTS="${1}"
-    pslot_list=$(get_pslot_list "${RUNTESTS}")
-    for pslot in ${pslot_list}; do
-        cancel_batch_jobs "${pslot}"
-    done
+  local RUNTESTS="${1}"
+  pslot_list=$(get_pslot_list "${RUNTESTS}")
+  for pslot in ${pslot_list}; do
+    cancel_batch_jobs "${pslot}"
+  done
 }
 
 function create_experiment() {
 
-    local yaml_config="${1}"
-    pr_sha=$(git rev-parse --short HEAD)
-    local TAG="${2:-${pr_sha}}"
-    cd "${HOMEglobal_}" || exit 1
-    case=$(basename "${yaml_config}" .yaml) || true
+  local yaml_config="${1}"
+  pr_sha=$(git rev-parse --short HEAD)
+  local TAG="${2:-${pr_sha}}"
+  cd "${HOMEglobal_}" || exit 1
+  case=$(basename "${yaml_config}" .yaml) || true
 
-    echo "Using provided TAG: ${TAG} for pslot"
-    export pslot=${case}_${TAG}
+  echo "Using provided TAG: ${TAG} for pslot"
+  export pslot=${case}_${TAG}
 
-    if [[ ${MACHINE_ID} == "noaacloud" ]]; then
-        source "${HOMEglobal_}/dev/ci/platforms/config.${PW_CSP}"
-    else
-        source "${HOMEglobal_}/dev/ci/platforms/config.${MACHINE_ID}"
-    fi
+  if [[ ${MACHINE_ID} == "noaacloud" ]]; then
+    source "${HOMEglobal_}/dev/ci/platforms/config.${PW_CSP}"
+  else
+    source "${HOMEglobal_}/dev/ci/platforms/config.${MACHINE_ID}"
+  fi
 
-    source "${HOMEglobal_}/dev/ush/gw_setup.sh"
+  source "${HOMEglobal_}/dev/ush/gw_setup.sh"
 
-    # Remove RUNDIRS dir incase this is a retry (STMP now in host file)
-    if [[ ${MACHINE_ID} == "noaacloud" ]]; then
-        STMP=$("${HOMEglobal_}/dev/ci/scripts/utils/parse_yaml.py" -y "${HOMEglobal_}/dev/workflow/hosts/${PW_CSP}pw.yaml" -k STMP -s)
-    else
-        STMP=$("${HOMEglobal_}/dev/ci/scripts/utils/parse_yaml.py" -y "${HOMEglobal_}/dev/workflow/hosts/${MACHINE_ID}.yaml" -k STMP -s)
-    fi
-    echo "Removing ${STMP}/RUNDIRS/${pslot} directory incase this is a retry"
-    rm -Rf "${STMP}/RUNDIRS/${pslot}"
+  # Remove RUNDIRS dir incase this is a retry (STMP now in host file)
+  if [[ ${MACHINE_ID} == "noaacloud" ]]; then
+    STMP=$("${HOMEglobal_}/dev/ci/scripts/utils/parse_yaml.py" -y "${HOMEglobal_}/dev/workflow/hosts/${PW_CSP}pw.yaml" -k STMP -s)
+  else
+    STMP=$("${HOMEglobal_}/dev/ci/scripts/utils/parse_yaml.py" -y "${HOMEglobal_}/dev/workflow/hosts/${MACHINE_ID}.yaml" -k STMP -s)
+  fi
+  echo "Removing ${STMP}/RUNDIRS/${pslot} directory incase this is a retry"
+  rm -Rf "${STMP}/RUNDIRS/${pslot}"
 
-    "${HOMEglobal_}/${system}/dev/workflow/create_experiment.py" --overwrite --yaml "${yaml_config}"
+  "${HOMEglobal_}/${system}/dev/workflow/create_experiment.py" --overwrite --yaml "${yaml_config}"
 
 }
 
 function publish_logs() {
-    # publish_logs function
-    # This function takes a directory path and a list of files as arguments.
-    # It calls the publish_logs.py script to publish the logs and returns its gist URL.
-    # Usage: publish_logs <ID> <dir_path> <file1> <file2> ... <fileN>
-    local PR_header="$1"
-    local dir_path="$2"
-    local file="$3"
-    local full_paths=""
-    while IFS= read -r line; do
-        full_path="${dir_path}/${line}"
-        if [[ -f "${full_path}" ]]; then
-            full_paths+="${full_path} "
-        else
-            echo "File ${full_path} does not exist"
-        fi
-    done < "${file}"
-
-    if [[ -n "${full_paths}" ]]; then
-        # shellcheck disable=SC2027,SC2086
-        ${HOMEglobal_}/dev/ci/scripts/utils/publish_logs.py --file ${full_paths} --repo ${PR_header} > /dev/null
-        URL="$("${HOMEglobal_}/dev/ci/scripts/utils/publish_logs.py" --file "${full_paths}" --gist "${PR_header}")"
+  # publish_logs function
+  # This function takes a directory path and a list of files as arguments.
+  # It calls the publish_logs.py script to publish the logs and returns its gist URL.
+  # Usage: publish_logs <ID> <dir_path> <file1> <file2> ... <fileN>
+  local PR_header="$1"
+  local dir_path="$2"
+  local file="$3"
+  local full_paths=""
+  while IFS= read -r line; do
+    full_path="${dir_path}/${line}"
+    if [[ -f "${full_path}" ]]; then
+      full_paths+="${full_path} "
+    else
+      echo "File ${full_path} does not exist"
     fi
-    echo "${URL}"
+  done < "${file}"
+
+  if [[ -n "${full_paths}" ]]; then
+    # shellcheck disable=SC2027,SC2086
+    ${HOMEglobal_}/dev/ci/scripts/utils/publish_logs.py --file ${full_paths} --repo ${PR_header} > /dev/null
+    URL="$("${HOMEglobal_}/dev/ci/scripts/utils/publish_logs.py" --file "${full_paths}" --gist "${PR_header}")"
+  fi
+  echo "${URL}"
 }
 
 function publish_logs_from_file() {
-    # publish_logs_from_file
-    # Reads a file that lists relative file names (one per line) under a directory
-    # and publishes them using publish_logs.py. When more than one valid file is
-    # found, call the python utility with --multiple --format github for gist
-    # output formatting.
-    # Usage: publish_logs_from_file <ID> <list_file>
-    local PR_header="$1"
-    local list_file="$2"
-    local files=()
+  # publish_logs_from_file
+  # Reads a file that lists relative file names (one per line) under a directory
+  # and publishes them using publish_logs.py. When more than one valid file is
+  # found, call the python utility with --multiple --format github for gist
+  # output formatting.
+  # Usage: publish_logs_from_file <ID> <list_file>
+  local PR_header="$1"
+  local list_file="$2"
+  local files=()
 
-    # Read the list file and build an array of existing full paths
-    while IFS= read -r line || [[ -n "${line}" ]]; do
-        # skip empty lines
-        if [[ -z "${line// /}" ]]; then
-            continue
-        fi
-        if [[ -f "${line}" ]]; then
-            files+=("${line}")
-        else
-            echo "File ${line} does not exist"
-        fi
-    done < "${list_file}"
-
-    local URL=""
-    if ((${#files[@]} > 0)); then
-        # First, upload to repo (retain original behavior) if desired
-        "${HOMEglobal_}/dev/ci/scripts/utils/publish_logs.py" --file "${files[@]}" --repo "${PR_header}" > /dev/null || true
-
-        # For gist, if more than one file use --multiple --format github
-        if ((${#files[@]} > 1)); then
-            cmd_args="--multiple --format github"
-        fi
-        URL="$("${HOMEglobal_}/dev/ci/scripts/utils/publish_logs.py" --file "${files[0]}" "${cmd_args:-}" --gist "${PR_header}")"
+  # Read the list file and build an array of existing full paths
+  while IFS= read -r line || [[ -n "${line}" ]]; do
+    # skip empty lines
+    if [[ -z "${line// /}" ]]; then
+      continue
     fi
+    if [[ -f "${line}" ]]; then
+      files+=("${line}")
+    else
+      echo "File ${line} does not exist"
+    fi
+  done < "${list_file}"
 
-    echo "${URL}"
+  local URL=""
+  if ((${#files[@]} > 0)); then
+    # First, upload to repo (retain original behavior) if desired
+    "${HOMEglobal_}/dev/ci/scripts/utils/publish_logs.py" --file "${files[@]}" --repo "${PR_header}" > /dev/null || true
+
+    # For gist, if more than one file use --multiple --format github
+    if ((${#files[@]} > 1)); then
+      cmd_args="--multiple --format github"
+    fi
+    URL="$("${HOMEglobal_}/dev/ci/scripts/utils/publish_logs.py" --file "${files[0]}" "${cmd_args:-}" --gist "${PR_header}")"
+  fi
+
+  echo "${URL}"
 }
 
 function cleanup_experiment() {
 
-    local EXPDIR="$1"
-    local pslot
-    local ARCDIR
-    local ATARDIR
-    local COMROOT
+  local EXPDIR="$1"
+  local pslot
+  local ARCDIR
+  local ATARDIR
+  local COMROOT
 
-    EXPDIR="$1"
-    pslot=$(basename "${EXPDIR}")
+  EXPDIR="$1"
+  pslot=$(basename "${EXPDIR}")
 
-    # Use the Python utility to get the required variables
-    read -r ARCDIR ATARDIR STMP COMROOT < <("${HOMEglobal_}/dev/ci/scripts/utils/get_config_var.py" ARCDIR ATARDIR STMP COMROOT "${EXPDIR}") || true
+  # Use the Python utility to get the required variables
+  read -r ARCDIR ATARDIR STMP COMROOT < <("${HOMEglobal_}/dev/ci/scripts/utils/get_config_var.py" ARCDIR ATARDIR STMP COMROOT "${EXPDIR}") || true
 
-    rm -Rf "${ARCDIR:?}"
-    rm -Rf "${ATARDIR:?}"
-    rm -Rf "${COMROOT}/${pslot:?}"
-    rm -Rf "${EXPDIR}/${pslot:?}"
-    rm -Rf "${STMP}/RUNDIRS/${pslot:?}"
+  rm -Rf "${ARCDIR:?}"
+  rm -Rf "${ATARDIR:?}"
+  rm -Rf "${COMROOT}/${pslot:?}"
+  rm -Rf "${EXPDIR}/${pslot:?}"
+  rm -Rf "${STMP}/RUNDIRS/${pslot:?}"
 }
 
 function build() {
 
-    source "${HOMEglobal_}/dev/ci/platforms/config.${MACHINE_ID}"
-    logs_dir="${HOMEglobal_}/sorc/logs"
-    if [[ ! -d "${logs_dir}" ]]; then
-        echo "Creating logs folder"
-        mkdir -p "${logs_dir}" || exit 1
-    fi
-    "${HOMEglobal_}/sorc/build_all.sh" -c -A "${HPC_ACCOUNT}" all
+  source "${HOMEglobal_}/dev/ci/platforms/config.${MACHINE_ID}"
+  logs_dir="${HOMEglobal_}/sorc/logs"
+  if [[ ! -d "${logs_dir}" ]]; then
+    echo "Creating logs folder"
+    mkdir -p "${logs_dir}" || exit 1
+  fi
+  "${HOMEglobal_}/sorc/build_all.sh" -c -A "${HPC_ACCOUNT}" all
 
 }
 
 function delete_dataroot() {
 
-    _runtests="${1}"
-    _pslot="${2}"
+  _runtests="${1}"
+  _pslot="${2}"
 
-    eval "$(
-        PDY=0 cyc=0 source "${_runtests}/EXPDIR/${_pslot}/config.base" >&/dev/null
-        echo _dataroot="${STMP}/RUNDIRS/${_pslot}"
-    )"
-    if [[ -d "${_dataroot}" ]]; then
-        echo "A previous DATAROOT exists for ${_pslot} in ${_dataroot} and is being deleted."
-        rm -rf "${_dataroot}"
-    else
-        echo "DATAROOT is not present for ${_pslot} in ${_dataroot}, nothing done."
-    fi
+  eval "$(
+    PDY=0 cyc=0 source "${_runtests}/EXPDIR/${_pslot}/config.base" >&/dev/null
+    echo _dataroot="${STMP}/RUNDIRS/${_pslot}"
+  )"
+  if [[ -d "${_dataroot}" ]]; then
+    echo "A previous DATAROOT exists for ${_pslot} in ${_dataroot} and is being deleted."
+    rm -rf "${_dataroot}"
+  else
+    echo "DATAROOT is not present for ${_pslot} in ${_dataroot}, nothing done."
+  fi
 }
 
 # --- Dispatch logic ---
 
 # Check if the script is being executed directly (not sourced)
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    # Script is being executed directly
-    utility_function="${1}"
-    shift # Remove the function name from the arguments list
+  # Script is being executed directly
+  utility_function="${1}"
+  shift # Remove the function name from the arguments list
 
-    # Check if the first argument corresponds to a defined function
-    type_t="$(type -t "${utility_function}")" || true
-    if [[ "${type_t}" == "function" ]]; then
-        # Call the function with the remaining arguments
-        "${utility_function}" "$@"
-    else
-        echo "ERROR: Utility function ${utility_function} not found or not a function in ${BASH_SOURCE[0]}" >&2
-        exit 1
-    fi
+  # Check if the first argument corresponds to a defined function
+  type_t="$(type -t "${utility_function}")" || true
+  if [[ "${type_t}" == "function" ]]; then
+    # Call the function with the remaining arguments
+    "${utility_function}" "$@"
+  else
+    echo "ERROR: Utility function ${utility_function} not found or not a function in ${BASH_SOURCE[0]}" >&2
+    exit 1
+  fi
 fi

@@ -95,7 +95,7 @@ class TestStageSubmoduleCopy:
 
     def test_copies_nexus_files(self, project_tree: Path, expdir: Path):
         """NEXUS config files are copied to EXPDIR."""
-        copied = _stage_submodule_copy(project_tree, expdir)
+        _stage_submodule_copy(project_tree, expdir)
 
         nexus_dst = expdir / "parm" / "chem" / "nexus" / "gocart"
         assert nexus_dst.is_dir()
@@ -131,20 +131,14 @@ class TestStageSubmoduleCopy:
         """Copied files are byte-identical to source (no Jinja2 rendering)."""
         _stage_submodule_copy(project_tree, expdir)
 
-        src_content = (
-            project_tree / "sorc" / "nexus.fd" / "config" / "gocart" / "NEXUS_Config.rc"
-        ).read_text()
-        dst_content = (
-            expdir / "parm" / "chem" / "nexus" / "gocart" / "NEXUS_Config.rc"
-        ).read_text()
+        src_content = (project_tree / "sorc" / "nexus.fd" / "config" / "gocart" / "NEXUS_Config.rc").read_text()
+        dst_content = (expdir / "parm" / "chem" / "nexus" / "gocart" / "NEXUS_Config.rc").read_text()
         assert dst_content == src_content
 
     def test_preserves_permissions(self, project_tree: Path, expdir: Path):
         """File permissions are preserved (cp -rp semantics)."""
         # Set a specific permission on a source file
-        src_file = (
-            project_tree / "sorc" / "nexus.fd" / "config" / "gocart" / "NEXUS_Config.rc"
-        )
+        src_file = project_tree / "sorc" / "nexus.fd" / "config" / "gocart" / "NEXUS_Config.rc"
         os.chmod(src_file, 0o755)
 
         _stage_submodule_copy(project_tree, expdir)
@@ -177,24 +171,18 @@ class TestStageSubmoduleCopy:
         assert "FATAL ERROR" in str(exc_info.value)
         assert "Submodule source not found" in str(exc_info.value)
 
-    def test_no_jinja2_rendering_on_copied_files(
-        self, project_tree: Path, expdir: Path
-    ):
+    def test_no_jinja2_rendering_on_copied_files(self, project_tree: Path, expdir: Path):
         """Files with Jinja2-like syntax are NOT rendered — copied verbatim."""
         # Write a file with Jinja2 syntax that should NOT be rendered
         nexus_dir = project_tree / "sorc" / "nexus.fd" / "config" / "gocart"
-        (nexus_dir / "template_like.rc").write_text(
-            "value = {{ should_not_render }}\n"
-        )
+        (nexus_dir / "template_like.rc").write_text("value = {{ should_not_render }}\n")
 
         _stage_submodule_copy(project_tree, expdir)
 
         dst = expdir / "parm" / "chem" / "nexus" / "gocart" / "template_like.rc"
         assert dst.read_text() == "value = {{ should_not_render }}\n"
 
-    def test_merges_into_existing_directory(
-        self, project_tree: Path, expdir: Path
-    ):
+    def test_merges_into_existing_directory(self, project_tree: Path, expdir: Path):
         """Copies merge into existing EXPDIR directories without error."""
         # Pre-create the destination directory with an existing file
         existing_dir = expdir / "parm" / "post"

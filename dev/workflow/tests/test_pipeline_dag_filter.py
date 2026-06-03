@@ -16,7 +16,6 @@ from __future__ import annotations
 import logging
 import os
 import sys
-from pathlib import Path
 
 import pytest
 import yaml
@@ -24,7 +23,6 @@ import yaml
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from deployment.pipeline import PipelineError, SubmodulePolicy, run
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -113,122 +111,77 @@ def dag_filter_dev_tree(tmp_path):
     # -- J-Jobs: 2 referenced + 2 extra (unreachable) --
     # JGLOBAL_FORECAST: references exglobal_forecast.sh, config base+fcst
     (dev_root / "jobs" / "JGLOBAL_FORECAST").write_text(
-        '#!/bin/bash\n'
-        '# J-Job: JGLOBAL_FORECAST\n'
+        "#!/bin/bash\n"
+        "# J-Job: JGLOBAL_FORECAST\n"
         'source "${HOMEglobal}/ush/jjob_header.sh" -e "fcst" -c "base fcst"\n'
         'export FORECASTSH="${SCRglobal}/exglobal_forecast.sh"\n'
         '"${FORECASTSH}" && true\n'
-        'exit 0\n'
+        "exit 0\n"
     )
 
     # JGFS_ATMOS_POST: references exgfs_atmos_post.sh, config base+post
     (dev_root / "jobs" / "JGFS_ATMOS_POST").write_text(
-        '#!/bin/bash\n'
-        '# J-Job: JGFS_ATMOS_POST\n'
+        "#!/bin/bash\n"
+        "# J-Job: JGFS_ATMOS_POST\n"
         'source "${HOMEglobal}/ush/jjob_header.sh" -e "post" -c "base post"\n'
-        '${SCRglobal}/exgfs_atmos_post.sh\n'
-        'exit 0\n'
+        "${SCRglobal}/exgfs_atmos_post.sh\n"
+        "exit 0\n"
     )
 
     # Extra J-Jobs NOT referenced by the workflow YAML
     (dev_root / "jobs" / "JGLOBAL_ARCHIVE").write_text(
-        '#!/bin/bash\n'
-        '# J-Job: JGLOBAL_ARCHIVE\n'
+        "#!/bin/bash\n"
+        "# J-Job: JGLOBAL_ARCHIVE\n"
         'source "${HOMEglobal}/ush/jjob_header.sh" -e "arch" -c "base arch"\n'
-        '${SCRglobal}/exglobal_archive.sh\n'
-        'exit 0\n'
+        "${SCRglobal}/exglobal_archive.sh\n"
+        "exit 0\n"
     )
     (dev_root / "jobs" / "JGLOBAL_STAGE_IC").write_text(
-        '#!/bin/bash\n'
-        '# J-Job: JGLOBAL_STAGE_IC\n'
+        "#!/bin/bash\n"
+        "# J-Job: JGLOBAL_STAGE_IC\n"
         'source "${HOMEglobal}/ush/jjob_header.sh" -e "stage" -c "base"\n'
-        '${SCRglobal}/exglobal_stage_ic.sh\n'
-        'exit 0\n'
+        "${SCRglobal}/exglobal_stage_ic.sh\n"
+        "exit 0\n"
     )
 
     # -- Ex-scripts: 2 referenced + 2 extra --
     (dev_root / "scripts" / "exglobal_forecast.sh").write_text(
-        '#!/bin/bash\n'
-        '# Ex-script: exglobal_forecast.sh\n'
-        'source "${USHglobal}/forecast_predet.sh"\n'
-        'source "${USHglobal}/forecast_det.sh"\n'
-        'exit 0\n'
+        '#!/bin/bash\n# Ex-script: exglobal_forecast.sh\nsource "${USHglobal}/forecast_predet.sh"\nsource "${USHglobal}/forecast_det.sh"\nexit 0\n'
     )
     (dev_root / "scripts" / "exgfs_atmos_post.sh").write_text(
-        '#!/bin/bash\n'
-        '# Ex-script: exgfs_atmos_post.sh\n'
-        'source "${USHglobal}/atmos_post.sh"\n'
-        'exit 0\n'
+        '#!/bin/bash\n# Ex-script: exgfs_atmos_post.sh\nsource "${USHglobal}/atmos_post.sh"\nexit 0\n'
     )
     # Extra ex-scripts NOT reachable
-    (dev_root / "scripts" / "exglobal_archive.sh").write_text(
-        '#!/bin/bash\n# Ex-script: exglobal_archive.sh\nexit 0\n'
-    )
-    (dev_root / "scripts" / "exglobal_stage_ic.sh").write_text(
-        '#!/bin/bash\n# Ex-script: exglobal_stage_ic.sh\nexit 0\n'
-    )
+    (dev_root / "scripts" / "exglobal_archive.sh").write_text("#!/bin/bash\n# Ex-script: exglobal_archive.sh\nexit 0\n")
+    (dev_root / "scripts" / "exglobal_stage_ic.sh").write_text("#!/bin/bash\n# Ex-script: exglobal_stage_ic.sh\nexit 0\n")
 
     # -- Ush scripts: 3 reachable + 2 extra --
-    (dev_root / "ush" / "forecast_predet.sh").write_text(
-        '#!/bin/bash\n# forecast_predet.sh\nexit 0\n'
-    )
-    (dev_root / "ush" / "forecast_det.sh").write_text(
-        '#!/bin/bash\n# forecast_det.sh\nexit 0\n'
-    )
-    (dev_root / "ush" / "atmos_post.sh").write_text(
-        '#!/bin/bash\n# atmos_post.sh\nexit 0\n'
-    )
+    (dev_root / "ush" / "forecast_predet.sh").write_text("#!/bin/bash\n# forecast_predet.sh\nexit 0\n")
+    (dev_root / "ush" / "forecast_det.sh").write_text("#!/bin/bash\n# forecast_det.sh\nexit 0\n")
+    (dev_root / "ush" / "atmos_post.sh").write_text("#!/bin/bash\n# atmos_post.sh\nexit 0\n")
     # Extra ush scripts NOT reachable
-    (dev_root / "ush" / "archive_utils.sh").write_text(
-        '#!/bin/bash\n# archive_utils.sh\nexit 0\n'
-    )
-    (dev_root / "ush" / "stage_ic_utils.sh").write_text(
-        '#!/bin/bash\n# stage_ic_utils.sh\nexit 0\n'
-    )
+    (dev_root / "ush" / "archive_utils.sh").write_text("#!/bin/bash\n# archive_utils.sh\nexit 0\n")
+    (dev_root / "ush" / "stage_ic_utils.sh").write_text("#!/bin/bash\n# stage_ic_utils.sh\nexit 0\n")
 
     # -- Config files --
     config_dir = dev_root / "parm" / "config" / "gfs_forecast_only"
-    (config_dir / "config.base").write_text(
-        '#!/bin/bash\n# config.base\nexport NET="gfs"\nexport RUN="gfs"\n'
-    )
-    (config_dir / "config.fcst").write_text(
-        '#!/bin/bash\n# config.fcst\nexport FHMAX=120\n'
-    )
-    (config_dir / "config.post").write_text(
-        '#!/bin/bash\n# config.post\nexport POSTGPSH="postgp.sh"\n'
-    )
-    (config_dir / "config.arch").write_text(
-        '#!/bin/bash\n# config.arch (should be excluded by DAG filter)\n'
-        'export HPSSARCH="YES"\n'
-    )
-    (config_dir / "config.resources").write_text(
-        '#!/bin/bash\n# config.resources\nexport ACCOUNT="dev"\n'
-    )
-    (config_dir / "config.com").write_text(
-        '#!/bin/bash\n# config.com\nexport COMROOT="/lfs/data/com"\n'
-    )
+    (config_dir / "config.base").write_text('#!/bin/bash\n# config.base\nexport NET="gfs"\nexport RUN="gfs"\n')
+    (config_dir / "config.fcst").write_text("#!/bin/bash\n# config.fcst\nexport FHMAX=120\n")
+    (config_dir / "config.post").write_text('#!/bin/bash\n# config.post\nexport POSTGPSH="postgp.sh"\n')
+    (config_dir / "config.arch").write_text('#!/bin/bash\n# config.arch (should be excluded by DAG filter)\nexport HPSSARCH="YES"\n')
+    (config_dir / "config.resources").write_text('#!/bin/bash\n# config.resources\nexport ACCOUNT="dev"\n')
+    (config_dir / "config.com").write_text('#!/bin/bash\n# config.com\nexport COMROOT="/lfs/data/com"\n')
 
     # -- ecFlow templates --
     (dev_root / "workflow" / "ecflow" / "templates" / "task.ecf.j2").write_text(
-        '%include <head.h>\n'
-        '# Task: {{ task.name }}\n'
-        '${EXPDIR}/ush/universal_wrapper.sh {{ task.jjob }}\n'
-        '%include <tail.h>\n'
+        "%include <head.h>\n# Task: {{ task.name }}\n${EXPDIR}/ush/universal_wrapper.sh {{ task.jjob }}\n%include <tail.h>\n"
     )
-    (dev_root / "workflow" / "ecflow" / "include" / "head.h").write_text(
-        "# head.h\n"
-    )
-    (dev_root / "workflow" / "ecflow" / "include" / "tail.h").write_text(
-        "# tail.h\n"
-    )
-    (dev_root / "workflow" / "ecflow" / "include" / "envsetup.h").write_text(
-        "# envsetup.h\n"
-    )
+    (dev_root / "workflow" / "ecflow" / "include" / "head.h").write_text("# head.h\n")
+    (dev_root / "workflow" / "ecflow" / "include" / "tail.h").write_text("# tail.h\n")
+    (dev_root / "workflow" / "ecflow" / "include" / "envsetup.h").write_text("# envsetup.h\n")
 
     # -- versions file --
-    (dev_root / "versions" / "run.ver").write_text(
-        "export gfs_ver=v17.0.0\n"
-    )
+    (dev_root / "versions" / "run.ver").write_text("export gfs_ver=v17.0.0\n")
 
     # -- .git for repo root detection --
     (tmp_path / ".git").mkdir()
@@ -283,9 +236,7 @@ def broken_jjob_dev_tree(tmp_path):
         "families": [
             {
                 "path": "gfs/forecast",
-                "tasks": [
-                    {"name": "fcst", "trigger": "", "jjob": "JMISSING_JOB"}
-                ],
+                "tasks": [{"name": "fcst", "trigger": "", "jjob": "JMISSING_JOB"}],
             }
         ],
         "inter_cycle_dependencies": [],
@@ -296,9 +247,7 @@ def broken_jjob_dev_tree(tmp_path):
     # No J-Job file for JMISSING_JOB → DAG_Filter should FATAL
 
     # ecFlow templates
-    (dev_root / "workflow" / "ecflow" / "templates" / "task.ecf.j2").write_text(
-        "# task\n"
-    )
+    (dev_root / "workflow" / "ecflow" / "templates" / "task.ecf.j2").write_text("# task\n")
     (dev_root / "workflow" / "ecflow" / "include" / "head.h").write_text("# h\n")
     (dev_root / "workflow" / "ecflow" / "include" / "tail.h").write_text("# t\n")
     (dev_root / "workflow" / "ecflow" / "include" / "envsetup.h").write_text("# e\n")
@@ -360,9 +309,7 @@ def incomplete_expdir_tree(tmp_path):
         "families": [
             {
                 "path": "gfs/forecast",
-                "tasks": [
-                    {"name": "fcst", "trigger": "", "jjob": "JGLOBAL_FORECAST"}
-                ],
+                "tasks": [{"name": "fcst", "trigger": "", "jjob": "JGLOBAL_FORECAST"}],
             }
         ],
         "inter_cycle_dependencies": [],
@@ -372,25 +319,17 @@ def incomplete_expdir_tree(tmp_path):
 
     # J-Job references an ex-script
     (dev_root / "jobs" / "JGLOBAL_FORECAST").write_text(
-        '#!/bin/bash\n'
-        'source "${HOMEglobal}/ush/jjob_header.sh" -e "fcst" -c "base"\n'
-        '${SCRglobal}/exglobal_forecast.sh\n'
-        'exit 0\n'
+        '#!/bin/bash\nsource "${HOMEglobal}/ush/jjob_header.sh" -e "fcst" -c "base"\n${SCRglobal}/exglobal_forecast.sh\nexit 0\n'
     )
 
     # Ex-script references a ush script that DOES exist in dev/ush/
     (dev_root / "scripts" / "exglobal_forecast.sh").write_text(
-        '#!/bin/bash\n'
-        'source "${USHglobal}/forecast_predet.sh"\n'
-        'source "${USHglobal}/missing_ush_dep.sh"\n'
-        'exit 0\n'
+        '#!/bin/bash\nsource "${USHglobal}/forecast_predet.sh"\nsource "${USHglobal}/missing_ush_dep.sh"\nexit 0\n'
     )
 
     # Only one ush script exists; the other is present for DAG filter
     # but we'll patch it out after DAG filter runs
-    (dev_root / "ush" / "forecast_predet.sh").write_text(
-        '#!/bin/bash\n# forecast_predet.sh\nexit 0\n'
-    )
+    (dev_root / "ush" / "forecast_predet.sh").write_text("#!/bin/bash\n# forecast_predet.sh\nexit 0\n")
     # missing_ush_dep.sh exists in dev but will fail completeness if
     # the staging incorrectly omits it. However, with DAG filter properly
     # working, it WOULD be staged. So let's NOT create it to trigger
@@ -399,20 +338,12 @@ def incomplete_expdir_tree(tmp_path):
 
     # Config files
     config_dir = dev_root / "parm" / "config" / "gfs_forecast_only"
-    (config_dir / "config.base").write_text(
-        '#!/bin/bash\nexport NET="gfs"\n'
-    )
-    (config_dir / "config.resources").write_text(
-        '#!/bin/bash\nexport ACCOUNT="dev"\n'
-    )
-    (config_dir / "config.com").write_text(
-        '#!/bin/bash\nexport COMROOT="/com"\n'
-    )
+    (config_dir / "config.base").write_text('#!/bin/bash\nexport NET="gfs"\n')
+    (config_dir / "config.resources").write_text('#!/bin/bash\nexport ACCOUNT="dev"\n')
+    (config_dir / "config.com").write_text('#!/bin/bash\nexport COMROOT="/com"\n')
 
     # ecFlow templates
-    (dev_root / "workflow" / "ecflow" / "templates" / "task.ecf.j2").write_text(
-        "# task\n"
-    )
+    (dev_root / "workflow" / "ecflow" / "templates" / "task.ecf.j2").write_text("# task\n")
     (dev_root / "workflow" / "ecflow" / "include" / "head.h").write_text("# h\n")
     (dev_root / "workflow" / "ecflow" / "include" / "tail.h").write_text("# t\n")
     (dev_root / "workflow" / "ecflow" / "include" / "envsetup.h").write_text("# e\n")
@@ -538,9 +469,7 @@ class TestPipelineDagFilterEnabled:
         assert "archive_utils.sh" not in staged_ush
         assert "stage_ic_utils.sh" not in staged_ush
 
-    def test_dag_filter_config_conditioning_still_runs(
-        self, dag_filter_dev_tree
-    ):
+    def test_dag_filter_config_conditioning_still_runs(self, dag_filter_dev_tree):
         """Config conditioning applies even with dag_filter=True.
 
         Validates: Requirement 13.3
@@ -551,16 +480,7 @@ class TestPipelineDagFilterEnabled:
         # Add a deploy-time conditional to a config file
         config_dir = info["dev_root"] / "parm" / "config" / "gfs_forecast_only"
         (config_dir / "config.fcst").write_text(
-            '#!/bin/bash\n'
-            '# config.fcst\n'
-            'case ${RUN} in\n'
-            '  *gfs)\n'
-            '    export FHMAX=120\n'
-            '    ;;\n'
-            '  *gdas)\n'
-            '    export FHMAX=9\n'
-            '    ;;\n'
-            'esac\n'
+            "#!/bin/bash\n# config.fcst\ncase ${RUN} in\n  *gfs)\n    export FHMAX=120\n    ;;\n  *gdas)\n    export FHMAX=9\n    ;;\nesac\n"
         )
 
         run(
@@ -583,9 +503,7 @@ class TestPipelineDagFilterEnabled:
             # at minimum, the file should still be valid
             assert "FHMAX" in content
 
-    def test_dag_filter_size_reduction_logged(
-        self, dag_filter_dev_tree, caplog
-    ):
+    def test_dag_filter_size_reduction_logged(self, dag_filter_dev_tree, caplog):
         """Size reduction report is logged when dag_filter=True.
 
         Validates: Requirements 9.1, 9.2, 9.3, 9.4
@@ -727,9 +645,7 @@ class TestPipelineDagFilterDisabled:
         assert "archive_utils.sh" in staged_ush
         assert "stage_ic_utils.sh" in staged_ush
 
-    def test_no_dag_filter_config_conditioning_still_runs(
-        self, dag_filter_dev_tree, caplog
-    ):
+    def test_no_dag_filter_config_conditioning_still_runs(self, dag_filter_dev_tree, caplog):
         """Config conditioning applies even with dag_filter=False.
 
         Validates: Requirement 13.3
@@ -772,9 +688,7 @@ class TestPipelineDagFilterDisabled:
 
         assert "DISABLED" in caplog.text
 
-    def test_no_dag_filter_no_size_reduction_logged(
-        self, dag_filter_dev_tree, caplog
-    ):
+    def test_no_dag_filter_no_size_reduction_logged(self, dag_filter_dev_tree, caplog):
         """Size reduction report NOT logged when dag_filter=False.
 
         Validates: Requirement 9 (only reports when filtering is active)
@@ -796,9 +710,7 @@ class TestPipelineDagFilterDisabled:
         # Size reduction report should NOT appear
         assert "DAG Filter Results:" not in caplog.text
 
-    def test_no_dag_filter_completeness_verifier_skipped(
-        self, dag_filter_dev_tree, caplog
-    ):
+    def test_no_dag_filter_completeness_verifier_skipped(self, dag_filter_dev_tree, caplog):
         """Completeness verification does NOT run when dag_filter=False.
 
         Validates: Requirement 13.2 (full mode skips DAG-specific checks)
@@ -853,9 +765,7 @@ class TestConfigConditioningBothModes:
 
         assert "Condition config files" in caplog.text
 
-    def test_conditioning_runs_without_dag_filter(
-        self, dag_filter_dev_tree, caplog
-    ):
+    def test_conditioning_runs_without_dag_filter(self, dag_filter_dev_tree, caplog):
         """Config conditioning executes when dag_filter=False.
 
         Validates: Requirement 13.3
@@ -910,9 +820,7 @@ class TestFatalErrorPropagation:
                 submodule_policy=SubmodulePolicy.SKIP_OPTIONAL,
             )
 
-    def test_dag_filter_fatal_not_raised_when_disabled(
-        self, broken_jjob_dev_tree
-    ):
+    def test_dag_filter_fatal_not_raised_when_disabled(self, broken_jjob_dev_tree):
         """Missing J-Job does NOT cause FATAL when dag_filter=False.
 
         The DAG_Filter is not invoked when dag_filter is disabled,
@@ -939,10 +847,7 @@ class TestFatalErrorPropagation:
             )
         except PipelineError as e:
             # If it raises, it should NOT be about JMISSING_JOB
-            assert "JMISSING_JOB" not in str(e), (
-                f"dag_filter=False should not check J-Job existence, "
-                f"but got: {e}"
-            )
+            assert "JMISSING_JOB" not in str(e), f"dag_filter=False should not check J-Job existence, but got: {e}"
 
     def test_completeness_verifier_fatal_propagates(self, dag_filter_dev_tree):
         """Completeness_Verifier FATAL ERROR propagates through pipeline.
@@ -958,10 +863,7 @@ class TestFatalErrorPropagation:
         # Modify an ex-script to reference a ush script that doesn't exist
         # in dev/ush/ (so it won't be staged)
         (info["dev_root"] / "scripts" / "exglobal_forecast.sh").write_text(
-            '#!/bin/bash\n'
-            'source "${USHglobal}/forecast_predet.sh"\n'
-            'source "${USHglobal}/completely_missing_ush.sh"\n'
-            'exit 0\n'
+            '#!/bin/bash\nsource "${USHglobal}/forecast_predet.sh"\nsource "${USHglobal}/completely_missing_ush.sh"\nexit 0\n'
         )
 
         # The DAG filter will emit a WARNING for the missing ush script

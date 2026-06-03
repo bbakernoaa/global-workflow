@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import hashlib
 import os
-import shutil
 import sys
 from pathlib import Path
 
@@ -22,10 +21,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "workflow
 
 from deployment.model_config_renderer import ModelConfigRenderer, RenderedFile
 from deployment.pipeline import (
-    SUBMODULE_COPY_MANIFEST,
     _stage_submodule_copy,
 )
-from deployment.template_renderer import TemplateRenderError
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -230,9 +227,7 @@ def project_tree(tmp_path: Path) -> Path:
     # Create NEXUS config files
     nexus_dir = project_root / "sorc" / "nexus.fd" / "config" / "gocart"
     nexus_dir.mkdir(parents=True)
-    (nexus_dir / "NEXUS_Config.rc").write_text(
-        "! NEXUS config\nkey = value\n"
-    )
+    (nexus_dir / "NEXUS_Config.rc").write_text("! NEXUS config\nkey = value\n")
     (nexus_dir / "HEMCO_sa_Config.rc").write_text("! HEMCO config\n")
 
     # Create UPP parm files
@@ -256,28 +251,21 @@ class TestFullRenderingPipeline:
     """
 
     @pytest.mark.parametrize("resolution", ["025", "050", "100", "500"])
-    def test_renders_all_coupled_configs_for_resolution(
-        self, resolution: str, expdir: Path
-    ):
+    def test_renders_all_coupled_configs_for_resolution(self, resolution: str, expdir: Path):
         """Full pipeline renders all coupled-model configs for each resolution."""
         context = _full_model_context(ocean_resolution=resolution)
         renderer = ModelConfigRenderer(dev_root=DEV_ROOT)
 
-        results = renderer.render_all(context, expdir)
+        renderer.render_all(context, expdir)
 
         # Verify all expected coupled-model output files exist
         parm_ufs = expdir / "parm" / "ufs"
         for expected in EXPECTED_COUPLED_OUTPUTS:
             output_path = parm_ufs / expected
-            assert output_path.exists(), (
-                f"Expected output '{expected}' not found for "
-                f"resolution={resolution}"
-            )
+            assert output_path.exists(), f"Expected output '{expected}' not found for resolution={resolution}"
 
     @pytest.mark.parametrize("resolution", ["025", "050", "100", "500"])
-    def test_rendered_files_are_non_empty(
-        self, resolution: str, expdir: Path
-    ):
+    def test_rendered_files_are_non_empty(self, resolution: str, expdir: Path):
         """All rendered coupled-model configs are non-empty files."""
         context = _full_model_context(ocean_resolution=resolution)
         renderer = ModelConfigRenderer(dev_root=DEV_ROOT)
@@ -287,15 +275,10 @@ class TestFullRenderingPipeline:
         parm_ufs = expdir / "parm" / "ufs"
         for expected in EXPECTED_COUPLED_OUTPUTS:
             output_path = parm_ufs / expected
-            assert output_path.stat().st_size > 0, (
-                f"Rendered file '{expected}' is empty for "
-                f"resolution={resolution}"
-            )
+            assert output_path.stat().st_size > 0, f"Rendered file '{expected}' is empty for resolution={resolution}"
 
     @pytest.mark.parametrize("resolution", ["025", "050", "100", "500"])
-    def test_mom_input_contains_resolution_grid_dims(
-        self, resolution: str, expdir: Path
-    ):
+    def test_mom_input_contains_resolution_grid_dims(self, resolution: str, expdir: Path):
         """MOM_input contains correct grid dimensions for each resolution."""
         expected_dims = {
             "025": ("NIGLOBAL = 1440", "NJGLOBAL = 1080"),
@@ -310,17 +293,11 @@ class TestFullRenderingPipeline:
 
         mom_input = (expdir / "parm" / "ufs" / "ocean" / "MOM_input").read_text()
         ni, nj = expected_dims[resolution]
-        assert ni in mom_input, (
-            f"Expected '{ni}' in MOM_input for resolution={resolution}"
-        )
-        assert nj in mom_input, (
-            f"Expected '{nj}' in MOM_input for resolution={resolution}"
-        )
+        assert ni in mom_input, f"Expected '{ni}' in MOM_input for resolution={resolution}"
+        assert nj in mom_input, f"Expected '{nj}' in MOM_input for resolution={resolution}"
 
     @pytest.mark.parametrize("resolution", ["025", "050", "100", "500"])
-    def test_render_all_returns_rendered_file_objects(
-        self, resolution: str, expdir: Path
-    ):
+    def test_render_all_returns_rendered_file_objects(self, resolution: str, expdir: Path):
         """render_all returns RenderedFile objects with sha256 and source."""
         context = _full_model_context(ocean_resolution=resolution)
         renderer = ModelConfigRenderer(dev_root=DEV_ROOT)
@@ -373,7 +350,7 @@ class TestComponentCombinations:
         )
         renderer = ModelConfigRenderer(dev_root=DEV_ROOT)
 
-        results = renderer.render_all(context, expdir)
+        renderer.render_all(context, expdir)
 
         # All expected coupled-model outputs should exist
         parm_ufs = expdir / "parm" / "ufs"
@@ -474,28 +451,17 @@ class TestSubmoduleCopyIntegration:
     Traces to: Requirement 13.3
     """
 
-    def test_nexus_files_copied_verbatim(
-        self, project_tree: Path, expdir: Path
-    ):
+    def test_nexus_files_copied_verbatim(self, project_tree: Path, expdir: Path):
         """NEXUS config files are copied verbatim to EXPDIR."""
         _stage_submodule_copy(project_tree, expdir)
 
-        src = (
-            project_tree
-            / "sorc"
-            / "nexus.fd"
-            / "config"
-            / "gocart"
-            / "NEXUS_Config.rc"
-        )
+        src = project_tree / "sorc" / "nexus.fd" / "config" / "gocart" / "NEXUS_Config.rc"
         dst = expdir / "parm" / "chem" / "nexus" / "gocart" / "NEXUS_Config.rc"
 
         assert dst.exists()
         assert dst.read_bytes() == src.read_bytes()
 
-    def test_upp_files_copied_verbatim(
-        self, project_tree: Path, expdir: Path
-    ):
+    def test_upp_files_copied_verbatim(self, project_tree: Path, expdir: Path):
         """UPP parm files are copied verbatim to EXPDIR."""
         _stage_submodule_copy(project_tree, expdir)
 
@@ -505,27 +471,19 @@ class TestSubmoduleCopyIntegration:
         assert dst.exists()
         assert dst.read_bytes() == src.read_bytes()
 
-    def test_no_jinja2_rendering_on_submodule_files(
-        self, project_tree: Path, expdir: Path
-    ):
+    def test_no_jinja2_rendering_on_submodule_files(self, project_tree: Path, expdir: Path):
         """Submodule files with Jinja2-like syntax are NOT rendered."""
         # Add a file with Jinja2 syntax to the NEXUS source
-        nexus_dir = (
-            project_tree / "sorc" / "nexus.fd" / "config" / "gocart"
-        )
+        nexus_dir = project_tree / "sorc" / "nexus.fd" / "config" / "gocart"
         jinja_content = "value = {{ should_not_render }}\n@[ALSO_NOT]\n"
         (nexus_dir / "test_template.rc").write_text(jinja_content)
 
         _stage_submodule_copy(project_tree, expdir)
 
-        dst = (
-            expdir / "parm" / "chem" / "nexus" / "gocart" / "test_template.rc"
-        )
+        dst = expdir / "parm" / "chem" / "nexus" / "gocart" / "test_template.rc"
         assert dst.read_text() == jinja_content
 
-    def test_submodule_copy_returns_all_copied_paths(
-        self, project_tree: Path, expdir: Path
-    ):
+    def test_submodule_copy_returns_all_copied_paths(self, project_tree: Path, expdir: Path):
         """_stage_submodule_copy returns paths of all copied files."""
         copied = _stage_submodule_copy(project_tree, expdir)
 
@@ -555,10 +513,7 @@ class TestEXPDIRManifest:
 
         for rf in results:
             # SHA-256 hash should be 64 hex characters
-            assert len(rf.sha256) == 64, (
-                f"Invalid SHA-256 hash length for {rf.path}: "
-                f"got {len(rf.sha256)}"
-            )
+            assert len(rf.sha256) == 64, f"Invalid SHA-256 hash length for {rf.path}: got {len(rf.sha256)}"
             # Hash should be valid hex
             int(rf.sha256, 16)
 
@@ -571,10 +526,7 @@ class TestEXPDIRManifest:
 
         for rf in results:
             actual_hash = _compute_sha256(rf.path)
-            assert rf.sha256 == actual_hash, (
-                f"SHA-256 mismatch for {rf.path}: "
-                f"manifest={rf.sha256}, actual={actual_hash}"
-            )
+            assert rf.sha256 == actual_hash, f"SHA-256 mismatch for {rf.path}: manifest={rf.sha256}, actual={actual_hash}"
 
     def test_manifest_includes_all_coupled_model_configs(self, expdir: Path):
         """Manifest (render_all results) includes all coupled-model configs."""
@@ -593,10 +545,7 @@ class TestEXPDIRManifest:
 
         # All expected coupled-model outputs should be in the manifest
         for expected in EXPECTED_COUPLED_OUTPUTS:
-            assert expected in rendered_rel_paths, (
-                f"Expected '{expected}' in manifest but not found. "
-                f"Got: {sorted(rendered_rel_paths)}"
-            )
+            assert expected in rendered_rel_paths, f"Expected '{expected}' in manifest but not found. Got: {sorted(rendered_rel_paths)}"
 
     def test_manifest_records_render_method(self, expdir: Path):
         """Coupled-model configs in manifest have method='render'."""
@@ -610,10 +559,7 @@ class TestEXPDIRManifest:
             if str(rf.path).startswith(str(parm_ufs)):
                 rel = str(rf.path.relative_to(parm_ufs))
                 if rel in EXPECTED_COUPLED_OUTPUTS:
-                    assert rf.method == "render", (
-                        f"Expected method='render' for {rel}, "
-                        f"got '{rf.method}'"
-                    )
+                    assert rf.method == "render", f"Expected method='render' for {rel}, got '{rf.method}'"
 
 
 # ---------------------------------------------------------------------------
@@ -642,9 +588,7 @@ class TestNoSymlinksInEXPDIR:
             for root, dirs, files in os.walk(coupled_dir):
                 for filename in files:
                     filepath = Path(root) / filename
-                    assert not filepath.is_symlink(), (
-                        f"Found symlink in EXPDIR: {filepath}"
-                    )
+                    assert not filepath.is_symlink(), f"Found symlink in EXPDIR: {filepath}"
 
     def test_all_rendered_files_are_regular_files(self, expdir: Path):
         """All rendered coupled-model config files are regular files."""
@@ -654,12 +598,8 @@ class TestNoSymlinksInEXPDIR:
         results = renderer.render_all(context, expdir)
 
         for rf in results:
-            assert rf.path.is_file(), (
-                f"Expected regular file at {rf.path}"
-            )
-            assert not rf.path.is_symlink(), (
-                f"Expected regular file but found symlink at {rf.path}"
-            )
+            assert rf.path.is_file(), f"Expected regular file at {rf.path}"
+            assert not rf.path.is_symlink(), f"Expected regular file but found symlink at {rf.path}"
 
     def test_no_symlinks_to_sorc_ufs_model(self, expdir: Path):
         """No symlinks to sorc/ufs_model.fd/tests/parm/ in EXPDIR."""
@@ -674,14 +614,11 @@ class TestNoSymlinksInEXPDIR:
                 if filepath.is_symlink():
                     link_target = str(os.readlink(filepath))
                     assert "sorc/ufs_model.fd/tests/parm/" not in link_target, (
-                        f"Found symlink to sorc/ufs_model.fd/tests/parm/ "
-                        f"in EXPDIR: {filepath} -> {link_target}"
+                        f"Found symlink to sorc/ufs_model.fd/tests/parm/ in EXPDIR: {filepath} -> {link_target}"
                     )
 
     @pytest.mark.parametrize("resolution", ["025", "050", "100", "500"])
-    def test_no_symlinks_for_any_resolution(
-        self, resolution: str, expdir: Path
-    ):
+    def test_no_symlinks_for_any_resolution(self, resolution: str, expdir: Path):
         """No symlinks in EXPDIR for any ocean resolution."""
         context = _full_model_context(ocean_resolution=resolution)
         renderer = ModelConfigRenderer(dev_root=DEV_ROOT)
@@ -695,7 +632,4 @@ class TestNoSymlinksInEXPDIR:
                 continue
             for filepath in coupled_dir.rglob("*"):
                 if filepath.is_file():
-                    assert not filepath.is_symlink(), (
-                        f"Found symlink for resolution={resolution}: "
-                        f"{filepath}"
-                    )
+                    assert not filepath.is_symlink(), f"Found symlink for resolution={resolution}: {filepath}"

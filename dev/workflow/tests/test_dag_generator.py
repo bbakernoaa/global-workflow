@@ -15,8 +15,6 @@ import os
 import sys
 import tempfile
 
-import pytest
-
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from deployment.dag_generator import (
@@ -30,7 +28,6 @@ from deployment.dag_generator import (
     parse_suite_config,
 )
 from deployment.workflow_config import DAG, Edge, MeterDef, TaskNode
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -339,24 +336,18 @@ class TestGenerateDefText:
         assert "family c" in text
         assert "task task1" in text
         # Verify nesting order
-        a_idx = next(i for i, l in enumerate(lines) if "family a" in l)
-        b_idx = next(i for i, l in enumerate(lines) if "family b" in l)
-        c_idx = next(i for i, l in enumerate(lines) if "family c" in l)
-        t_idx = next(i for i, l in enumerate(lines) if "task task1" in l)
+        a_idx = next(i for i, ln in enumerate(lines) if "family a" in ln)
+        b_idx = next(i for i, ln in enumerate(lines) if "family b" in ln)
+        c_idx = next(i for i, ln in enumerate(lines) if "family c" in ln)
+        t_idx = next(i for i, ln in enumerate(lines) if "task task1" in ln)
         assert a_idx < b_idx < c_idx < t_idx
 
     def test_multiple_tasks_same_family(self):
         """Test multiple tasks in the same family."""
         dag = DAG(suite_name="multi")
-        dag.nodes["app/step/task_a"] = TaskNode(
-            name="task_a", family_path="app/step", jjob="JA"
-        )
-        dag.nodes["app/step/task_b"] = TaskNode(
-            name="task_b", family_path="app/step", jjob="JB"
-        )
-        dag.nodes["app/step/task_c"] = TaskNode(
-            name="task_c", family_path="app/step", jjob="JC"
-        )
+        dag.nodes["app/step/task_a"] = TaskNode(name="task_a", family_path="app/step", jjob="JA")
+        dag.nodes["app/step/task_b"] = TaskNode(name="task_b", family_path="app/step", jjob="JB")
+        dag.nodes["app/step/task_c"] = TaskNode(name="task_c", family_path="app/step", jjob="JC")
         text = generate_def_text(dag)
 
         assert "task task_a" in text
@@ -461,9 +452,7 @@ class TestGenerateDefFile:
     def test_creates_parent_directories(self):
         dag = _make_simple_dag()
         with tempfile.TemporaryDirectory() as tmpdir:
-            output_path = os.path.join(
-                tmpdir, "deep", "nested", "path", "suite.def"
-            )
+            output_path = os.path.join(tmpdir, "deep", "nested", "path", "suite.def")
             generate_def(dag, output_path)
             assert os.path.exists(output_path)
 
@@ -472,9 +461,7 @@ class TestGenerateDefFile:
         dag = _make_simple_dag()
         with tempfile.TemporaryDirectory() as tmpdir:
             expdir = os.path.join(tmpdir, "EXPDIR")
-            output_path = os.path.join(
-                expdir, "ecf", "defs", f"{dag.suite_name}.def"
-            )
+            output_path = os.path.join(expdir, "ecf", "defs", f"{dag.suite_name}.def")
             generate_def(dag, output_path)
             assert os.path.exists(output_path)
 
@@ -501,12 +488,8 @@ class TestParseDefTasks:
 
     def test_nested_family_extraction(self):
         dag = DAG(suite_name="nested")
-        dag.nodes["a/b/c/task1"] = TaskNode(
-            name="task1", family_path="a/b/c", jjob="J1"
-        )
-        dag.nodes["a/b/task2"] = TaskNode(
-            name="task2", family_path="a/b", jjob="J2"
-        )
+        dag.nodes["a/b/c/task1"] = TaskNode(name="task1", family_path="a/b/c", jjob="J1")
+        dag.nodes["a/b/task2"] = TaskNode(name="task2", family_path="a/b", jjob="J2")
         text = generate_def_text(dag)
         tasks = parse_def_tasks(text)
 
@@ -520,9 +503,7 @@ class TestParseDefTasks:
         def_tasks = parse_def_tasks(text)
 
         # Build expected set from DAG
-        dag_tasks = {
-            (node.family_path, node.name) for node in dag.nodes.values()
-        }
+        dag_tasks = {(node.family_path, node.name) for node in dag.nodes.values()}
 
         assert def_tasks == dag_tasks
 
@@ -532,9 +513,7 @@ class TestParseDefTasks:
         text = generate_def_text(dag)
         def_tasks = parse_def_tasks(text)
 
-        dag_tasks = {
-            (node.family_path, node.name) for node in dag.nodes.values()
-        }
+        dag_tasks = {(node.family_path, node.name) for node in dag.nodes.values()}
 
         assert def_tasks == dag_tasks
 
@@ -615,9 +594,7 @@ class TestIntegrationWithParser:
         """Generate def from the gfs_forecast_only.yaml sample config."""
         from deployment.workflow_config import parse
 
-        sample_dir = os.path.join(
-            os.path.dirname(__file__), "..", "..", "parm", "workflow"
-        )
+        sample_dir = os.path.join(os.path.dirname(__file__), "..", "..", "parm", "workflow")
         path = os.path.join(sample_dir, "gfs_forecast_only.yaml")
         dag = parse(path)
 
@@ -643,18 +620,14 @@ class TestIntegrationWithParser:
 
         # Verify definition fidelity
         def_tasks = parse_def_tasks(text)
-        dag_tasks = {
-            (node.family_path, node.name) for node in dag.nodes.values()
-        }
+        dag_tasks = {(node.family_path, node.name) for node in dag.nodes.values()}
         assert def_tasks == dag_tasks
 
     def test_cycled_config(self):
         """Generate def from the gfs_cycled.yaml sample config."""
         from deployment.workflow_config import parse
 
-        sample_dir = os.path.join(
-            os.path.dirname(__file__), "..", "..", "parm", "workflow"
-        )
+        sample_dir = os.path.join(os.path.dirname(__file__), "..", "..", "parm", "workflow")
         path = os.path.join(sample_dir, "gfs_cycled.yaml")
         dag = parse(path)
 
@@ -669,26 +642,20 @@ class TestIntegrationWithParser:
         assert len(def_tasks) > 30
 
         # Verify definition fidelity
-        dag_tasks = {
-            (node.family_path, node.name) for node in dag.nodes.values()
-        }
+        dag_tasks = {(node.family_path, node.name) for node in dag.nodes.values()}
         assert def_tasks == dag_tasks
 
     def test_generate_def_to_file(self):
         """Test full pipeline: parse config -> generate def -> write file."""
         from deployment.workflow_config import parse
 
-        sample_dir = os.path.join(
-            os.path.dirname(__file__), "..", "..", "parm", "workflow"
-        )
+        sample_dir = os.path.join(os.path.dirname(__file__), "..", "..", "parm", "workflow")
         path = os.path.join(sample_dir, "gfs_forecast_only.yaml")
         dag = parse(path)
 
         with tempfile.TemporaryDirectory() as tmpdir:
             expdir = os.path.join(tmpdir, "EXPDIR")
-            output_path = os.path.join(
-                expdir, "ecf", "defs", f"{dag.suite_name}.def"
-            )
+            output_path = os.path.join(expdir, "ecf", "defs", f"{dag.suite_name}.def")
             result = generate_def(dag, output_path)
 
             # File exists at correct path

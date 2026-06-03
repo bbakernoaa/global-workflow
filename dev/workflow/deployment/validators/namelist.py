@@ -25,33 +25,22 @@ class NamelistValidator:
         group_name = None
         for lineno, line in enumerate(content.splitlines(), 1):
             stripped = line.strip()
-            if not stripped or stripped.startswith('!'):
+            if not stripped or stripped.startswith("!"):
                 continue
-            if stripped.startswith('&'):
+            if stripped.startswith("&"):
                 if in_group:
-                    errors.append(
-                        f"{filepath}:{lineno}: Nested group '{stripped}' "
-                        f"inside unclosed group '&{group_name}'"
-                    )
+                    errors.append(f"{filepath}:{lineno}: Nested group '{stripped}' inside unclosed group '&{group_name}'")
                 group_name = stripped[1:]
                 in_group = True
-            elif stripped == '/':
+            elif stripped == "/":
                 if not in_group:
-                    errors.append(
-                        f"{filepath}:{lineno}: Group terminator '/' "
-                        f"without matching '&group'"
-                    )
+                    errors.append(f"{filepath}:{lineno}: Group terminator '/' without matching '&group'")
                 in_group = False
                 group_name = None
             elif in_group:
                 # Validate variable assignment
-                if '=' not in stripped and not stripped.startswith('!'):
-                    errors.append(
-                        f"{filepath}:{lineno}: Expected 'var = value' "
-                        f"inside &{group_name}"
-                    )
+                if "=" not in stripped and not stripped.startswith("!"):
+                    errors.append(f"{filepath}:{lineno}: Expected 'var = value' inside &{group_name}")
         if in_group:
-            errors.append(
-                f"{filepath}: Unclosed namelist group '&{group_name}'"
-            )
+            errors.append(f"{filepath}: Unclosed namelist group '&{group_name}'")
         return errors

@@ -17,14 +17,13 @@ from __future__ import annotations
 import os
 import sys
 
-from hypothesis import given, settings, HealthCheck
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from deployment.workflow_config import DAG, MeterDef, TaskNode
 from deployment.dag_generator import generate_def_text, parse_def_tasks
-
+from deployment.workflow_config import DAG, MeterDef, TaskNode
 
 # ---------------------------------------------------------------------------
 # Hypothesis Strategies for generating valid DAG objects
@@ -47,14 +46,8 @@ def _meter_def_strategy(draw):
     min_value = draw(st.integers(min_value=0, max_value=50))
     max_value = draw(st.integers(min_value=min_value + 1, max_value=200))
     has_threshold = draw(st.booleans())
-    threshold = (
-        draw(st.integers(min_value=min_value, max_value=max_value))
-        if has_threshold
-        else None
-    )
-    return MeterDef(
-        name=name, min_value=min_value, max_value=max_value, threshold=threshold
-    )
+    threshold = draw(st.integers(min_value=min_value, max_value=max_value)) if has_threshold else None
+    return MeterDef(name=name, min_value=min_value, max_value=max_value, threshold=threshold)
 
 
 @st.composite
@@ -187,9 +180,7 @@ def test_definition_fidelity_property(dag: DAG):
     parsed_tasks = parse_def_tasks(def_text)
 
     # Step 4: Build the expected set from the source DAG
-    expected_tasks = {
-        (node.family_path, node.name) for node in dag.nodes.values()
-    }
+    expected_tasks = {(node.family_path, node.name) for node in dag.nodes.values()}
 
     # Assert fidelity: emitted tasks == source DAG tasks
     assert parsed_tasks == expected_tasks, (

@@ -19,8 +19,7 @@ import re
 import sys
 from pathlib import Path
 
-import pytest
-from hypothesis import given, settings, HealthCheck
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "workflow"))
@@ -58,6 +57,7 @@ RESOLUTION_MIXING = {
 # Hypothesis strategies for valid ocean Model_Context generation
 # ---------------------------------------------------------------------------
 
+
 @st.composite
 def valid_ocean_model_context(draw: st.DrawFn) -> dict:
     """Generate a valid ocean Model_Context dict for MOM_input rendering.
@@ -72,17 +72,25 @@ def valid_ocean_model_context(draw: st.DrawFn) -> dict:
     do_sppt = draw(st.booleans())
 
     # Valid string values
-    diag_coord_def_z_file = draw(st.sampled_from([
-        "oceanda_zgrid_75L.nc",
-        "oceanda_zgrid_100L.nc",
-        "ocean_zgrid_50L.nc",
-        "diag_coord_z.nc",
-    ]))
-    frunoff = draw(st.sampled_from([
-        "INPUT/runoff.daitren.clim.nc",
-        "INPUT/runoff.monthly.nc",
-        "INPUT/river_runoff.nc",
-    ]))
+    diag_coord_def_z_file = draw(
+        st.sampled_from(
+            [
+                "oceanda_zgrid_75L.nc",
+                "oceanda_zgrid_100L.nc",
+                "ocean_zgrid_50L.nc",
+                "diag_coord_z.nc",
+            ]
+        )
+    )
+    frunoff = draw(
+        st.sampled_from(
+            [
+                "INPUT/runoff.daitren.clim.nc",
+                "INPUT/runoff.monthly.nc",
+                "INPUT/river_runoff.nc",
+            ]
+        )
+    )
 
     # Valid int values
     dt_ocean = draw(st.sampled_from([450, 900, 1800, 3600, 7200]))
@@ -110,6 +118,7 @@ def valid_ocean_model_context(draw: st.DrawFn) -> dict:
 # ---------------------------------------------------------------------------
 # Helper functions
 # ---------------------------------------------------------------------------
+
 
 def _render_mom_input(context: dict) -> str:
     """Render MOM_input.j2 with the given context and return the output string."""
@@ -187,158 +196,97 @@ class TestMOMInputTemplateEquivalence:
         # Check NIGLOBAL
         niglobal = _extract_param_value(rendered, "NIGLOBAL")
         assert niglobal is not None, f"NIGLOBAL not found in rendered output for res={resolution}"
-        assert int(niglobal) == expected["NIGLOBAL"], (
-            f"NIGLOBAL={niglobal} != expected {expected['NIGLOBAL']} for res={resolution}"
-        )
+        assert int(niglobal) == expected["NIGLOBAL"], f"NIGLOBAL={niglobal} != expected {expected['NIGLOBAL']} for res={resolution}"
 
         # Check NJGLOBAL
         njglobal = _extract_param_value(rendered, "NJGLOBAL")
         assert njglobal is not None, f"NJGLOBAL not found in rendered output for res={resolution}"
-        assert int(njglobal) == expected["NJGLOBAL"], (
-            f"NJGLOBAL={njglobal} != expected {expected['NJGLOBAL']} for res={resolution}"
-        )
+        assert int(njglobal) == expected["NJGLOBAL"], f"NJGLOBAL={njglobal} != expected {expected['NJGLOBAL']} for res={resolution}"
 
         # Check KHTH
         khth = _extract_param_value(rendered, "KHTH")
         assert khth is not None, f"KHTH not found in rendered output for res={resolution}"
-        assert float(khth) == expected["KHTH"], (
-            f"KHTH={khth} != expected {expected['KHTH']} for res={resolution}"
-        )
+        assert float(khth) == expected["KHTH"], f"KHTH={khth} != expected {expected['KHTH']} for res={resolution}"
 
         # Check KHTR
         khtr = _extract_param_value(rendered, "KHTR")
         assert khtr is not None, f"KHTR not found in rendered output for res={resolution}"
-        assert float(khtr) == expected["KHTR"], (
-            f"KHTR={khtr} != expected {expected['KHTR']} for res={resolution}"
-        )
+        assert float(khtr) == expected["KHTR"], f"KHTR={khtr} != expected {expected['KHTR']} for res={resolution}"
 
         # Check resolution-specific mixing params (non-500 only)
         if resolution in RESOLUTION_MIXING:
             for param, expected_val in RESOLUTION_MIXING[resolution].items():
                 val = _extract_param_value(rendered, param)
-                assert val is not None, (
-                    f"{param} not found in rendered output for res={resolution}"
-                )
-                assert float(val) == expected_val, (
-                    f"{param}={val} != expected {expected_val} for res={resolution}"
-                )
+                assert val is not None, f"{param} not found in rendered output for res={resolution}"
+                assert float(val) == expected_val, f"{param}={val} != expected {expected_val} for res={resolution}"
 
         # Check USE_VARIABLE_MIXING and SMAGORINSKY_AH
         use_var_mixing = _extract_param_value(rendered, "USE_VARIABLE_MIXING")
         smagorinsky_ah = _extract_param_value(rendered, "SMAGORINSKY_AH")
         if resolution != "500":
-            assert use_var_mixing == "True", (
-                f"USE_VARIABLE_MIXING should be True for res={resolution}"
-            )
-            assert smagorinsky_ah == "True", (
-                f"SMAGORINSKY_AH should be True for res={resolution}"
-            )
+            assert use_var_mixing == "True", f"USE_VARIABLE_MIXING should be True for res={resolution}"
+            assert smagorinsky_ah == "True", f"SMAGORINSKY_AH should be True for res={resolution}"
         else:
-            assert use_var_mixing == "False", (
-                f"USE_VARIABLE_MIXING should be False for res=500"
-            )
-            assert smagorinsky_ah == "False", (
-                f"SMAGORINSKY_AH should be False for res=500"
-            )
+            assert use_var_mixing == "False", "USE_VARIABLE_MIXING should be False for res=500"
+            assert smagorinsky_ah == "False", "SMAGORINSKY_AH should be False for res=500"
 
         # --- 2. Conditional blocks based on boolean flags ---
 
         # DT and DT_THERM should match context values
         dt_val = _extract_param_value(rendered, "DT")
         assert dt_val is not None, "DT not found in rendered output"
-        assert int(dt_val) == ocean["dt_ocean"], (
-            f"DT={dt_val} != expected {ocean['dt_ocean']}"
-        )
+        assert int(dt_val) == ocean["dt_ocean"], f"DT={dt_val} != expected {ocean['dt_ocean']}"
 
         dt_therm_val = _extract_param_value(rendered, "DT_THERM")
         assert dt_therm_val is not None, "DT_THERM not found in rendered output"
-        assert int(dt_therm_val) == ocean["dt_therm"], (
-            f"DT_THERM={dt_therm_val} != expected {ocean['dt_therm']}"
-        )
+        assert int(dt_therm_val) == ocean["dt_therm"], f"DT_THERM={dt_therm_val} != expected {ocean['dt_therm']}"
 
         # NK should match context value
         nk_val = _extract_param_value(rendered, "NK")
         assert nk_val is not None, "NK not found in rendered output"
-        assert int(nk_val) == ocean["nk"], (
-            f"NK={nk_val} != expected {ocean['nk']}"
-        )
+        assert int(nk_val) == ocean["nk"], f"NK={nk_val} != expected {ocean['nk']}"
 
         # use_waves conditional
         if ocean["use_waves"]:
-            assert "USE_WAVES = True" in rendered, (
-                "USE_WAVES = True should appear when use_waves is True"
-            )
-            assert 'WAVE_METHOD = "SURFACE_BANDS"' in rendered, (
-                "WAVE_METHOD should appear when use_waves is True"
-            )
+            assert "USE_WAVES = True" in rendered, "USE_WAVES = True should appear when use_waves is True"
+            assert 'WAVE_METHOD = "SURFACE_BANDS"' in rendered, "WAVE_METHOD should appear when use_waves is True"
         else:
-            assert "USE_WAVES = True" not in rendered, (
-                "USE_WAVES should not appear when use_waves is False"
-            )
+            assert "USE_WAVES = True" not in rendered, "USE_WAVES should not appear when use_waves is False"
 
         # river_runoff conditional
         if ocean["river_runoff"]:
-            assert "RIVER_RUNOFF = True" in rendered, (
-                "RIVER_RUNOFF = True should appear when river_runoff is True"
-            )
-            assert "${CHLCLIM}" in rendered, (
-                "FRUNOFF shell variable should be preserved when river_runoff is True"
-            )
+            assert "RIVER_RUNOFF = True" in rendered, "RIVER_RUNOFF = True should appear when river_runoff is True"
+            assert "${CHLCLIM}" in rendered, "FRUNOFF shell variable should be preserved when river_runoff is True"
         else:
-            assert "RIVER_RUNOFF = True" not in rendered, (
-                "RIVER_RUNOFF should not appear when river_runoff is False"
-            )
+            assert "RIVER_RUNOFF = True" not in rendered, "RIVER_RUNOFF should not appear when river_runoff is False"
 
         # oda_incupd conditional
         if ocean["oda_incupd"]:
-            assert "ODA_INCUPD = True" in rendered, (
-                "ODA_INCUPD = True should appear when oda_incupd is True"
-            )
+            assert "ODA_INCUPD = True" in rendered, "ODA_INCUPD = True should appear when oda_incupd is True"
             oda_nhours = _extract_param_value(rendered, "ODA_INCUPD_NHOURS")
-            assert oda_nhours is not None, (
-                "ODA_INCUPD_NHOURS should appear when oda_incupd is True"
-            )
-            assert int(oda_nhours) == ocean["oda_incupd_nhours"], (
-                f"ODA_INCUPD_NHOURS={oda_nhours} != expected {ocean['oda_incupd_nhours']}"
-            )
+            assert oda_nhours is not None, "ODA_INCUPD_NHOURS should appear when oda_incupd is True"
+            assert int(oda_nhours) == ocean["oda_incupd_nhours"], f"ODA_INCUPD_NHOURS={oda_nhours} != expected {ocean['oda_incupd_nhours']}"
         else:
-            assert "ODA_INCUPD = False" in rendered, (
-                "ODA_INCUPD = False should appear when oda_incupd is False"
-            )
-            assert "ODA_INCUPD_NHOURS" not in rendered, (
-                "ODA_INCUPD_NHOURS should not appear when oda_incupd is False"
-            )
+            assert "ODA_INCUPD = False" in rendered, "ODA_INCUPD = False should appear when oda_incupd is False"
+            assert "ODA_INCUPD_NHOURS" not in rendered, "ODA_INCUPD_NHOURS should not appear when oda_incupd is False"
 
         # do_sppt conditional
         if ocean["do_sppt"]:
-            assert "DO_SPPT = True" in rendered, (
-                "DO_SPPT = True should appear when do_sppt is True"
-            )
+            assert "DO_SPPT = True" in rendered, "DO_SPPT = True should appear when do_sppt is True"
         else:
-            assert "DO_SPPT = False" in rendered, (
-                "DO_SPPT = False should appear when do_sppt is False"
-            )
+            assert "DO_SPPT = False" in rendered, "DO_SPPT = False should appear when do_sppt is False"
 
         # diag_coord_def_z_file should appear in rendered output
-        assert ocean["diag_coord_def_z_file"] in rendered, (
-            f"diag_coord_def_z_file '{ocean['diag_coord_def_z_file']}' "
-            f"not found in rendered output"
-        )
+        assert ocean["diag_coord_def_z_file"] in rendered, f"diag_coord_def_z_file '{ocean['diag_coord_def_z_file']}' not found in rendered output"
 
         # --- 3. MOM6ParameterValidator passes ---
         validator = MOM6ParameterValidator()
         errors = validator.validate(rendered, "MOM_input")
-        assert errors == [], (
-            f"MOM6ParameterValidator found errors for res={resolution}: {errors}"
-        )
+        assert errors == [], f"MOM6ParameterValidator found errors for res={resolution}: {errors}"
 
         # --- 4. No legacy atparse tokens ---
         atparse_matches = _ATPARSE_RE.findall(rendered)
-        assert atparse_matches == [], (
-            f"Legacy @[...] atparse tokens found in rendered output: {atparse_matches}"
-        )
+        assert atparse_matches == [], f"Legacy @[...] atparse tokens found in rendered output: {atparse_matches}"
 
         # Shell variables should be preserved
-        assert "${TOPOEDITS}" in rendered, (
-            "Shell variable ${TOPOEDITS} should be preserved in rendered output"
-        )
+        assert "${TOPOEDITS}" in rendered, "Shell variable ${TOPOEDITS} should be preserved in rendered output"

@@ -88,20 +88,11 @@ class CompletenessVerifier:
             # Build a descriptive FATAL message listing all missing deps
             parts: list[str] = []
             for jjob, script in missing_ex:
-                parts.append(
-                    f"J-Job '{jjob}' references ex-script '{script}' "
-                    f"not found in {self.expdir / 'scripts'}"
-                )
+                parts.append(f"J-Job '{jjob}' references ex-script '{script}' not found in {self.expdir / 'scripts'}")
             for ref_script, ush in missing_ush:
-                parts.append(
-                    f"Script '{ref_script}' sources ush script '{ush}' "
-                    f"not found in {self.expdir / 'ush'}"
-                )
+                parts.append(f"Script '{ref_script}' sources ush script '{ush}' not found in {self.expdir / 'ush'}")
             for jjob, config in missing_cfg:
-                parts.append(
-                    f"J-Job '{jjob}' requires config '{config}' "
-                    f"not found in {self.expdir / 'parm' / 'config'}"
-                )
+                parts.append(f"J-Job '{jjob}' requires config '{config}' not found in {self.expdir / 'parm' / 'config'}")
             raise PipelineError(
                 "completeness",
                 "Missing dependencies in staged EXPDIR: " + "; ".join(parts),

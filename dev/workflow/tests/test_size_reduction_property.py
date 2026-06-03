@@ -16,16 +16,14 @@ from __future__ import annotations
 import os
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock
 
-from hypothesis import given, settings, HealthCheck
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from deployment.dag_filter import DAGReachabilitySet
 from deployment.pipeline import SizeReductionReport, _log_size_reduction
-
 
 # ---------------------------------------------------------------------------
 # Hypothesis Strategies
@@ -99,20 +97,15 @@ def test_size_reduction_staged_counts_match_set_lengths(reachability):
     """
     report = _log_size_reduction(Path("/tmp/fake_dev"), reachability)
 
-    assert report.staged_jjobs == len(reachability.jjobs), (
-        f"staged_jjobs={report.staged_jjobs} != len(jjobs)={len(reachability.jjobs)}"
-    )
+    assert report.staged_jjobs == len(reachability.jjobs), f"staged_jjobs={report.staged_jjobs} != len(jjobs)={len(reachability.jjobs)}"
     assert report.staged_ex_scripts == len(reachability.ex_scripts), (
-        f"staged_ex_scripts={report.staged_ex_scripts} != "
-        f"len(ex_scripts)={len(reachability.ex_scripts)}"
+        f"staged_ex_scripts={report.staged_ex_scripts} != len(ex_scripts)={len(reachability.ex_scripts)}"
     )
     assert report.staged_ush_scripts == len(reachability.ush_scripts), (
-        f"staged_ush_scripts={report.staged_ush_scripts} != "
-        f"len(ush_scripts)={len(reachability.ush_scripts)}"
+        f"staged_ush_scripts={report.staged_ush_scripts} != len(ush_scripts)={len(reachability.ush_scripts)}"
     )
     assert report.staged_configs == len(reachability.config_files), (
-        f"staged_configs={report.staged_configs} != "
-        f"len(config_files)={len(reachability.config_files)}"
+        f"staged_configs={report.staged_configs} != len(config_files)={len(reachability.config_files)}"
     )
 
 
@@ -133,20 +126,16 @@ def test_size_reduction_total_counts_match_available(reachability):
     report = _log_size_reduction(Path("/tmp/fake_dev"), reachability)
 
     assert report.total_jjobs == reachability.total_available_jjobs, (
-        f"total_jjobs={report.total_jjobs} != "
-        f"total_available_jjobs={reachability.total_available_jjobs}"
+        f"total_jjobs={report.total_jjobs} != total_available_jjobs={reachability.total_available_jjobs}"
     )
     assert report.total_ex_scripts == reachability.total_available_ex_scripts, (
-        f"total_ex_scripts={report.total_ex_scripts} != "
-        f"total_available_ex_scripts={reachability.total_available_ex_scripts}"
+        f"total_ex_scripts={report.total_ex_scripts} != total_available_ex_scripts={reachability.total_available_ex_scripts}"
     )
     assert report.total_ush_scripts == reachability.total_available_ush_scripts, (
-        f"total_ush_scripts={report.total_ush_scripts} != "
-        f"total_available_ush_scripts={reachability.total_available_ush_scripts}"
+        f"total_ush_scripts={report.total_ush_scripts} != total_available_ush_scripts={reachability.total_available_ush_scripts}"
     )
     assert report.total_configs == reachability.total_available_configs, (
-        f"total_configs={report.total_configs} != "
-        f"total_available_configs={reachability.total_available_configs}"
+        f"total_configs={report.total_configs} != total_available_configs={reachability.total_available_configs}"
     )
 
 
@@ -167,21 +156,14 @@ def test_size_reduction_staged_never_exceeds_total(reachability):
     """
     report = _log_size_reduction(Path("/tmp/fake_dev"), reachability)
 
-    assert report.staged_jjobs <= report.total_jjobs, (
-        f"staged_jjobs={report.staged_jjobs} > total_jjobs={report.total_jjobs}"
-    )
+    assert report.staged_jjobs <= report.total_jjobs, f"staged_jjobs={report.staged_jjobs} > total_jjobs={report.total_jjobs}"
     assert report.staged_ex_scripts <= report.total_ex_scripts, (
-        f"staged_ex_scripts={report.staged_ex_scripts} > "
-        f"total_ex_scripts={report.total_ex_scripts}"
+        f"staged_ex_scripts={report.staged_ex_scripts} > total_ex_scripts={report.total_ex_scripts}"
     )
     assert report.staged_ush_scripts <= report.total_ush_scripts, (
-        f"staged_ush_scripts={report.staged_ush_scripts} > "
-        f"total_ush_scripts={report.total_ush_scripts}"
+        f"staged_ush_scripts={report.staged_ush_scripts} > total_ush_scripts={report.total_ush_scripts}"
     )
-    assert report.staged_configs <= report.total_configs, (
-        f"staged_configs={report.staged_configs} > "
-        f"total_configs={report.total_configs}"
-    )
+    assert report.staged_configs <= report.total_configs, f"staged_configs={report.staged_configs} > total_configs={report.total_configs}"
 
 
 @given(reachability=_reachability_sets())

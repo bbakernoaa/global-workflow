@@ -14,7 +14,6 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from pathlib import Path
 
 from deployment.template_renderer import TemplateRenderer, TemplateRenderError
 
@@ -69,12 +68,7 @@ class TestStrictUndefinedDetection:
     def test_undefined_variable_includes_line_number(self, tmp_path):
         """Error includes the line number where the undefined variable appears."""
         # Put the undefined variable on line 4
-        template_content = (
-            "line1: value1\n"
-            "line2: value2\n"
-            "line3: value3\n"
-            "line4: {{ missing_var }}\n"
-        )
+        template_content = "line1: value1\nline2: value2\nline3: value3\nline4: {{ missing_var }}\n"
         src = tmp_path / "multi_line.yaml.j2"
         src.write_text(template_content)
 

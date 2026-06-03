@@ -32,41 +32,41 @@ IFS=':' read -ra grids <<< "${grid_string}"
 
 output_grids=""
 for grid in "${grids[@]}"; do
-    gridopt="grid${grid}"
-    output_grids="${output_grids} -new_grid ${!gridopt} ${output_file_prefix}_${grid}"
+  gridopt="grid${grid}"
+  output_grids="${output_grids} -new_grid ${!gridopt} ${output_file_prefix}_${grid}"
 done
 
 #shellcheck disable=SC2086
 ${WGRIB2} "${input_file}" ${defaults} \
-    ${interp_winds} \
-    ${interp_bilinear} \
-    ${interp_neighbor} \
-    ${interp_budget} \
-    ${increased_bits} \
-    ${output_grids}
+  ${interp_winds} \
+  ${interp_bilinear} \
+  ${interp_neighbor} \
+  ${interp_budget} \
+  ${increased_bits} \
+  ${output_grids}
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    echo "FATAL ERROR: WGRIB2 failed to generate interpolated grib2 file!"
-    exit "${err}"
+  echo "FATAL ERROR: WGRIB2 failed to generate interpolated grib2 file!"
+  exit "${err}"
 fi
 
 # trim and mask for all grids
 for grid in "${grids[@]}"; do
-    trim_rh "${output_file_prefix}_${grid}"
+  trim_rh "${output_file_prefix}_${grid}"
+  export err=$?
+  if [[ ${err} -ne 0 ]]; then
+    echo "FATAL ERROR: Failed during the execution of trim_rh"
+    exit "${err}"
+  fi
+  var_count=$(${WGRIB2} "${output_file_prefix}_${grid}" -match "LAND|ICEC" | wc -l)
+  if [[ "${var_count}" -eq 2 ]]; then
+    mod_icec "${output_file_prefix}_${grid}"
     export err=$?
     if [[ ${err} -ne 0 ]]; then
-        echo "FATAL ERROR: Failed during the execution of trim_rh"
-        exit "${err}"
+      echo "FATAL ERROR: Failed during execution of mod_icec"
+      exit "${err}"
     fi
-    var_count=$(${WGRIB2} "${output_file_prefix}_${grid}" -match "LAND|ICEC" | wc -l)
-    if [[ "${var_count}" -eq 2 ]]; then
-        mod_icec "${output_file_prefix}_${grid}"
-        export err=$?
-        if [[ ${err} -ne 0 ]]; then
-            echo "FATAL ERROR: Failed during execution of mod_icec"
-            exit "${err}"
-        fi
-    fi
+  fi
 done
 
 exit 0

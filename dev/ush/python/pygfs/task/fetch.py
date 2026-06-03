@@ -1,21 +1,20 @@
 #!/usr/bin/env python3
 
 import os
+import tarfile
 from logging import getLogger
 from typing import Any, Dict
-import tarfile
 
-from wxflow import (Task, htar,
-                    logit, parse_j2yaml, chdir)
+from wxflow import Task, chdir, htar, logit, parse_j2yaml
+
 # import tarfile
 
 
-logger = getLogger(__name__.split('.')[-1])
+logger = getLogger(__name__.split(".")[-1])
 
 
 class Fetch(Task):
-    """Task to pull ROTDIR data from HPSS (or locally)
-    """
+    """Task to pull ROTDIR data from HPSS (or locally)"""
 
     def __init__(self, config: Dict[str, Any]) -> None:
         """Constructor for the Fetch task
@@ -51,8 +50,7 @@ class Fetch(Task):
         fetch_yaml = fetch_dict.FETCH_YAML_TMPL
         fetch_parm = os.path.join(fetch_dict.PARMglobal, "fetch")
 
-        parsed_fetch = parse_j2yaml(os.path.join(fetch_parm, fetch_yaml),
-                                    fetch_dict)
+        parsed_fetch = parse_j2yaml(os.path.join(fetch_parm, fetch_yaml), fetch_dict)
         return parsed_fetch
 
     @logit(logger)
@@ -70,7 +68,7 @@ class Fetch(Task):
         """
 
         f_names = fetchdir_set.target.contents
-        if len(f_names) <= 0:     # Abort if no files
+        if len(f_names) <= 0:  # Abort if no files
             raise FileNotFoundError("FATAL ERROR: The tar ball has no files")
 
         on_hpss = fetchdir_set.target.on_hpss

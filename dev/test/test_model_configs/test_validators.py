@@ -14,13 +14,12 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "workflow"))
 
 from deployment.validators import (
-    ModelConfigureValidator,
-    NamelistValidator,
     DiagTableValidator,
     ESMFConfigValidator,
     FieldTableValidator,
+    ModelConfigureValidator,
+    NamelistValidator,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

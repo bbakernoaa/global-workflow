@@ -27,11 +27,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
-
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from deployment import ee2_scanner
 from deployment.ee2_scanner import ScanResult, scan_file
 from deployment.rag_ee2_adapter import (
     EXTRACT_CATEGORIES,
@@ -118,9 +115,7 @@ class TestRagEE2ResultPassed:
         """A flagged file in any scan category fails the result (Req 10.1)."""
         result = RagEE2Result(
             files_with_issues=1,
-            issues_by_category={
-                "error_handling": [{"file": "ush/x.sh", "desc": "missing err_chk"}]
-            },
+            issues_by_category={"error_handling": [{"file": "ush/x.sh", "desc": "missing err_chk"}]},
             extract_findings={c: [] for c in EXTRACT_CATEGORIES},
             scanned_files=["ush/x.sh"],
         )
@@ -144,9 +139,7 @@ class TestRagEE2ResultPassed:
         """per_file_verdict marks the flagged category 'issue', rest 'clean'."""
         result = RagEE2Result(
             files_with_issues=1,
-            issues_by_category={
-                "shebang_compliance": [{"file": "ush/forecast_postdet.sh"}]
-            },
+            issues_by_category={"shebang_compliance": [{"file": "ush/forecast_postdet.sh"}]},
             extract_findings={c: [] for c in EXTRACT_CATEGORIES},
             scanned_files=["ush/forecast_postdet.sh"],
         )
@@ -165,9 +158,7 @@ class TestDeriveChangedFiles:
     @staticmethod
     def _init_repo(root: Path) -> None:
         subprocess.run(["git", "init", "-q"], cwd=root, check=True)
-        subprocess.run(
-            ["git", "config", "user.email", "t@example.com"], cwd=root, check=True
-        )
+        subprocess.run(["git", "config", "user.email", "t@example.com"], cwd=root, check=True)
         subprocess.run(["git", "config", "user.name", "t"], cwd=root, check=True)
 
     def test_filters_to_ee2_relevant_paths(self, tmp_path):
@@ -225,9 +216,7 @@ class TestRunScanAndRecordBaseline:
             scan_payload={"statistics": {"files_with_issues": 0}, "issues_by_category": {}},
             extract_payload={"extract_findings": {c: [] for c in EXTRACT_CATEGORIES}},
         )
-        result = run_rag_ee2_scan(
-            client, ["ush/forecast_postdet.sh"], repo_root=repo
-        )
+        result = run_rag_ee2_scan(client, ["ush/forecast_postdet.sh"], repo_root=repo)
         assert result.passed
         # The adapter must request all five scan + three extract categories.
         assert client.scan_calls == [(1, SCAN_CATEGORIES)]
@@ -236,9 +225,7 @@ class TestRunScanAndRecordBaseline:
         out = record_baseline(result, repo / "fixtures", name="b.json")
         reloaded = load_baseline(out)
         assert reloaded["passed"] is True
-        assert reloaded["files"]["ush/forecast_postdet.sh"]["scan"][
-            "error_handling"
-        ] == "clean"
+        assert reloaded["files"]["ush/forecast_postdet.sh"]["scan"]["error_handling"] == "clean"
 
     def test_record_baseline_is_deterministic(self, tmp_path):
         """Two recordings of the same result are byte-identical (Req 10.3)."""
@@ -321,9 +308,7 @@ class TestCheckAgainstBaseline:
         """A baseline issue the scanner misses is reported as a divergence."""
         result = RagEE2Result(
             files_with_issues=1,
-            issues_by_category={
-                "file_naming": [{"file": "scripts/BAD_NAME.sh"}]
-            },
+            issues_by_category={"file_naming": [{"file": "scripts/BAD_NAME.sh"}]},
             extract_findings={c: [] for c in EXTRACT_CATEGORIES},
             scanned_files=["scripts/BAD_NAME.sh"],
         )
@@ -358,11 +343,7 @@ def test_adapter_module_has_no_rag_server_dependency():
     import deployment.rag_ee2_adapter as adapter
 
     source = Path(adapter.__file__).read_text(encoding="utf-8")
-    import_lines = [
-        line.strip()
-        for line in source.splitlines()
-        if line.strip().startswith(("import ", "from "))
-    ]
+    import_lines = [line.strip() for line in source.splitlines() if line.strip().startswith(("import ", "from "))]
     joined = "\n".join(import_lines).lower()
     assert "mcp" not in joined
     assert "agentcore" not in joined

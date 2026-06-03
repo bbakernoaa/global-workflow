@@ -16,14 +16,12 @@ import os
 import sys
 import tempfile
 
-import hypothesis
-from hypothesis import given, settings, HealthCheck
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from deployment.workflow_config import DAG, Edge, MeterDef, TaskNode, parse, pretty_print
-
+from deployment.workflow_config import DAG, Edge, parse, pretty_print
 
 # ---------------------------------------------------------------------------
 # Hypothesis Strategies for generating valid Workflow_Configuration YAML
@@ -158,18 +156,18 @@ def _workflow_config_yaml(draw):
         for task in family["tasks"]:
             lines.append(f'      - name: "{task["name"]}"')
             lines.append(f'        jjob: "{task["jjob"]}"')
-            if "trigger" in task and task["trigger"]:
+            if task.get("trigger"):
                 lines.append(f'        trigger: "{task["trigger"]}"')
-            if "events" in task and task["events"]:
+            if task.get("events"):
                 events_str = ", ".join(f'"{e}"' for e in task["events"])
                 lines.append(f"        events: [{events_str}]")
-            if "meters" in task and task["meters"]:
+            if task.get("meters"):
                 lines.append("        meters:")
                 for m in task["meters"]:
                     lines.append(f'          - name: "{m["name"]}"')
-                    lines.append(f'            min: {m["min"]}')
-                    lines.append(f'            max: {m["max"]}')
-            if "variables" in task and task["variables"]:
+                    lines.append(f"            min: {m['min']}")
+                    lines.append(f"            max: {m['max']}")
+            if task.get("variables"):
                 lines.append("        variables:")
                 for k, v in task["variables"].items():
                     lines.append(f'          {k}: "{v}"')
@@ -220,6 +218,7 @@ def _dag_edges_equal(dag1: DAG, dag2: DAG) -> bool:
 
     Compares edges as sets of (source, target, kind) tuples.
     """
+
     def edge_key(e: Edge) -> tuple:
         return (e.source, e.target, e.kind)
 
@@ -288,9 +287,7 @@ def test_parser_roundtrip_property(yaml_content: str):
             dag2 = parse(tmp2.name)
 
             # Step 5: Assert structural equality
-            assert dag1.suite_name == dag2.suite_name, (
-                f"Suite names differ: {dag1.suite_name!r} vs {dag2.suite_name!r}"
-            )
+            assert dag1.suite_name == dag2.suite_name, f"Suite names differ: {dag1.suite_name!r} vs {dag2.suite_name!r}"
             assert set(dag1.nodes.keys()) == set(dag2.nodes.keys()), (
                 f"Node sets differ:\n"
                 f"  Only in dag1: {set(dag1.nodes.keys()) - set(dag2.nodes.keys())}\n"

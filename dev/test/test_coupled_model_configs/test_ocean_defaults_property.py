@@ -15,8 +15,7 @@ import os
 import sys
 from copy import deepcopy
 
-import pytest
-from hypothesis import given, settings, HealthCheck
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 # Add the workflow module to the path
@@ -109,16 +108,14 @@ def ocean_context_with_overrides(draw: st.DrawFn) -> dict:
         # Generate a value that is different from the default
         default_val = defaults_for_res[key]
         if isinstance(default_val, int):
-            override_val = draw(
-                st.integers(min_value=1, max_value=99999).filter(
-                    lambda v, d=default_val: v != d
-                )
-            )
+            override_val = draw(st.integers(min_value=1, max_value=99999).filter(lambda v, d=default_val: v != d))
         elif isinstance(default_val, float):
             override_val = draw(
                 st.floats(
-                    min_value=0.001, max_value=99999.0,
-                    allow_nan=False, allow_infinity=False,
+                    min_value=0.001,
+                    max_value=99999.0,
+                    allow_nan=False,
+                    allow_infinity=False,
                 ).filter(lambda v, d=default_val: v != d)
             )
         else:
@@ -184,9 +181,7 @@ class TestOceanResolutionDefaultOverride:
 
         # Assert: explicit values are preserved (not overwritten by defaults)
         for key in explicit_keys:
-            assert key in merged_ocean, (
-                f"Explicit key '{key}' should be present in merged ocean context"
-            )
+            assert key in merged_ocean, f"Explicit key '{key}' should be present in merged ocean context"
             assert merged_ocean[key] == explicit_values[key], (
                 f"Explicit value for '{key}' should be {explicit_values[key]!r}, "
                 f"but got {merged_ocean[key]!r}. "
@@ -196,10 +191,7 @@ class TestOceanResolutionDefaultOverride:
         # Assert: default-only keys appear with correct default values
         defaults_for_res = OCEAN_RESOLUTION_DEFAULTS.get(resolution, {})
         for key in default_only_keys:
-            assert key in merged_ocean, (
-                f"Default-only key '{key}' should appear in merged ocean context "
-                f"for resolution '{resolution}'"
-            )
+            assert key in merged_ocean, f"Default-only key '{key}' should appear in merged ocean context for resolution '{resolution}'"
             assert merged_ocean[key] == defaults_for_res[key], (
                 f"Default-only key '{key}' should have value "
                 f"{defaults_for_res[key]!r} from resolution '{resolution}' "
@@ -243,11 +235,7 @@ class TestOceanResolutionDefaultOverride:
         # All defaults for this resolution should be present
         defaults_for_res = OCEAN_RESOLUTION_DEFAULTS.get(resolution, {})
         for key, expected_value in defaults_for_res.items():
-            assert key in merged_ocean, (
-                f"Default key '{key}' should be present in merged ocean "
-                f"context for resolution '{resolution}'"
-            )
+            assert key in merged_ocean, f"Default key '{key}' should be present in merged ocean context for resolution '{resolution}'"
             assert merged_ocean[key] == expected_value, (
-                f"Default key '{key}' should have value {expected_value!r} "
-                f"for resolution '{resolution}', got {merged_ocean[key]!r}"
+                f"Default key '{key}' should have value {expected_value!r} for resolution '{resolution}', got {merged_ocean[key]!r}"
             )

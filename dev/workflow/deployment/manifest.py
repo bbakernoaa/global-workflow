@@ -13,7 +13,6 @@ from __future__ import annotations
 import getpass
 import hashlib
 import os
-import platform
 import socket
 import subprocess
 from collections import OrderedDict
@@ -22,7 +21,6 @@ from pathlib import Path
 from typing import Any, Optional
 
 import yaml
-
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -93,7 +91,10 @@ def _git_info(repo_root: Optional[Path] = None) -> dict[str, str]:
     try:
         result = subprocess.run(
             ["git", "rev-parse", "HEAD"],
-            capture_output=True, text=True, cwd=cwd, timeout=10,
+            capture_output=True,
+            text=True,
+            cwd=cwd,
+            timeout=10,
         )
         if result.returncode == 0:
             info["git_commit"] = result.stdout.strip()
@@ -103,7 +104,10 @@ def _git_info(repo_root: Optional[Path] = None) -> dict[str, str]:
     try:
         result = subprocess.run(
             ["git", "remote", "get-url", "origin"],
-            capture_output=True, text=True, cwd=cwd, timeout=10,
+            capture_output=True,
+            text=True,
+            cwd=cwd,
+            timeout=10,
         )
         if result.returncode == 0:
             info["git_remote"] = result.stdout.strip()
@@ -113,7 +117,10 @@ def _git_info(repo_root: Optional[Path] = None) -> dict[str, str]:
     try:
         result = subprocess.run(
             ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-            capture_output=True, text=True, cwd=cwd, timeout=10,
+            capture_output=True,
+            text=True,
+            cwd=cwd,
+            timeout=10,
         )
         if result.returncode == 0:
             info["git_branch"] = result.stdout.strip()
@@ -267,18 +274,20 @@ def generate_manifest(
     # --- Build manifest content (without snapshot_id) for hashing ---
     # We serialize the manifest body first to compute the content hash,
     # then insert the snapshot_id.
-    manifest_body = OrderedDict([
-        ("git_commit", git_commit),
-        ("git_remote", git_remote),
-        ("git_branch", git_branch),
-        ("deployed_by", deployed_by),
-        ("deployed_on", deployed_on),
-        ("deployed_at", timestamp.strftime("%Y-%m-%dT%H:%M:%SZ")),
-        ("platform", platform_name),
-        ("wxflow_version", wxflow_version),
-        ("uwtools_version", uwtools_version),
-        ("files", file_hashes),
-    ])
+    manifest_body = OrderedDict(
+        [
+            ("git_commit", git_commit),
+            ("git_remote", git_remote),
+            ("git_branch", git_branch),
+            ("deployed_by", deployed_by),
+            ("deployed_on", deployed_on),
+            ("deployed_at", timestamp.strftime("%Y-%m-%dT%H:%M:%SZ")),
+            ("platform", platform_name),
+            ("wxflow_version", wxflow_version),
+            ("uwtools_version", uwtools_version),
+            ("files", file_hashes),
+        ]
+    )
 
     # Serialize body for content hashing
     body_yaml = _serialize_manifest(manifest_body)
@@ -288,9 +297,11 @@ def generate_manifest(
     snapshot_id = compute_snapshot_id(version, body_bytes)
 
     # --- Build final manifest with snapshot_id at the top ---
-    full_manifest = OrderedDict([
-        ("snapshot_id", snapshot_id),
-    ])
+    full_manifest = OrderedDict(
+        [
+            ("snapshot_id", snapshot_id),
+        ]
+    )
     full_manifest.update(manifest_body)
 
     return _serialize_manifest(full_manifest)
@@ -333,11 +344,9 @@ def verify_manifest(expdir: Path) -> list[str]:
     """
     manifest_path = expdir / MANIFEST_FILENAME
     if not manifest_path.exists():
-        raise FileNotFoundError(
-            f"Manifest not found: {manifest_path}"
-        )
+        raise FileNotFoundError(f"Manifest not found: {manifest_path}")
 
-    with open(manifest_path, "r", encoding="utf-8") as f:
+    with open(manifest_path, encoding="utf-8") as f:
         manifest = yaml.safe_load(f)
 
     errors: list[str] = []
@@ -352,19 +361,12 @@ def verify_manifest(expdir: Path) -> list[str]:
         actual_hash = sha256_file(filepath)
         expected_hash = expected.get("sha256", "")
         if actual_hash != expected_hash:
-            errors.append(
-                f"Hash mismatch: {rel_path} "
-                f"(expected {expected_hash[:16]}..., "
-                f"got {actual_hash[:16]}...)"
-            )
+            errors.append(f"Hash mismatch: {rel_path} (expected {expected_hash[:16]}..., got {actual_hash[:16]}...)")
 
         actual_size = filepath.stat().st_size
         expected_size = expected.get("size", -1)
         if actual_size != expected_size:
-            errors.append(
-                f"Size mismatch: {rel_path} "
-                f"(expected {expected_size}, got {actual_size})"
-            )
+            errors.append(f"Size mismatch: {rel_path} (expected {expected_size}, got {actual_size})")
 
     return errors
 
@@ -389,11 +391,10 @@ def _serialize_manifest(data: OrderedDict) -> str:
 
     class _ManifestDumper(yaml.SafeDumper):
         """Custom YAML dumper for manifest serialization."""
+
         pass
 
-    def _represent_ordered_dict(
-        dumper: yaml.SafeDumper, data: OrderedDict
-    ) -> Any:
+    def _represent_ordered_dict(dumper: yaml.SafeDumper, data: OrderedDict) -> Any:
         return dumper.represent_mapping(
             yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
             data.items(),
@@ -402,14 +403,10 @@ def _serialize_manifest(data: OrderedDict) -> str:
     def _represent_str(dumper: yaml.SafeDumper, data: str) -> Any:
         # Use double-quoted style for strings containing special chars
         if any(c in data for c in ("\n", "\t", ":", "#", "{", "}")):
-            return dumper.represent_scalar(
-                "tag:yaml.org,2002:str", data, style='"'
-            )
+            return dumper.represent_scalar("tag:yaml.org,2002:str", data, style='"')
         # Empty strings need quoting
         if data == "":
-            return dumper.represent_scalar(
-                "tag:yaml.org,2002:str", data, style='"'
-            )
+            return dumper.represent_scalar("tag:yaml.org,2002:str", data, style='"')
         return dumper.represent_scalar("tag:yaml.org,2002:str", data)
 
     _ManifestDumper.add_representer(OrderedDict, _represent_ordered_dict)

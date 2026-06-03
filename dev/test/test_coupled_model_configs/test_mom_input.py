@@ -7,8 +7,6 @@ shell variable preservation, and unsupported resolution error handling.
 Traces to: Requirements 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8
 """
 
-import os
-import sys
 from pathlib import Path
 
 import pytest

@@ -37,7 +37,7 @@ mkdir -p "${COMOUT_ATMOS_MASTER}"
 "${SCRglobal}/exglobal_atmos_upp.py" && true
 export err=$?
 if [[ ${err} -ne 0 ]]; then
-    err_exit "Failed to generate atmospheric GRIB2 master files"
+  err_exit "Failed to generate atmospheric GRIB2 master files"
 fi
 
 ##############################################
@@ -48,7 +48,7 @@ fi
 # Final processing
 ##############################################
 if [[ -e "${pgmout}" ]]; then
-    cat "${pgmout}"
+  cat "${pgmout}"
 fi
 
 ##########################################
@@ -56,7 +56,7 @@ fi
 ##########################################
 cd "${DATAROOT}" || exit 1
 if [[ "${KEEPDATA:-NO}" == "NO" ]]; then
-    rm -rf "${DATA}"
+  rm -rf "${DATA}"
 fi
 
 exit 0

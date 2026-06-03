@@ -43,93 +43,93 @@ month_spec=$2
 
 case ${month_num} in
 
-    01)
-        Mon=Jan
-        Month=January
-        ;;
+  01)
+    Mon=Jan
+    Month=January
+    ;;
 
-    02)
-        Mon=Feb
-        Month=February
-        ;;
+  02)
+    Mon=Feb
+    Month=February
+    ;;
 
-    03)
-        Mon=Mar
-        Month=March
-        ;;
+  03)
+    Mon=Mar
+    Month=March
+    ;;
 
-    04)
-        Mon=Apr
-        Month=April
-        ;;
+  04)
+    Mon=Apr
+    Month=April
+    ;;
 
-    05)
-        Mon=May
-        Month=May
-        ;;
+  05)
+    Mon=May
+    Month=May
+    ;;
 
-    06)
-        Mon=Jun
-        Month=June
-        ;;
+  06)
+    Mon=Jun
+    Month=June
+    ;;
 
-    07)
-        Mon=Jul
-        Month=July
-        ;;
+  07)
+    Mon=Jul
+    Month=July
+    ;;
 
-    08)
-        Mon=Aug
-        Month=August
-        ;;
+  08)
+    Mon=Aug
+    Month=August
+    ;;
 
-    09)
-        Mon=Sep
-        Month=September
-        ;;
+  09)
+    Mon=Sep
+    Month=September
+    ;;
 
-    10)
-        Mon=Oct
-        Month=October
-        ;;
+  10)
+    Mon=Oct
+    Month=October
+    ;;
 
-    11)
-        Mon=Nov
-        Month=November
-        ;;
+  11)
+    Mon=Nov
+    Month=November
+    ;;
 
-    12)
-        Mon=Dec
-        Month=December
-        ;;
+  12)
+    Mon=Dec
+    Month=December
+    ;;
 
-    *)
-        echo "FATAL ERROR input month number (${month_num}) is invalid"
-        exit 2
-        ;;
+  *)
+    echo "FATAL ERROR input month number (${month_num}) is invalid"
+    exit 2
+    ;;
 
 esac
 
 if [[ "${month_spec}" == "Mon" ]]; then
 
-    echo "${Mon}"
-    echo "${Mon}" > month_name.txt
+  echo "${Mon}"
+  echo "${Mon}" > month_name.txt
 
 elif [[ "${month_spec}" == "Month" ]]; then
 
-    echo "${Month}"
-    echo "${Month}" > month_name.txt
+  echo "${Month}"
+  echo "${Month}" > month_name.txt
 
 elif [[ "${month_spec}" == "MON" ]]; then
 
-    MON="${Mon^^}"
-    echo "${MON}"
-    echo "${MON}" > month_name.txt
+  MON="${Mon^^}"
+  echo "${MON}"
+  echo "${MON}" > month_name.txt
 
 elif [[ "${month_spec}" == "MONTH" ]]; then
 
-    MONTH="${Month^^}"
-    echo "${MONTH}"
-    echo "${MONTH}" > month_name.txt
+  MONTH="${Month^^}"
+  echo "${MONTH}"
+  echo "${MONTH}" > month_name.txt
 
 fi

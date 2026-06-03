@@ -18,11 +18,9 @@ import yaml
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "workflow"))
 
 from deployment.component_composer import (
-    COMPONENT_REGISTRY,
     ComponentCompositionError,
     _extract_trigger_paths,
     _path_belongs_to_component,
-    _path_belongs_to_excluded_component,
     _remove_dangling_refs,
     compose_components,
     load_active_components,
@@ -31,7 +29,6 @@ from deployment.component_composer import (
     merge_model_sections,
     resolve_triggers,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -268,9 +265,7 @@ class TestLoadActiveComponents:
     """Tests for loading multiple active components."""
 
     def test_loads_all_components(self, components_dir: Path):
-        loaded = load_active_components(
-            ["atmosphere", "ocean", "ice"], components_dir
-        )
+        loaded = load_active_components(["atmosphere", "ocean", "ice"], components_dir)
         assert len(loaded) == 3
         assert "atmosphere" in loaded
         assert "ocean" in loaded
@@ -309,9 +304,7 @@ class TestMergeModelSections:
 
     def test_merges_multiple_components(self, components_dir: Path):
         base_model = {"resolution": "C384"}
-        active = load_active_components(
-            ["atmosphere", "ocean", "ice"], components_dir
-        )
+        active = load_active_components(["atmosphere", "ocean", "ice"], components_dir)
         merged = merge_model_sections(base_model, active)
 
         assert "fv3" in merged
@@ -334,9 +327,7 @@ class TestMergeModelSections:
 
     def test_derives_active_components_list(self, components_dir: Path):
         base_model = {"resolution": "C384"}
-        active = load_active_components(
-            ["atmosphere", "ocean"], components_dir
-        )
+        active = load_active_components(["atmosphere", "ocean"], components_dir)
         merged = merge_model_sections(base_model, active)
 
         assert "active_components" in merged
@@ -375,9 +366,7 @@ class TestMergeFamilies:
 
     def test_merges_multiple_component_families(self, components_dir: Path):
         base_families: list = []
-        active = load_active_components(
-            ["atmosphere", "ocean", "wave"], components_dir
-        )
+        active = load_active_components(["atmosphere", "ocean", "wave"], components_dir)
         merged = merge_families(base_families, active)
 
         paths = [f["path"] for f in merged]
@@ -388,9 +377,7 @@ class TestMergeFamilies:
 
     def test_deduplicates_by_path(self, components_dir: Path):
         # Base already has gfs/ocean
-        base_families = [
-            {"path": "gfs/ocean", "tasks": [{"name": "existing", "jjob": "J1"}]}
-        ]
+        base_families = [{"path": "gfs/ocean", "tasks": [{"name": "existing", "jjob": "J1"}]}]
         active = load_active_components(["ocean"], components_dir)
         merged = merge_families(base_families, active)
 
@@ -401,9 +388,7 @@ class TestMergeFamilies:
         assert ocean_families[0]["tasks"][0]["name"] == "existing"
 
     def test_preserves_base_families(self, components_dir: Path):
-        base_families = [
-            {"path": "custom/family", "tasks": [{"name": "task1", "jjob": "J1"}]}
-        ]
+        base_families = [{"path": "custom/family", "tasks": [{"name": "task1", "jjob": "J1"}]}]
         active = load_active_components(["ocean"], components_dir)
         merged = merge_families(base_families, active)
 
@@ -430,15 +415,11 @@ class TestExtractTriggerPaths:
         assert paths == ["gfs/atmos/forecast/fcst"]
 
     def test_meter_trigger(self):
-        paths = _extract_trigger_paths(
-            "gfs/atmos/forecast/fcst:forecast_hour ge 6"
-        )
+        paths = _extract_trigger_paths("gfs/atmos/forecast/fcst:forecast_hour ge 6")
         assert paths == ["gfs/atmos/forecast/fcst"]
 
     def test_compound_trigger(self):
-        paths = _extract_trigger_paths(
-            "gfs/atmos/forecast/fcst == complete and gfs/ocean/prep == complete"
-        )
+        paths = _extract_trigger_paths("gfs/atmos/forecast/fcst == complete and gfs/ocean/prep == complete")
         assert "gfs/atmos/forecast/fcst" in paths
         assert "gfs/ocean/prep" in paths
 
@@ -594,9 +575,7 @@ class TestRemoveDanglingRefs:
     """Tests for the dangling reference removal helper."""
 
     def test_removes_single_ref(self):
-        result = _remove_dangling_refs(
-            "gfs/ocean/prep == complete", ["gfs/ocean/prep"]
-        )
+        result = _remove_dangling_refs("gfs/ocean/prep == complete", ["gfs/ocean/prep"])
         assert result == ""
 
     def test_removes_ref_with_and(self):
@@ -608,9 +587,7 @@ class TestRemoveDanglingRefs:
         assert "gfs/ocean" not in result
 
     def test_removes_meter_ref(self):
-        result = _remove_dangling_refs(
-            "gfs/wave/init:step ge 5", ["gfs/wave/init"]
-        )
+        result = _remove_dangling_refs("gfs/wave/init:step ge 5", ["gfs/wave/init"])
         assert result == ""
 
 
@@ -622,9 +599,7 @@ class TestRemoveDanglingRefs:
 class TestComposeComponents:
     """Integration tests for the full composition pipeline."""
 
-    def test_full_composition(
-        self, full_workflow_config: dict, components_dir: Path
-    ):
+    def test_full_composition(self, full_workflow_config: dict, components_dir: Path):
         result = compose_components(full_workflow_config, components_dir)
 
         # Model sections should be merged
@@ -636,9 +611,7 @@ class TestComposeComponents:
 
         # Active components should be derived
         assert "active_components" in result["model"]
-        assert set(result["model"]["active_components"]) == {
-            "atmosphere", "ocean", "ice", "wave", "aerosol"
-        }
+        assert set(result["model"]["active_components"]) == {"atmosphere", "ocean", "ice", "wave", "aerosol"}
 
         # Families should be merged
         family_paths = [f["path"] for f in result["families"]]
@@ -648,9 +621,7 @@ class TestComposeComponents:
         assert "gfs/wave" in family_paths
         assert "gfs/aerosol" in family_paths
 
-    def test_subset_composition(
-        self, full_workflow_config: dict, components_dir: Path
-    ):
+    def test_subset_composition(self, full_workflow_config: dict, components_dir: Path):
         # Only atmosphere and ocean
         full_workflow_config["components"] = ["atmosphere", "ocean"]
         result = compose_components(full_workflow_config, components_dir)
@@ -663,17 +634,13 @@ class TestComposeComponents:
         # Active components should reflect the subset
         assert result["model"]["active_components"] == ["atmosphere", "ocean"]
 
-    def test_excluded_component_triggers_removed(
-        self, full_workflow_config: dict, components_dir: Path
-    ):
+    def test_excluded_component_triggers_removed(self, full_workflow_config: dict, components_dir: Path):
         # Exclude wave - ocean's trigger to atmos should remain valid
         full_workflow_config["components"] = ["atmosphere", "ocean"]
         result = compose_components(full_workflow_config, components_dir)
 
         # Ocean's trigger references atmos, which is active - should remain
-        ocean_families = [
-            f for f in result["families"] if f["path"] == "gfs/ocean"
-        ]
+        ocean_families = [f for f in result["families"] if f["path"] == "gfs/ocean"]
         assert len(ocean_families) == 1
         for task in ocean_families[0]["tasks"]:
             if task["trigger"]:
@@ -702,17 +669,14 @@ class TestComposeComponents:
         with pytest.raises(ComponentCompositionError, match="Unknown component"):
             compose_components(config, components_dir)
 
-    def test_does_not_mutate_input(
-        self, full_workflow_config: dict, components_dir: Path
-    ):
+    def test_does_not_mutate_input(self, full_workflow_config: dict, components_dir: Path):
         import copy
+
         original = copy.deepcopy(full_workflow_config)
         compose_components(full_workflow_config, components_dir)
         assert full_workflow_config == original
 
-    def test_atmosphere_only(
-        self, full_workflow_config: dict, components_dir: Path
-    ):
+    def test_atmosphere_only(self, full_workflow_config: dict, components_dir: Path):
         full_workflow_config["components"] = ["atmosphere"]
         result = compose_components(full_workflow_config, components_dir)
 

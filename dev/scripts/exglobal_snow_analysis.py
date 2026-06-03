@@ -5,15 +5,15 @@
 # for a global Snow Depth analysis
 import os
 
-from wxflow import Logger, cast_strdict_as_dtypedict
 from pygfs.task.snow_analysis import SnowAnalysis
+
+from wxflow import Logger, cast_strdict_as_dtypedict
 
 # Initialize root logger
 logger = Logger(level=os.environ.get("LOGGING_LEVEL", "DEBUG"), colored_log=True)
 
 
-if __name__ == '__main__':
-
+if __name__ == "__main__":
     # Take configuration from environment and cast it as python dictionary
     config = cast_strdict_as_dtypedict(os.environ)
 
@@ -29,14 +29,14 @@ if __name__ == '__main__':
 
     # Process IMS snow cover (if applicable)
     if snow_anl.task_config.DO_IMS_SCF:
-        snow_anl.execute('scf_to_ioda')
+        snow_anl.execute("scf_to_ioda")
 
     # Process GHCN (if applicable)
     if snow_anl.task_config.DO_GHCN:
         snow_anl.prepare_GHCN()
 
     # Execute JEDI snow analysis
-    snow_anl.execute('snowanlvar')
+    snow_anl.execute("snowanlvar")
 
     # Add increments
     snow_anl.add_increments()

@@ -33,7 +33,7 @@ rc="${rc:-${2:-$?}}"
 # Please consult with global-workflow CMs about permanent changes to
 # $POSTAMBLE_CMD or this postamble function.
 if [[ -v 'POSTAMBLE_CMD' ]]; then
-    ${POSTAMBLE_CMD}
+  ${POSTAMBLE_CMD}
 fi
 
 # Calculate the elapsed time

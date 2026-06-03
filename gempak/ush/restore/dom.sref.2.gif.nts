@@ -5,15 +5,15 @@ PANEL     0
 
 LATLON    28/12/1//5;10
 CLEAR     YES
-GLEVEL    0   
+GLEVEL    0
 GVCORD    NONE
 SCALE     0
 FLINE     0;0;3;
-CLRBAR    0                               
+CLRBAR    0
 LINE      1/1/1
-TEXT      .8/3/2/c/sw 
-CONTUR    
+TEXT      .8/3/2/c/sw
+CONTUR
 CINT
 LINE
 TYPE      F
-FINT      .11;10                       
+FINT      .11;10

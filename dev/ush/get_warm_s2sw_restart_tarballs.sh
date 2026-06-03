@@ -9,8 +9,8 @@ set -eu
 # TODO: Extend support to additional systems.
 # Usage : get_warm_s2sw_restart_tarballs.sh YYYYMMDDHH HPSS_ROOT_DIR UNTAR_DIR
 if [[ $# -ne 4 ]]; then
-    echo "Usage: $0 YYYYMMDDHH HPSS_ROOT_DIR UNTAR_DIR HPC_ACCOUNT"
-    exit 1
+  echo "Usage: $0 YYYYMMDDHH HPSS_ROOT_DIR UNTAR_DIR HPC_ACCOUNT"
+  exit 1
 fi
 # Cycle is in YYYYMMDDHH format and is passed as an argument.
 cycle=$1
@@ -27,8 +27,8 @@ hpss_dir="${hpss_root_dir}/${cycle}"
 phpss_dir="${hpss_root_dir}/${pcycle}"
 
 if ! mkdir -p "${untar_dir}"; then
-    echo "Error: Unable to create untar directory ${untar_dir}"
-    exit 1
+  echo "Error: Unable to create untar directory ${untar_dir}"
+  exit 1
 fi
 
 cd "${untar_dir}"
@@ -48,7 +48,7 @@ tasks=1
 
 # Construct a wrapper script in a loop to submit to the sbatch system
 for tarball in "${targets[@]}"; do
-    sbatch << EOF
+  sbatch << EOF
 #!/bin/bash
 #SBATCH --job-name=get_retro_${tarball}
 #SBATCH --output=get_retro_${tarball}.out
@@ -81,7 +81,7 @@ done
 
 # Now do the same for the previous cycle tarballs
 for tarball in "${ptargets[@]}"; do
-    sbatch << EOF
+  sbatch << EOF
 #!/bin/bash
 #SBATCH --job-name=get_retro_${tarball}
 #SBATCH --output=get_retro_${tarball}.out
