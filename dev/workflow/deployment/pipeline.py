@@ -836,6 +836,17 @@ def _stage_render_templates(
                     )
                     continue
 
+                # DAG reachability filter: when enabled, only render config
+                # templates that are in the reachability set (Req 13.1, 13.2).
+                # This ensures the EXPDIR contains only configs actually
+                # required by the application's task DAG.
+                if reachability_set is not None and rel_str.startswith("config/"):
+                    if not reachability_set.contains_config(src_file.name):
+                        logger.debug(
+                            f"  Skipping {rel_to_src} (not in DAG reachability set)"
+                        )
+                        continue
+
                 # Compute destination path (strip .j2 suffix)
                 dst_name = rel_to_src.name[:-3]
                 dst_file = dst_dir / rel_to_src.parent / dst_name

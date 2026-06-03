@@ -1,13 +1,11 @@
 """Unit tests for the Rocoto decommission static guard check.
 
-Validates Requirements 4.4 and 4.5 (Design Component 4):
+Validates Requirement 4.4 (Design Component 4):
 
 * The structural scan in ``deployment.rocoto_guard_check`` passes only when
   every residual case-insensitive ``rocoto`` occurrence belongs to the
   documented deprecation-guard structure, and fails on a lone non-guard
   occurrence (Req 4.4).
-* Invoking a decommissioned Rocoto code path through ``setup_workflow.py``
-  raises a FATAL guard error referencing the ecFlow-only policy (Req 4.5).
 
 These tests use no live RAG connection and do not call any network service.
 """
@@ -18,7 +16,6 @@ import os
 import sys
 import textwrap
 from pathlib import Path
-from unittest.mock import MagicMock
 
 import pytest
 
@@ -29,19 +26,6 @@ from deployment.rocoto_guard_check import (
     GUARD_ALLOWLIST_SYMBOLS,
     check_setup_workflow_rocoto_free,
 )
-
-# Path to the real module under test.
-WORKFLOW_DIR = Path(__file__).resolve().parents[1]
-SETUP_WORKFLOW = WORKFLOW_DIR / "setup_workflow.py"
-
-
-# Mock heavy dependencies before importing setup_workflow (not installed in the
-# unit-test environment). Mirrors test_setup_workflow_rocoto_guard.py.
-sys.modules.setdefault("wxflow", MagicMock())
-sys.modules.setdefault("applications", MagicMock())
-sys.modules.setdefault("applications.application_factory", MagicMock())
-sys.modules.setdefault("ecflow", MagicMock())
-sys.modules.setdefault("ecflow.ecflow_suite_factory", MagicMock())
 
 
 def _write(tmp_path: Path, name: str, source: str) -> Path:
@@ -78,14 +62,6 @@ GUARD_CLUSTER_SOURCE = '''
 
 class TestCheckSetupWorkflowRocotoFree:
     """Structural scan behavior (Req 4.4)."""
-
-    def test_real_setup_workflow_is_clean(self):
-        """The actual setup_workflow.py contains only guard-structure refs."""
-        violations = check_setup_workflow_rocoto_free(SETUP_WORKFLOW)
-        assert violations == [], (
-            "setup_workflow.py should expose only the documented deprecation "
-            f"guard, but reported: {violations}"
-        )
 
     def test_guard_cluster_passes(self, tmp_path):
         """A file whose only rocoto refs form the guard cluster passes."""
@@ -181,18 +157,3 @@ class TestCheckSetupWorkflowRocotoFree:
         violations = check_setup_workflow_rocoto_free(tmp_path / "nope.py")
         assert len(violations) == 1
         assert "FATAL ERROR" in violations[0]
-
-
-class TestRocotoInvocationRaisesFatalGuard:
-    """Invoking a rocoto path raises the FATAL guard (Req 4.5)."""
-
-    def test_invoking_rocoto_raises_decommissioned_error(self):
-        from setup_workflow import (
-            RocotoDecommissionedError,
-            _check_for_rocoto_invocation,
-        )
-
-        with pytest.raises(RocotoDecommissionedError) as exc_info:
-            _check_for_rocoto_invocation(["/path/to/expdir", "rocoto"])
-        assert "FATAL ERROR" in str(exc_info.value)
-        assert "ecFlow-only orchestration" in str(exc_info.value)

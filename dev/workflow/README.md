@@ -278,7 +278,46 @@ The test suite includes:
 - **Integration tests** exercising end-to-end deployment with application naming
 - **Goal realization gate** verifying all 14 parent correctness properties
 
-Current status: **1191 passed, 4 skipped** (92s).
+Current status: **1176 passed, 4 skipped** (~2 min).
+
+---
+
+## Directory Structure
+
+```
+dev/workflow/
+├── deploy.py                    # CLI entry point (deploy_workflow command)
+├── deployment/                  # Pipeline implementation modules
+│   ├── pipeline.py              # 8-stage orchestrator
+│   ├── dag_filter.py            # DAG reachability analysis
+│   ├── dag_generator.py         # ecFlow .def and .ecf generation
+│   ├── name_resolver.py         # Application J-Job naming resolution
+│   ├── file_stager.py           # Artifact staging with rename-on-copy
+│   ├── template_renderer.py     # Jinja2 config rendering
+│   ├── model_config_renderer.py # UFS model input pre-rendering
+│   ├── config_conditioner.py    # Deploy-time conditional elimination
+│   ├── completeness_verifier.py # Cross-reference integrity check
+│   ├── ee2_scanner.py           # EE2 compliance validation
+│   ├── platform_conditioner.py  # Platform-specific env rendering
+│   ├── deploy_time_vars.py      # Deploy-time variable registry
+│   ├── validation.py            # Input validation
+│   ├── workflow_config.py       # Workflow YAML parser
+│   ├── rocoto_guard_check.py    # Static scan for Rocoto references
+│   └── prefix_registry.yaml     # Application prefix → source mappings
+├── ecflow/
+│   └── templates/               # Jinja2 templates for ecFlow scripts
+│       ├── task.ecf.j2          # Per-task .ecf template
+│       ├── head.h.j2            # ecFlow preamble (traps, logging)
+│       ├── tail.h.j2            # ecFlow postamble (cleanup, complete)
+│       └── envsetup.h.j2        # Platform environment sourcing
+├── hosts/                       # Per-platform host config YAMLs
+├── tests/                       # pytest suite (unit, integration, property-based)
+├── dag_visualize.py             # DAG visualization utility
+├── goal_realization_gate.py     # CI verification gate (14 properties)
+├── ARCHITECTURE.md              # System architecture documentation
+├── LEGACY_INVENTORY.md          # Inventory of root-level legacy artifacts
+└── requirements.txt             # Python dependencies
+```
 
 ---
 

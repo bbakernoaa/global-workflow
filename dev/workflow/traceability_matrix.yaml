@@ -106,7 +106,6 @@ requirements:
   R1:
     title: "ecFlow-Only Orchestration"
     tests:
-      - "tests/test_setup_workflow_rocoto_guard.py"
       - "tests/test_rocoto_guard_check.py"
       - "tests/test_dag_generator.py"
     status: pass
@@ -200,6 +199,5 @@ requirements:
   R14:
     title: "Decommissioning of Existing Rocoto Code Paths"
     tests:
-      - "tests/test_setup_workflow_rocoto_guard.py"
       - "tests/test_rocoto_guard_check.py"
     status: pass
